@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 220 15% 15%;
+
+        --card: 0 0% 100%;
+        --card-foreground: 220 15% 15%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 220 15% 15%;
+
+        --primary: 221 65% 54%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 30 58% 92%;
+        --secondary-foreground: 220 15% 20%;
+
+        --muted: 210 20% 95%;
+        --muted-foreground: 210 10% 40%;
+
+        --accent: 12 88% 61%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 72% 58%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 210 15% 85%;
+        --input: 210 15% 85%;
+        --ring: 221 65% 54%;
+
+        --radius: 0.5rem;
+
+        --sidebar-primary: 221 65% 54%;
+        --sidebar-primary-foreground: 0 0% 100%;
+
+        --chart-1: 348 100% 69%;
+        --chart-2: 205 82% 58%;
+        --chart-3: 45 100% 67%;
+        --chart-4: 180 50% 58%;
+        --chart-5: 255 100% 70%;
+        --chart-6: 36 100% 62%;
+    }
+
+    .dark {
+        --background: 220 18% 10%;
+        --foreground: 0 0% 100%;
+
+        --card: 220 18% 12%;
+        --card-foreground: 0 0% 100%;
+
+        --popover: 220 18% 12%;
+        --popover-foreground: 0 0% 100%;
+
+        --primary: 221 65% 64%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 30 20% 20%;
+        --secondary-foreground: 30 30% 90%;
+
+        --muted: 210 10% 25%;
+        --muted-foreground: 210 10% 70%;
+
+        --accent: 221 65% 64%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 65% 45%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 210 10% 25%;
+        --input: 210 10% 25%;
+        --ring: 221 65% 64%;
+
+        --sidebar-primary: 221 65% 64%;
+        --sidebar-primary-foreground: 0 0% 100%;
+
+        --chart-1: 348 90% 65%;
+        --chart-2: 205 75% 55%;
+        --chart-3: 45 90% 65%;
+        --chart-4: 180 45% 55%;
+        --chart-5: 255 90% 65%;
+        --chart-6: 36 90% 60%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    @layer components {
+        .notification-dot {
+            @apply absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-pulse;
+        }
+
+        .notification-badge {
+            @apply absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-medium;
+        }
+    }
+
+    /* Fix for Leaflet map */
+    .leaflet-container {
+        /* z-index: 0; */
+    }
+
+    .leaflet-control,
+    .leaflet-pane {
+        /* z-index: 0 !important; */
+    }
+
+    /* Ensure dropdowns appear above map */
+    .dropdown-menu-content {
+        /* z-index: 1000 !important; */
+    }
+
+    /* Back to top button */
+    .back-to-top {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 50;
+        transition: all 0.3s ease;
+    }
+
+    .back-to-top.hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(10px);
+    }
+
+    /* Infinite scroll loading */
+    .loading-spinner {
+        @apply animate-spin rounded-full h-8 w-8 border-b-2 border-primary;
+    }
+
+    /* Image upload preview - Fixed to avoid @apply with group utility */
+    .image-preview {
+        @apply relative overflow-hidden rounded-lg;
+    }
+
+    /* Apply group class directly in HTML/JSX instead */
+    .image-preview:hover .image-overlay {
+        @apply opacity-100;
+    }
+
+    .image-overlay {
+        @apply absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 transition-opacity;
+    }
+
+    /* Form validation styles */
+    .field-error {
+        @apply text-destructive text-sm mt-1;
+    }
+
+    .field-success {
+        @apply text-green-600 text-sm mt-1;
+    }
+
+    /* Custom scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        @apply bg-muted;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        @apply bg-muted-foreground rounded-full;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        @apply bg-foreground;
+    }
+}

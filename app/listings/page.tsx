@@ -27,7 +27,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: { [
                 <ListingCard key={listing.id} listing={listing} />
               ))}
             </div>
-            <ListingsClient initialFilters={filters} initialSortBy={sortBy} />
+            {/* <ListingsClient initialFilters={filters} initialSortBy={sortBy} /> */}
           </div>
         </div>
       </div>

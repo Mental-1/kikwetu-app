@@ -1,4 +1,6 @@
-import { ListingsFilter } from "@/components/listings-filter";
+import dynamic from 'next/dynamic';
+
+const ListingsFilter = dynamic(() => import('@/components/listings-filter').then(mod => mod.ListingsFilter), { ssr: false });
 import { SearchService } from "@/lib/services/search-service";
 import { parseSearchParams, PAGE_SIZE } from "@/lib/search-utils";
 import { ListingCard } from "@/components/listings/listing-card";
@@ -27,7 +29,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: { [
                 <ListingCard key={listing.id} listing={listing} />
               ))}
             </div>
-            {/* <ListingsClient initialFilters={filters} initialSortBy={sortBy} /> */}
+            <ListingsClient initialFilters={filters} initialSortBy={sortBy} />
           </div>
         </div>
       </div>

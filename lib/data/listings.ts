@@ -8,10 +8,10 @@ export async function getListingById(id: string) {
     .from("listings")
     .select(
       `
-      *,
-      profiles (*),
-      category (*),
-      reviews (*)
+      id, title, description, price, location, latitude, longitude, condition, featured, images, views, created_at, updated_at, category_id, subcategory_id, user_id,
+      profiles (id, username, avatar_url),
+      categories (id, name),
+      reviews (id, rating, comment, created_at, user_id)
     `,
     )
     .eq("id", id)

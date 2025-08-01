@@ -1,12 +1,12 @@
-import { SearchService } from "@/lib/services/search-service";
 import { parseSearchParams, PAGE_SIZE } from "@/lib/search-utils";
 import { ListingsClient } from "./listings-client";
+import { getFilteredListingsAction } from "@/app/actions/search";
 
 export default async function ListingsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
   const filters = parseSearchParams(new URLSearchParams(searchParams as any));
   const sortBy = (searchParams.sortBy as string) || "newest";
 
-  const initialListings = await SearchService.getFilteredListings({
+  const initialListings = await getFilteredListingsAction({
     page: 1,
     pageSize: PAGE_SIZE,
     filters,

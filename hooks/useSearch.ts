@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { SearchService } from "@/lib/services/search-service";
 import { SearchFilters, SearchParams, ListingsResponse } from "@/lib/types/search";
 import { createListingsQueryKey } from "@/lib/search-utils";
+import { getFilteredListingsAction, getCategoriesAction, getSubcategoriesAction } from "@/app/actions/search";
 
 interface UseSearchOptions {
   filters: SearchFilters;
@@ -31,7 +31,7 @@ export const useSearch = ({
         userLocation,
       };
 
-      const result = await SearchService.getFilteredListings(searchParams);
+      const result = await getFilteredListingsAction(searchParams);
       return result;
     },
     getNextPageParam: (lastPage, allPages) => {
@@ -49,7 +49,7 @@ export const useSearch = ({
 export const useCategories = () => {
   return useQuery({
     queryKey: ["categories"],
-    queryFn: SearchService.getCategories,
+    queryFn: getCategoriesAction,
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
   });
@@ -58,7 +58,7 @@ export const useCategories = () => {
 export const useSubcategories = () => {
   return useQuery({
     queryKey: ["subcategories"],
-    queryFn: SearchService.getSubcategories,
+    queryFn: getSubcategoriesAction,
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
   });

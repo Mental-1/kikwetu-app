@@ -1,10 +1,8 @@
 import "server-only";
 import { getSupabaseServer } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
 
 export async function getListingById(id: string) {
-  const cookieStore = cookies();
-  const supabase = await getSupabaseServer(cookieStore);
+  const supabase = await getSupabaseServer();
 
   const { data, error } = await supabase
     .from("listings")

@@ -1,16 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import { SearchParams, ListingsResponse } from "@/lib/types/search";
 import { ListingsItem } from "@/lib/types/listing";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
 
 export class SearchService {
   static async getFilteredListings(
     params: SearchParams,
   ): Promise<ListingsResponse> {
+    const supabase = await getSupabaseServer();
+
     try {
       console.log("SearchService.getFilteredListings called with:", params);
 

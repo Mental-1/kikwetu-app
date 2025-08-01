@@ -52,14 +52,28 @@ export class SearchService {
       // Sanitize the data to prevent hydration issues
       const sanitizedData: ListingsItem[] = (listings as any[]).map((item) => ({
         ...item,
-        id: item.id || '', // Ensure id is always a string
+        id: item.id || '',
         title: item.title || "Untitled Listing",
-        description: item.description || "",
-        price: item.price || 0,
-        condition: item.condition || "N/A",
-        location: item.location || "Unknown location",
+        description: item.description || null,
+        price: item.price || null,
+        location: item.location || null,
+        latitude: item.latitude || null,
+        longitude: item.longitude || null,
+        condition: item.condition || null,
+        featured: item.featured || false,
         images: Array.isArray(item.images) ? item.images : [],
-        // Add any other fields that might be null/undefined
+        views: item.views || 0,
+        created_at: item.created_at || null,
+        updated_at: item.updated_at || null,
+        category_id: item.category_id || null,
+        category_name: item.category_name || null,
+        subcategory_id: item.subcategory_id || null,
+        subcategory_name: item.subcategory_name || null,
+        user_id: item.user_id || null,
+        seller_name: item.seller_name || null,
+        seller_username: item.seller_username || null,
+        seller_avatar: item.seller_avatar || null,
+        distance_km: item.distance_km || null,
       }));
 
       // Determine if there are more pages to fetch

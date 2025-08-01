@@ -3,7 +3,8 @@ import { getSupabaseServer } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
 export async function getListingById(id: string) {
-  const supabase = await getSupabaseServer();
+  const cookieStore = cookies();
+  const supabase = await getSupabaseServer(cookieStore);
 
   const { data, error } = await supabase
     .from("listings")

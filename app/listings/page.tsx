@@ -1,23 +1,12 @@
-import { parseSearchParams, PAGE_SIZE } from "@/lib/search-utils";
-import { ListingsClient } from "./listings-client";
-import { getFilteredListingsAction } from "@/app/actions/search";
+'use client';
 
-export default async function ListingsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const filters = parseSearchParams(new URLSearchParams(searchParams as any));
-  const sortBy = (searchParams.sortBy as string) || "newest";
+import { ListingsClient } from './listings-client';
 
-  const initialListings = await getFilteredListingsAction({
-    page: 1,
-    pageSize: PAGE_SIZE,
-    filters,
-    sortBy,
-    userLocation: null,
-  });
-
+export default function ListingsPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-6">
-        <ListingsClient initialListings={initialListings} />
+        <ListingsClient />
       </div>
     </div>
   );

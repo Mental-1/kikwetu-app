@@ -20,7 +20,13 @@ export const useSearch = ({
   enabled = true,
   initialData,
 }: UseSearchOptions) => {
-  return useInfiniteQuery({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
     queryKey: createListingsQueryKey(filters, sortBy, userLocation),
     queryFn: async ({ pageParam = 1 }) => {
       const searchParams: SearchParams = {
@@ -44,6 +50,14 @@ export const useSearch = ({
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
   });
+
+  return {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  };
 };
 
 export const useCategories = () => {

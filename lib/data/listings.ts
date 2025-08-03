@@ -18,7 +18,6 @@ export async function getListingById(id: string) {
 
   if (error) {
     console.error("Failed to fetch listing:", error);
-    // In a real app, you might want to log this error to a service
     return null;
   }
 

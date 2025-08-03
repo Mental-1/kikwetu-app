@@ -5,24 +5,18 @@ import { useSearch } from '@/hooks/useSearch';
 import { useSearchState } from '@/hooks/useSearchState';
 import { ListingCard } from '@/components/listings/listing-card';
 import { ListingsFilter } from '@/components/listings-filter';
-import { ListingsResponse } from '@/lib/types/search';
 import { PAGE_SIZE } from '@/lib/search-utils';
+import { ListingsPageSkeleton } from '@/components/skeletons/listings-page-skeleton';
 
-export function ListingsClient({ initialListings }: { initialListings: ListingsResponse }) {
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
+export function ListingsClient() {
   const { filters, sortBy } = useSearchState();
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSearch({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useSearch({
     filters,
     sortBy,
     userLocation,
     pageSize: PAGE_SIZE,
-    initialData: initialListings,
   });
 
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -59,8 +53,8 @@ export function ListingsClient({ initialListings }: { initialListings: ListingsR
 
   const allListings = useMemo(() => data?.pages.flatMap((page) => page.data) || [], [data]);
 
-  if (!isMounted) {
-    return null;
+  if (isLoading) {
+    return <ListingsPageSkeleton />;
   }
 
   return (

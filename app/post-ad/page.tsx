@@ -579,7 +579,6 @@ export default function PostAdPage() {
     </div>
   );
 }
-}
 
 function AdDetailsStep({
   formData,

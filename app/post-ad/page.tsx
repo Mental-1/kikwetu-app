@@ -56,7 +56,6 @@ const steps = [
 ];
 
 export default function PostAdPage() {
-  const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [formData, setFormData] = useState({

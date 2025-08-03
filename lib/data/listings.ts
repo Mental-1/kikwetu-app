@@ -23,5 +23,13 @@ export async function getListingById(id: string) {
     return null;
   }
 
-  return data;
+  // Supabase returns related tables as arrays, even for a single related record.
+  // We need to transform the data to match our Listing type.
+  const transformedData = {
+    ...data,
+    category: Array.isArray(data.category) ? data.category[0] : data.category,
+    profiles: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles,
+  };
+
+  return transformedData;
 }

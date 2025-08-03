@@ -8,9 +8,9 @@ export async function getListingById(id: string) {
     .from("listings")
     .select(
       `
-      id, title, description, price, location, latitude, longitude, condition, featured, images, views, created_at, updated_at, category_id, subcategory_id, user_id, negotiable, status, payment_status, plan,
+      id, title, description, price, location, latitude, longitude, condition, featured, images, views, created_at, updated_at, category_id, subcategory_id, user_id, negotiable, status, payment_status, plan, expiry_date,
       profiles (id, username, avatar_url),
-      categories (id, name),
+      category:categories (id, name),
       reviews (id, rating, comment, created_at, user_id)
     `,
     )

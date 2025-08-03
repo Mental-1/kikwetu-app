@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useCategories, useSubcategoriesByCategory } from "@/hooks/useCategories";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -55,10 +56,7 @@ const steps = [
 ];
 
 export default function PostAdPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
-  const [allSubcategories, setAllSubcategories] = useState<SubCategory[]>([]);
-  const [, setCategoriesLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [formData, setFormData] = useState({
@@ -85,37 +83,11 @@ export default function PostAdPage() {
     setFormData((prev) => ({ ...prev, ...data }));
   }, []);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch(
-          process.env.NEXT_PUBLIC_APP_URL + "/api/categories",
-        );
-        const data = await response.json();
-        setCategories(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setCategoriesLoading(false);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    const fetchSubcategories = async () => {
-      try {
-        const response = await fetch(
-          process.env.NEXT_PUBLIC_APP_URL + "/api/subcategories",
-        );
-        const data = await response.json();
-        setAllSubcategories(data);
-      } catch (error) {
-        console.error("Failed to fetch subcategories:", error);
-      }
-    };
-    fetchSubcategories();
-  }, []);
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const selectedCategory = categories.find((c) => c.name === formData.category);
+  const { data: subcategories = [] } = useSubcategoriesByCategory(
+    selectedCategory?.id || null,
+  );
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -128,29 +100,26 @@ export default function PostAdPage() {
     fetchPlans();
   }, [updateFormData]);
 
-  useEffect(() => {
-    if (formData.category) {
-      const selectedCategory = categories.find(
-        (c) => c.name === formData.category,
-      );
-      if (selectedCategory) {
-        setSubcategories(
-          allSubcategories.filter(
-            (sub) => sub.parent_category_id === selectedCategory.id,
-          ),
-        );
-      } else {
-        setSubcategories([]);
-      }
-    } else {
-      setSubcategories([]);
-    }
-  }, [formData.category, categories, allSubcategories]);
-
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
+
+  // Form validation helper
+  const isFormValid = () => {
+    const basicFieldsValid = formData.title.trim() &&
+                            formData.description.trim() &&
+                            formData.category &&
+                            formData.price;
+
+    if (selectedTier?.price > 0) {
+      const paymentFieldsValid = formData.paymentMethod &&
+                                (formData.paymentMethod === 'mpesa' ? formData.phoneNumber : formData.email);
+      return basicFieldsValid && paymentFieldsValid;
+    }
+
+    return basicFieldsValid;
+  };
 
   const handleAdvanceStep = () => {
     if (currentStep < steps.length - 1) {
@@ -564,13 +533,15 @@ export default function PostAdPage() {
                   <Button
                     onClick={handleSubmit}
                     disabled={
+                      !isFormValid() ||
                       isSubmitted ||
                       paymentStatus === 'pending' ||
                       isPublishingListing ||
-                      (selectedTier.price > 0 && (paymentStatus !== 'completed' || !formData.paymentMethod))
+                      // For paid tiers: allow if payment is idle or completed
+                      (selectedTier?.price > 0 && paymentStatus !== 'idle' && paymentStatus !== 'completed')
                     }
                   >
-                    {selectedTier.price > 0 && paymentStatus !== 'completed'
+                    {selectedTier?.price > 0 && paymentStatus !== 'completed'
                       ? "Pay"
                       : "Submit Ad"}
                     <ChevronRight className="h-4 w-4 ml-2" />
@@ -607,6 +578,7 @@ export default function PostAdPage() {
       </Dialog>
     </div>
   );
+}
 }
 
 function AdDetailsStep({
@@ -1248,4 +1220,3 @@ function PreviewStep({
       </div>
     </div>
   );
-}

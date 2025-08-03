@@ -9,6 +9,11 @@ import { ListingsResponse } from '@/lib/types/search';
 import { PAGE_SIZE } from '@/lib/search-utils';
 
 export function ListingsClient({ initialListings }: { initialListings: ListingsResponse }) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const { filters, sortBy } = useSearchState();
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
@@ -53,6 +58,10 @@ export function ListingsClient({ initialListings }: { initialListings: ListingsR
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const allListings = useMemo(() => data?.pages.flatMap((page) => page.data) || [], [data]);
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col md:flex-row gap-6">

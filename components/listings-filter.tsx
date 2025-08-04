@@ -28,11 +28,22 @@ import {
 import { useSearchState } from "@/hooks/useSearchState";
 import { formatPrice } from "@/lib/utils";
 
-export function ListingsFilter() {
+import { memo } from 'react';
+// ... other imports
+
+interface ListingsFilterProps {
+  filters: any; // Replace with your actual filter type
+  updateFilters: (filters: any) => void;
+  clearFilters: () => void;
+}
+
+export const ListingsFilter = memo(({ filters, updateFilters, clearFilters }: ListingsFilterProps) => {
+  // ... component logic
+});
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
 
-  const { filters, updateFilters, clearFilters } = useSearchState();
+  
 
   // Use the category hooks
   const {

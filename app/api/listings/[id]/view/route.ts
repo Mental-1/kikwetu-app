@@ -33,7 +33,11 @@ export async function POST(
     });
 
     if (error) {
-      return NextResponse.json({ error: "Database Error" }, { status: 500 });
+      console.error("Error incrementing listing view:", error);
+      return NextResponse.json(
+        { error: "Database Error", details: error.message },
+        { status: 500 },
+      );
     }
 
     if (!data || data.length === 0) {

@@ -9,7 +9,7 @@ import { PAGE_SIZE } from '@/lib/search-utils';
 import { ListingsPageSkeleton } from '@/components/skeletons/listings-page-skeleton';
 
 export function ListingsClient() {
-  const { filters, sortBy } = useSearchState();
+  const { filters, sortBy, updateFilters, clearFilters } = useSearchState();
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useSearch({
@@ -59,7 +59,11 @@ export function ListingsClient() {
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
-      <ListingsFilter />
+      <ListingsFilter
+        filters={filters}
+        updateFilters={updateFilters}
+        clearFilters={clearFilters}
+      />
       <div className="flex-1">
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {allListings.map((listing) => (

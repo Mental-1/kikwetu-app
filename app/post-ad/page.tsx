@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useCategories, useSubcategoriesByCategory } from "@/hooks/useCategories";
+import {
+  useCategories,
+  useSubcategoriesByCategory,
+} from "@/hooks/useCategories";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -82,7 +85,8 @@ export default function PostAdPage() {
     setFormData((prev) => ({ ...prev, ...data }));
   }, []);
 
-  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategories();
   const selectedCategory = categories.find((c) => c.name === formData.category);
   const { data: subcategories = [] } = useSubcategoriesByCategory(
     selectedCategory?.id || null,
@@ -106,14 +110,18 @@ export default function PostAdPage() {
 
   // Form validation helper
   const isFormValid = () => {
-    const basicFieldsValid = formData.title.trim() &&
-                            formData.description.trim() &&
-                            formData.category &&
-                            formData.price;
+    const basicFieldsValid =
+      formData.title.trim() &&
+      formData.description.trim() &&
+      formData.category &&
+      formData.price;
 
     if (selectedTier?.price > 0) {
-      const paymentFieldsValid = formData.paymentMethod &&
-                                (formData.paymentMethod === 'mpesa' ? formData.phoneNumber : formData.email);
+      const paymentFieldsValid =
+        formData.paymentMethod &&
+        (formData.paymentMethod === "mpesa"
+          ? formData.phoneNumber
+          : formData.email);
       return basicFieldsValid && paymentFieldsValid;
     }
 
@@ -189,7 +197,8 @@ export default function PostAdPage() {
   }, [currentTransactionId, methodStepIndex]);
 
   const handleSubmit = async () => {
-    if (isSubmitted || isPublishingListing || paymentStatus === 'pending') return;
+    if (isSubmitted || isPublishingListing || paymentStatus === "pending")
+      return;
     setIsSubmitted(true);
 
     if (!selectedTier) {
@@ -369,7 +378,7 @@ export default function PostAdPage() {
       amount: tier.price,
       phoneNumber: formData.phoneNumber,
       email: formData.email,
-      description: `RouteMe Listing - ${tier.name} Plan`,
+      description: `Kikwetu Listing - ${tier.name} Plan`,
       transactionId: transaction.id,
     };
 
@@ -522,7 +531,7 @@ export default function PostAdPage() {
                 <Button
                   variant="outline"
                   onClick={handleBack}
-                  disabled={currentStep === 0 || paymentStatus === 'pending'}
+                  disabled={currentStep === 0 || paymentStatus === "pending"}
                 >
                   <ChevronLeft className="h-4 w-4 mr-2" />
                   Back
@@ -534,13 +543,13 @@ export default function PostAdPage() {
                     disabled={
                       !isFormValid() ||
                       isSubmitted ||
-                      paymentStatus === 'pending' ||
                       isPublishingListing ||
-                      // For paid tiers: allow if payment is idle or completed
-                      (selectedTier?.price > 0 && paymentStatus !== 'idle' && paymentStatus !== 'completed')
+                      (selectedTier?.price > 0 &&
+                        (paymentStatus === "pending" ||
+                          paymentStatus === "completed"))
                     }
                   >
-                    {selectedTier?.price > 0 && paymentStatus !== 'completed'
+                    {selectedTier?.price > 0 && paymentStatus !== "completed"
                       ? "Pay"
                       : "Submit Ad"}
                     <ChevronRight className="h-4 w-4 ml-2" />
@@ -550,8 +559,8 @@ export default function PostAdPage() {
                     onClick={handleAdvanceStep}
                     disabled={
                       isSubmitted ||
-                      paymentStatus === 'pending' ||
-                      isPublishingListing
+                      isPublishingListing ||
+                      (currentStep === 0 && !isFormValid())
                     }
                   >
                     Next
@@ -684,7 +693,10 @@ function AdDetailsStep({
               </SelectTrigger>
               <SelectContent>
                 {availableSubcategories.map((subcategory) => (
-                  <SelectItem key={subcategory.id} value={String(subcategory.id)}>
+                  <SelectItem
+                    key={subcategory.id}
+                    value={String(subcategory.id)}
+                  >
                     {subcategory.name}
                   </SelectItem>
                 ))}
@@ -1011,7 +1023,7 @@ function PaymentMethodStep({
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Payment Method</h2>
 
-      <Dialog open={paymentStatus === 'pending'}>
+      <Dialog open={paymentStatus === "pending"}>
         <DialogContent className="w-3/4 sm:max-w-[425px]">
           <DialogTitle>Awaiting Payment Confirmation</DialogTitle>
           <div className="flex flex-col items-center justify-center py-8">
@@ -1030,18 +1042,20 @@ function PaymentMethodStep({
         </p>
       </div>
 
-      {paymentStatus === 'completed' && (
-         <div className="flex items-center justify-center p-4 rounded-lg bg-green-100 border border-green-300 text-green-800">
-           <CheckCircle2 className="h-5 w-5 mr-3" />
-           <p className="font-medium">Payment Confirmed. You can now submit your ad.</p>
-         </div>
+      {paymentStatus === "completed" && (
+        <div className="flex items-center justify-center p-4 rounded-lg bg-green-100 border border-green-300 text-green-800">
+          <CheckCircle2 className="h-5 w-5 mr-3" />
+          <p className="font-medium">
+            Payment Confirmed. You can now submit your ad.
+          </p>
+        </div>
       )}
 
-      {paymentStatus === 'failed' && (
-         <div className="flex items-center justify-center p-4 rounded-lg bg-red-100 border border-red-300 text-red-800">
-           <XCircle className="h-5 w-5 mr-3" />
-           <p className="font-medium">Payment Failed. Please try again.</p>
-         </div>
+      {paymentStatus === "failed" && (
+        <div className="flex items-center justify-center p-4 rounded-lg bg-red-100 border border-red-300 text-red-800">
+          <XCircle className="h-5 w-5 mr-3" />
+          <p className="font-medium">Payment Failed. Please try again.</p>
+        </div>
       )}
 
       <div className="space-y-4">

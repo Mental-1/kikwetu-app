@@ -295,7 +295,7 @@ export function AuthForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Welcome to RouteMe</CardTitle>
+        <CardTitle>Welcome to Kikwetu</CardTitle>
         <CardDescription>
           {authMode === "sign-in"
             ? "Sign in to your account to continue"

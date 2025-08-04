@@ -51,7 +51,7 @@ export default async function HomePage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <ErrorBoundary
               fallback={
                 <div className="col-span-full text-center py-8 text-red-600">

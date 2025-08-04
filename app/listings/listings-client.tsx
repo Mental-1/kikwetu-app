@@ -52,6 +52,8 @@ export function ListingsClient() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const allListings = useMemo(() => data?.pages.flatMap((page) => page.data) || [], [data]);
+  const [view, setView] = useState('grid');
+
 
   if (isLoading) {
     return <ListingsPageSkeleton />;
@@ -65,11 +67,25 @@ export function ListingsClient() {
         clearFilters={clearFilters}
       />
       <div className="flex-1">
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {allListings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
+        <div className="flex justify-end mb-4">
+          <button onClick={() => setView('grid')} className={`mr-2 px-3 py-1 rounded ${view === 'grid' ? 'bg-primary text-white' : 'bg-gray-200'}`}>Grid</button>
+          <button onClick={() => setView('list')} className={`px-3 py-1 rounded ${view === 'list' ? 'bg-primary text-white' : 'bg-gray-200'}`}>List</button>
         </div>
+        {view === 'grid' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {allListings.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            {allListings.map((listing) => (
+              <div key={listing.id} className="mb-4">
+                <ListingCard listing={listing} />
+              </div>
+            ))}
+          </div>
+        )}
         <div ref={loadingRef} className="flex justify-center py-8">
           {isFetchingNextPage && <p>Loading more...</p>}
         </div>

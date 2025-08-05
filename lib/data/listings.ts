@@ -47,8 +47,8 @@ export async function getListingById(id: string) {
   // We need to transform the data to match our Listing type.
   const transformedData = {
     ...data,
-    category: Array.isArray(data.category) ? data.category[0] : data.category,
-    profiles: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles,
+    category: Array.isArray(data.category) ? (data.category[0] || null) : data.category,
+    profiles: Array.isArray(data.profiles) ? (data.profiles[0] || null) : data.profiles,
     reviews: reviews || [],
   };
 

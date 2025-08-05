@@ -1,19 +1,18 @@
 import { getSettings } from "@/app/settings/actions/settings-actions";
 
+// Fallback exchange rates (USD base) - update periodically
 const exchangeRates = {
   USD: 1,
-  KES: 130,
-  EUR: 0.9,
-  GBP: 0.8,
+  KES: 130, // Approximate - last updated: [date]
+  EUR: 0.9, // Approximate - last updated: [date]  
+  GBP: 0.8, // Approximate - last updated: [date]
 };
 
 export const formatPrice = (price: number, currency: keyof typeof exchangeRates) => {
-  const rate = exchangeRates[currency] || exchangeRates.USD;
-  const convertedPrice = price * rate;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-  }).format(convertedPrice);
+  }).format(price);
 };
 
 export const convertPrice = (price: number, from: keyof typeof exchangeRates, to: keyof typeof exchangeRates) => {
@@ -56,20 +55,30 @@ export const getExchangeRates = async () => {
   return null; // Should not be reached if MAX_RETRIES > 0
 };
 
-export const formatPriceWithCurrency = async (price: number) => {
+export const formatPriceWithCurrency = async (price: number, sourceCurrency: keyof typeof exchangeRates = "KES") => {
   const settings = await getSettings();
-  const currency = settings?.preferences?.currency || "USD";
-  const rates = await getExchangeRates();
+  const targetCurrency = settings?.preferences?.currency || "KES"; // Default to KES
 
-  if (!rates) {
-    return formatPrice(price, "USD");
+  if (sourceCurrency === targetCurrency) {
+    return formatPrice(price, targetCurrency); // No conversion needed if currencies are the same
   }
 
-  const rate = rates[currency] || rates.USD;
-  const convertedPrice = price * rate;
+  const liveRates = await getExchangeRates(); // This fetches rates relative to USD
 
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(convertedPrice);
+  let convertedPrice = price;
+
+  if (liveRates) {
+    // Convert price from sourceCurrency to USD using live rates
+    const priceInUSD = price / (liveRates[sourceCurrency] || exchangeRates[sourceCurrency] || 1);
+    // Convert price from USD to targetCurrency using live rates
+    convertedPrice = priceInUSD * (liveRates[targetCurrency] || exchangeRates[targetCurrency] || 1);
+  } else {
+    // Fallback to static exchangeRates if live rates are not available
+    // Convert price from sourceCurrency to USD using static rates
+    const priceInUSD = price / (exchangeRates[sourceCurrency] || 1);
+    // Convert price from USD to targetCurrency using static rates
+    convertedPrice = priceInUSD * (exchangeRates[targetCurrency] || 1);
+  }
+
+  return formatPrice(convertedPrice, targetCurrency);
 };

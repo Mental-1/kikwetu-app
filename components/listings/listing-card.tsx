@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin } from "lucide-react";
+import { useState, useEffect } from 'react';
 import { formatPriceWithCurrency } from "@/lib/currency-converter";
 import { ListingsItem } from "@/lib/types/listing";
 
@@ -12,6 +13,20 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
+  const [formattedPrice, setFormattedPrice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getFormattedPrice = async () => {
+      if (listing.price !== undefined && listing.price !== null) {
+        const price = await formatPriceWithCurrency(listing.price);
+        setFormattedPrice(price);
+      } else {
+        setFormattedPrice("N/A");
+      }
+    };
+    getFormattedPrice();
+  }, [listing.price]);
+
   if (layout === "list") {
     return (
       <Link href={`/listings/${listing.id}`}>
@@ -33,7 +48,7 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
                     {listing.title}
                   </h3>
                   <p className="text-xl font-bold text-green-600">
-                    Ksh {formatPriceWithCurrency(listing.price)}
+                    Ksh {formattedPrice}
                   </p>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
@@ -74,7 +89,7 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
               {listing.title}
             </h3>
             <p className="text-lg font-bold text-green-600 mb-1">
-              Ksh {formatPriceWithCurrency(listing.price)}
+              Ksh {formattedPrice}
             </p>
             <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
               {listing.description}

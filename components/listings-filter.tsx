@@ -131,7 +131,6 @@ export const ListingsFilter = memo(
         priceRange: {
           ...filters.priceRange,
           [field]:
-              [field]:
     field === "max" && numericValue === 0 ? NO_MAX_PRICE : numericValue,
         },
       });
@@ -152,7 +151,7 @@ export const ListingsFilter = memo(
         filters.subcategories.length > 0 ||
         filters.conditions.length > 0 ||
         filters.priceRange.min > 0 ||
-        filters.priceRange.max < 1000000 ||
+        filters.priceRange.max < NO_MAX_PRICE ||
         filters.maxDistance !== 50 ||
         filters.searchQuery.trim() !== "",
       [filters],
@@ -218,7 +217,16 @@ export const ListingsFilter = memo(
         return (
           <Alert className="mb-4">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load subcategories</AlertDescription>
+            <AlertDescription className="flex justify-between items-center">
+              Failed to load subcategories
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => prefetchSubcategories()}
+              >
+                Retry
+              </Button>
+            </AlertDescription>
           </Alert>
         );
       }

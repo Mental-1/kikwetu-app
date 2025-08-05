@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Eye, Star, Clock, Calendar, TrendingUp, Edit, Trash2 } from "lucide-react";
-import { formatPrice } from "@/lib/utils";
+import { formatPriceWithCurrency } from "@/lib/currency-converter";
 import { Listing } from "@/lib/types/listing";
 
 interface ListingCardWithActionsProps {
@@ -69,7 +69,7 @@ export function ListingCardWithActions({
         <CardTitle className="text-lg line-clamp-1">{listing.title}</CardTitle>
         <div className="flex items-center justify-between">
           <span className="text-2xl font-bold text-green-600">
-            Ksh {formatPrice(listing.price)}
+            Ksh {formatPriceWithCurrency(listing.price)}
           </span>
           <Badge variant="outline">{listing.condition}</Badge>
         </div>

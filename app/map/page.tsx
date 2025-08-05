@@ -63,6 +63,13 @@ export default function MapViewPage() {
       return { lat: latitude, lng: longitude };
     } catch (err: any) {
       console.error("Error getting location:", err);
+      const errorMessage = err.code === 1 
+        ? "Location access denied. Please enable location services."
+        : err.code === 2 
+        ? "Unable to determine your location. Please try again."
+        : err.code === 3
+        ? "Location request timed out. Please try again."
+        : "Could not retrieve your location.";
       setMapError(errorMessage);
       // Default to Nairobi if location fails, so map can still load
       setUserLocation(DEFAULT_LOCATION);

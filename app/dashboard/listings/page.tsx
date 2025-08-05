@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { getSupabaseClient } from "@/utils/supabase/client";
+import { ChevronLeft, Star, Eye, Calendar, Clock, Edit, Trash2, TrendingUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ListingCardWithActions } from "@/components/listings/listing-card-with-actions";
 import {
@@ -25,6 +26,8 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { requestReReview } from "@/app/dashboard/listings/actions";
 import { formatPrice } from "@/lib/utils";
+
+import type { Database } from "@/utils/supabase/database.types";
 
 interface Listing {
   id: string;
@@ -57,7 +60,9 @@ export default function UserListingsPage() {
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [userPlan, setUserPlan] = useState<string>("free");
 
-  const transformListingData = (l: any): Listing => ({
+  const transformListingData = (l: Database["public"]["Tables"]["listings"]["Row"] & {
+  category?: { name: string }
+}): Listing => ({
     id: l.id,
     title: l.title,
     description: l.description ?? "",

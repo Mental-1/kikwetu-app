@@ -73,6 +73,7 @@ export type Listing = {
   expiry_date: string;
   profiles: Profile;
   reviews: Review[];
+  featured: boolean;
 };
 
 export type Category = {

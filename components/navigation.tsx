@@ -42,9 +42,9 @@ const Logo = () => {
       <Image
         src="/kikwetu_light.png"
         alt="Kikwetu Logo"
-        width={120}
-        height={40}
-        className="h-10 w-auto"
+        width={144}
+        height={48}
+        className="h-12 w-auto"
       />
     );
   }

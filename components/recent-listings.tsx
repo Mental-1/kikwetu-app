@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DisplayListingItem } from "@/lib/types/listing";
 import Image from "next/image";
-import { formatPriceWithCurrency } from "@/lib/currency-converter";
+import { formatPrice } from "@/lib/utils";
 
 interface RecentListingsProps {
   initialListings: DisplayListingItem[];
@@ -46,7 +46,7 @@ export function RecentListings({ initialListings }: RecentListingsProps) {
                   {listing.title}
                 </h3>
                 <p className="text-lg font-bold text-green-600 mb-1">
-                  Ksh {formatPriceWithCurrency(listing.price ?? 0)}
+                  Ksh {formatPrice(listing.price)}
                 </p>
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-1">
                   {listing.description}

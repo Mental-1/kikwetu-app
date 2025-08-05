@@ -25,7 +25,7 @@ import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { getPlans, Plan } from "./actions";
-import { formatPriceWithCurrency } from "@/lib/currency-converter";
+import { formatPrice } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -1194,7 +1194,7 @@ function PreviewStep({
                 {formData.title || "Ad Title"}
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                Ksh {formatPriceWithCurrency(Number(formData.price)) || "N/A"}
+                Ksh {formatPrice(Number(formData.price)) || "N/A"}
               </p>
               {formData.negotiable && (
                 <span className="text-sm text-muted-foreground">

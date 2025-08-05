@@ -6,7 +6,7 @@ import { updateListingStatus } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatPriceWithCurrency } from "@/lib/currency-converter";
+import { formatPrice } from "@/lib/utils";
 import { Listing } from "@/lib/types/listing";
 import Image from "next/image";
 
@@ -139,7 +139,7 @@ export default function ListingPreviewPage({
               <div className="flex items-center gap-4 pt-2">
                 <Badge variant="secondary">{listing.condition}</Badge>
                 <span className="text-2xl font-bold text-green-600">
-                  Ksh {formatPriceWithCurrency(listing.price)}
+                  Ksh {formatPrice(listing.price)}
                 </span>
               </div>
             </CardHeader>

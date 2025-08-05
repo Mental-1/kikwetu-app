@@ -28,7 +28,7 @@ import { ListingMediaGallery } from "@/components/listing-media-gallery";
 import posthog from "posthog-js";
 import { ReviewsSection } from "@/components/listings/ReviewsSection";
 import { Listing } from "@/lib/types/listing";
-import { formatPriceWithCurrency } from "@/lib/currency-converter";
+import { formatPrice } from "@/lib/utils";
 
 export function ListingDetailsClient({ listing }: { listing: Listing }) {
     const router = useRouter();
@@ -319,7 +319,7 @@ export function ListingDetailsClient({ listing }: { listing: Listing }) {
   
                   <div className="flex items-center gap-4">
                     <div className="text-2xl font-bold text-green-600">
-                      Ksh {formatPriceWithCurrency(listing.price)}
+                      Ksh {formatPrice(listing.price)}
                     </div>
                     <Badge variant="outline">{listing.condition}</Badge>
                     <Badge variant="secondary">{listing.category.name}</Badge>

@@ -34,7 +34,7 @@ export default function RenewListingPage({ params }: { params: { id: string } })
       }
     };
     fetchPlans();
-  }, []);
+  }, [toast]);
 
   const handleRenew = async () => {
     if (!user || !selectedPlan) return;

@@ -25,7 +25,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { requestReReview } from "@/app/dashboard/listings/actions";
-import { formatPrice } from "@/lib/utils";
+import { formatPriceWithCurrency } from "@/lib/currency-converter";
 
 import type { Database } from "@/utils/supabase/database.types";
 
@@ -346,7 +346,7 @@ export default function UserListingsPage() {
                     </CardTitle>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl font-bold text-green-600">
-                        {formatPrice(listing.price, 'KES')}
+                        {formatPriceWithCurrency(listing.price, 'KES')}
                       </span>
                       <Badge variant="outline">{listing.condition}</Badge>
                     </div>
@@ -527,7 +527,7 @@ export default function UserListingsPage() {
                     </CardTitle>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl font-bold text-green-600">
-                        {formatPrice(listing.price, 'KES')}
+                        {formatPriceWithCurrency(listing.price, 'KES')}
                       </span>
                       <Badge variant="outline">{listing.condition}</Badge>
                     </div>

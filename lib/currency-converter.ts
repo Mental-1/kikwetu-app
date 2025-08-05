@@ -61,10 +61,10 @@ export const getExchangeRates = async (): Promise<ExchangeRatesMap | null> => {
 
 export const formatPriceWithCurrency = async (price: number, sourceCurrency: keyof typeof exchangeRates = "KES") => {
   const settings = await getSettings();
-  const targetCurrency = (settings?.preferences?.currency || "KES") as keyof typeof exchangeRates;
+  const targetCurrency: string = settings?.preferences?.currency?.toString() || "KES";
 
   if (sourceCurrency === targetCurrency) {
-    return formatPrice(price, targetCurrency); // No conversion needed if currencies are the same
+    return formatPrice(price, targetCurrency.toString()); // No conversion needed if currencies are the same
   }
 
   const liveRates = await getExchangeRates(); // This fetches rates relative to USD

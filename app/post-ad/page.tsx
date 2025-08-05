@@ -25,7 +25,7 @@ import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { getPlans, Plan } from "./actions";
-import { formatPrice } from "@/lib/utils";
+import { formatPriceWithCurrency } from "@/lib/currency-converter";
 import {
   Dialog,
   DialogContent,

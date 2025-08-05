@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getSupabaseClient } from '@/utils/supabase/client';
 import { useAuth } from '@/contexts/auth-context';
 import { getPlans, Plan } from '@/app/post-ad/actions';
-import { formatPrice } from '@/lib/utils';
+import { formatPriceWithCurrency } from '@/lib/currency-converter';
 
 export default function RenewListingPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -89,7 +89,7 @@ export default function RenewListingPage({ params }: { params: { id: string } })
               <CardTitle>{plan.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{formatPrice(plan.price)}</p>
+              <p className="text-2xl font-bold">{formatPriceWithCurrency(plan.price)}</p>
               <ul className="mt-4 space-y-2">
                 {((plan.features as string[]) || []).map((feature, index) => (
                   <li key={`${plan.id}-feature-${index}`}>{feature}</li>

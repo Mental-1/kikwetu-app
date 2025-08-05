@@ -39,6 +39,7 @@ interface Listing {
   views: number;
   created_at: string;
   updated_at: string;
+  expiry_date?: string;
   category: { name: string };
 }
 
@@ -92,6 +93,7 @@ export default function UserListingsPage() {
             views: l.views ?? 0,
             created_at: l.created_at ?? "",
             updated_at: l.updated_at ?? "",
+            expiry_date: l.expiry_date ?? undefined,
             category: l.category ?? { name: "" },
           })),
         );
@@ -145,6 +147,10 @@ export default function UserListingsPage() {
 
   const handleEdit = (listingId: string) => {
     router.push(`/listings/${listingId}/edit`);
+  };
+
+  const handleRenew = (listingId: string) => {
+    router.push(`/listings/${listingId}/renew`);
   };
 
   const handleDelete = async (listingId: string) => {
@@ -393,6 +399,17 @@ export default function UserListingsPage() {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+
+                  {new Date(listing.expiry_date || 0) < new Date() && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRenew(listing.id)}
+                    >
+                      <TrendingUp className="h-4 w-4 mr-1" />
+                      Renew
+                    </Button>
+                  )}
                 </div>
 
                 {canFeature(listing) && (

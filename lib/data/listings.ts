@@ -17,8 +17,7 @@ export async function getListingById(id: string) {
     .select(
       `*,
       category:categories(*),
-      profiles(*),
-      reviews(*)
+      profiles(*)
     `
     )
     .eq("id", id)

@@ -72,7 +72,7 @@ export default function RenewListingPage({ params }: { params: { id: string } })
             <CardContent>
               <p className="text-2xl font-bold">{formatPrice(plan.price)}</p>
               <ul className="mt-4 space-y-2">
-                {(plan.features || []).map((feature) => (
+                {((plan.features as string[]) || []).map((feature) => (
                   <li key={feature}>{feature}</li>
                 ))}
               </ul>

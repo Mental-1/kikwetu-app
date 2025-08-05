@@ -1,41 +1,31 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MapLayout } from "@/components/map-layout";
 import { MapSidebar } from "@/components/map-sidebar";
 import { getNearbyListings } from "./actions";
 import dynamic from "next/dynamic";
+import { MapListing, UserLocation } from "@/lib/types/map";
+import { debounce } from "@/utils/debounce";
+import { Button } from "@/components/ui/button";
 
 // Dynamically import the map component to avoid SSR issues
 const MapComponent = dynamic(() => import("@/components/map-component"), {
   ssr: false,
-  loading: () => (
-    <div className="w-full h-full bg-muted flex items-center justify-center">
-      Loading map...
-    </div>
-  ),
+  loading: () => <MapSkeleton />,
 });
 
-// TODO: Replace with actual data fetching logic for nearby listings using the postgis API in supabase
-const nearbyListings: MapListing[] = [
-  {
-    id: 1,
-    title: "iPhone 13 Pro Max",
-    price: 899,
-    image_url: "/placeholder.svg?height=80&width=80",
-    distance_km: 0.9,
-    lat: -1.2921,
-    lng: 36.8219,
-  },
-];
+const MapSkeleton = () => (
+  <div className="w-full h-full bg-muted flex items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
+      <p className="text-sm text-muted-foreground">Loading map...</p>
+    </div>
+  </div>
+);
 
-/**
- * Renders a page with a sidebar of nearby item listings and an interactive map centered on the user's location.
- *
- * The sidebar allows users to search and filter listings by distance, select a listing, and toggle its visibility. The map displays the user's current location (or a default location if unavailable) and highlights the selected listing.
- */
-import { MapListing, UserLocation } from "@/lib/types/map";
-import { debounce } from "@/utils/debounce";
+const DEFAULT_LOCATION = { lat: -1.2921, lng: 36.8219 }; // Nairobi
+const GEOLOCATION_TIMEOUT = 10000; // 10 seconds
 
 export default function MapViewPage() {
   const [listings, setListings] = useState<MapListing[]>([]);
@@ -46,40 +36,79 @@ export default function MapViewPage() {
   const [debouncedDistance, setDebouncedDistance] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(true);
+  
+  const [isMapLoading, setIsMapLoading] = useState(true);
+  const [mapError, setMapError] = useState<string | null>(null);
 
-  const handleToggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
+  const [isSidebarLoading, setIsSidebarLoading] = useState(true);
+  const [sidebarError, setSidebarError] = useState<string | null>(null);
 
   const debouncedSetDistance = useRef(debounce(setDebouncedDistance, 500)).current;
+
+  const fetchLocation = useCallback(async () => {
+    setIsMapLoading(true);
+    setMapError(null);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Geolocation is not supported by your browser."));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: GEOLOCATION_TIMEOUT, // 10 seconds
+        });
+      });
+      const { latitude, longitude } = position.coords;
+      setUserLocation({ lat: latitude, lng: longitude });
+      return { lat: latitude, lng: longitude };
+    } catch (err: any) {
+      console.error("Error getting location:", err);
+      const errorMessage = err.code === 1 
+        ? "Location access denied. Please enable location services."
+        : err.code === 2 
+        ? "Unable to determine your location. Please try again."
+        : err.code === 3
+        ? "Location request timed out. Please try again."
+        : "Could not retrieve your location.";
+      setMapError(errorMessage);
+      // Default to Nairobi if location fails, so map can still load
+      setUserLocation(DEFAULT_LOCATION);
+      return null;
+    } finally {
+      setIsMapLoading(false);
+    }
+  }, []);
+
+  const INITIAL_FETCH_RADIUS_KM = 5;
+
+const fetchListings = useCallback(async (location: UserLocation) => {
+    setIsSidebarLoading(true);
+    setSidebarError(null);
+    try {
+      const nearby = await getNearbyListings(location.lat, location.lng, INITIAL_FETCH_RADIUS_KM);
+      setListings(nearby);
+    } catch (err: any) {
+      console.error("Error fetching listings:", err);
+      setSidebarError("Failed to load nearby listings.");
+    } finally {
+      setIsSidebarLoading(false);
+    }
+  }, []);
+
+  const loadMapData = useCallback(async () => {
+    const location = await fetchLocation();
+    if (location) {
+      await fetchListings(location);
+    }
+  }, [fetchLocation, fetchListings]);
+
+  useEffect(() => {
+    loadMapData();
+  }, [loadMapData]);
 
   useEffect(() => {
     debouncedSetDistance(distance);
   }, [distance, debouncedSetDistance]);
-
-  useEffect(() => {
-    const fetchLocationAndListings = async () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const { latitude, longitude } = position.coords;
-            setUserLocation({ lat: latitude, lng: longitude });
-            const nearby = await getNearbyListings(latitude, longitude, 25); // Fetch initial 25km
-            setListings(nearby);
-          },
-          (error) => {
-            console.error("Error getting location:", error);
-            // Default to Nairobi if location is denied
-            setUserLocation({ lat: -1.2921, lng: 36.8219 });
-          },
-        );
-      } else {
-        // Default to Nairobi if geolocation not supported
-        setUserLocation({ lat: -1.2921, lng: 36.8219 });
-      }
-    };
-    fetchLocationAndListings();
-  }, []);
 
   useEffect(() => {
     const filtered = listings
@@ -87,6 +116,36 @@ export default function MapViewPage() {
       .filter((l) => l.title.toLowerCase().includes(searchQuery.toLowerCase()));
     setFilteredListings(filtered);
   }, [listings, debouncedDistance, searchQuery]);
+
+  const renderMapContent = () => {
+    if (isMapLoading) {
+      return <MapSkeleton />;
+    }
+
+    if (mapError) {
+      return (
+        <div className="w-full h-full bg-muted flex items-center justify-center">
+          <div className="text-center p-4 bg-background rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-destructive mb-2">Map Error</h3>
+            <p className="text-muted-foreground mb-4">{mapError}</p>
+            <Button onClick={loadMapData}>Try Again</Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (userLocation) {
+      return (
+        <MapComponent
+          userLocation={userLocation}
+          listings={filteredListings}
+          selectedListingId={selectedListing}
+          onMarkerClick={(id) => setSelectedListing(id)}
+        />
+      );
+    }
+    return null; // Should not be reached
+  };
 
   return (
     <MapLayout
@@ -102,24 +161,13 @@ export default function MapViewPage() {
           onSearchChange={setSearchQuery}
           isOpen={isOpen}
           onToggle={onToggle}
+          isLoading={isSidebarLoading}
+          error={sidebarError}
+          onRetry={() => userLocation && fetchListings(userLocation)}
         />
       )}
     >
-      {userLocation ? (
-        <MapComponent
-          userLocation={userLocation}
-          listings={filteredListings}
-          selectedListingId={selectedListing}
-          onMarkerClick={(id) => setSelectedListing(id)}
-        />
-      ) : (
-        <div className="w-full h-full bg-muted flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Loading map...</p>
-          </div>
-        </div>
-      )}
+      {renderMapContent()}
     </MapLayout>
   );
 }

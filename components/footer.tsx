@@ -1,5 +1,35 @@
+'use client';
+
 import Link from "next/link";
-import Image from "next/image"; // Import Image component
+import Image from "next/image";
+import { useTheme } from "next-themes";
+
+const FooterLogo = () => {
+  const { theme } = useTheme();
+  const logoSrc = theme === 'dark' ? '/kikwetu-dark.png' : '/kikwetu_light.png';
+
+  if (!theme) {
+    return (
+      <Image
+        src="/kikwetu_light.png"
+        alt="Kikwetu Logo"
+        width={144}
+        height={48}
+        className="h-12 w-auto"
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={logoSrc}
+      alt="Kikwetu Logo"
+      width={144}
+      height={48}
+      className="h-12 w-auto"
+    />
+  );
+};
 
 /**
  * Renders the website footer with branding, navigation links, category filters, and social media connections.
@@ -13,7 +43,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
             <Link href="/" className="flex items-center space-x-2">
-              <Image src="/RouteMe_logo.png" alt="RouteMe Logo" width={32} height={32} className="h-6 w-6" />
+              <FooterLogo />
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
               Find and post classified ads in your area. Buy, sell, and connect

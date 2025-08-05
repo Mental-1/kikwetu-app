@@ -1,6 +1,7 @@
 'use client';
 
-import { reportUser } from "./actions";
+import { reportUser, toggleSaveListing, isListingSaved } from "./actions";
+import { useAuth } from "@/contexts/auth-context";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -32,6 +33,7 @@ import { formatPrice } from "@/lib/utils";
 export function ListingDetailsClient({ listing }: { listing: Listing }) {
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = useAuth();
     const [isSaved, setIsSaved] = useState(false);
     const [gettingDirections, setGettingDirections] = useState(false);
   
@@ -50,7 +52,11 @@ export function ListingDetailsClient({ listing }: { listing: Listing }) {
           seller_id: listing.profiles.id,
         });
       }
-    }, [listing]);
+
+      if (user) {
+        isListingSaved(listing.id, user.id).then(setIsSaved);
+      }
+    }, [listing, user]);
   
     const getDirections = async () => {
       if (!listing?.latitude || !listing?.longitude) {
@@ -183,24 +189,29 @@ export function ListingDetailsClient({ listing }: { listing: Listing }) {
     };
   
     const handleSave = async () => {
-      try {
-        const response = await fetch(`/api/listings/${listing.id}/save`, {
-          method: isSaved ? "DELETE" : "POST",
+      if (!user) {
+        toast({
+          title: "Please sign in",
+          description: "You need to be signed in to save listings.",
+          variant: "destructive",
         });
-  
-        if (response.ok) {
-          setIsSaved(!isSaved);
-          toast({
-            title: isSaved ? "Removed from saved" : "Saved successfully",
-            description: isSaved
-              ? "Listing removed from your saved items"
-              : "Listing added to your saved items",
-          });
-        }
-      } catch (error) {
+        return;
+      }
+
+      const result = await toggleSaveListing(listing.id, user.id);
+
+      if (result.success) {
+        setIsSaved(result.saved ?? false);
+        toast({
+          title: result.saved ? "Saved successfully" : "Removed from saved",
+          description: result.saved
+            ? "Listing added to your saved items"
+            : "Listing removed from your saved items",
+        });
+      } else {
         toast({
           title: "Error",
-          description: "Failed to save listing",
+          description: result.error,
           variant: "destructive",
         });
       }

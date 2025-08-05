@@ -105,17 +105,16 @@
 
     /* Fix for Leaflet map */
     .leaflet-container {
-        /* z-index: 0; */
     }
 
     .leaflet-control,
     .leaflet-pane {
-        /* z-index: 0 !important; */
+        z-index: 0 !important;
     }
 
     /* Ensure dropdowns appear above map */
     .dropdown-menu-content {
-        /* z-index: 1000 !important; */
+        z-index: 1000 !important;
     }
 
     /* Back to top button */

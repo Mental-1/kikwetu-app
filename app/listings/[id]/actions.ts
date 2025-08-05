@@ -1,7 +1,6 @@
-"use server";
+'use server';
 
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { PostHog } from "posthog-node";
 import pino from "pino";
@@ -11,16 +10,7 @@ const logger = pino({
 });
 
 export async function reportUser(listingId: string, ownerId: string) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-      },
-    },
-  );
+  const supabase = await getSupabaseServer();
 
   // Ensure a user is logged in to report
   const {
@@ -41,12 +31,13 @@ export async function reportUser(listingId: string, ownerId: string) {
     return { error: "Failed to report user." };
   }
 
-  // Optional: You could also create a notification for admins here
-
-  revalidatePath(`/listings/${listingId}`);
-
   // Track event with PostHog
-  const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!);
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!posthogKey) {
+    logger.warn("PostHog key not configured, skipping event tracking");
+    return { success: "User has been reported for review." };
+  }
+  const posthog = new PostHog(posthogKey);
   try {
     posthog.capture({
       distinctId: user.id,
@@ -62,4 +53,64 @@ export async function reportUser(listingId: string, ownerId: string) {
   }
 
   return { success: "User has been reported for review." };
+}
+
+export async function toggleSaveListing(listingId: string, userId: string) {
+  const supabase = await getSupabaseServer();
+
+  const { data: savedListing, error: fetchError } = await supabase
+    .from('saved_listings')
+    .select('id')
+    .eq('listing_id', listingId)
+    .eq('user_id', userId)
+    .single();
+
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    // PGRST116 means no rows found, which is fine.
+    return { success: false, error: 'Failed to check saved status.' };
+  }
+
+  if (savedListing) {
+    // Unsave the listing
+    const { error: deleteError } = await supabase
+      .from('saved_listings')
+      .delete()
+      .eq('id', savedListing.id);
+
+    if (deleteError) {
+      return { success: false, error: 'Failed to unsave listing.' };
+    }
+
+    revalidatePath(`/listings/${listingId}`);
+    return { success: true, saved: false };
+  } else {
+    // Save the listing
+    const { error: insertError } = await supabase
+      .from('saved_listings')
+      .insert({ listing_id: listingId, user_id: userId });
+
+    if (insertError) {
+      return { success: false, error: 'Failed to save listing.' };
+    }
+
+    revalidatePath(`/listings/${listingId}`);
+    return { success: true, saved: true };
+  }
+}
+
+export async function isListingSaved(listingId: string, userId: string) {
+  const supabase = await getSupabaseServer();
+
+  const { data, error } = await supabase
+    .from('saved_listings')
+    .select('id')
+    .eq('listing_id', listingId)
+    .eq('user_id', userId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    return false;
+  }
+
+  return !!data;
 }

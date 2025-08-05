@@ -323,10 +323,10 @@ function AccountDetails() {
                     </Button>
                   </div>
                   <h3 className="text-xl font-semibold mt-4">
-                    {profile?.full_name || "User"}
+                    {accountData.formData?.full_name || "User"}
                   </h3>
                   <p className="text-muted-foreground">
-                    @{profile?.username || "username"}
+                    @{accountData.formData?.username || "username"}
                   </p>
 
                   <div className="flex items-center mt-2">

@@ -64,7 +64,7 @@ export type Listing = {
   negotiable: boolean;
   images: string[];
   user_id: string;
-  status: "pending" | "approved" | "rejected" | "expired";
+  status: "pending" | "approved" | "rejected" | "expired" | "active";
   payment_status: "paid" | "unpaid";
   plan: "free" | "basic" | "premium";
   views: number;
@@ -73,6 +73,8 @@ export type Listing = {
   expiry_date: string;
   profiles: Profile;
   reviews: Review[];
+  featured: boolean;
+  featured_until?: string;
 };
 
 export type Category = {

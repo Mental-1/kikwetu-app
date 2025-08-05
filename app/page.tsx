@@ -7,11 +7,11 @@ import { CategoriesSkeleton } from "@/components/categories-skeleton";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
 import CategoriesSection from "@/components/categories-section";
-import { SearchService } from "@/lib/services/search-service";
+import { getFilteredListingsAction } from "@/app/actions/search";
 import { DEFAULT_FILTERS } from "@/lib/search-utils";
 
 export default async function HomePage() {
-  const { data: initialListings } = await SearchService.getFilteredListings({
+  const { data: initialListings } = await getFilteredListingsAction({
     page: 1,
     pageSize: 8,
     filters: DEFAULT_FILTERS,
@@ -51,7 +51,7 @@ export default async function HomePage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <ErrorBoundary
               fallback={
                 <div className="col-span-full text-center py-8 text-red-600">

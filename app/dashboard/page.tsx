@@ -382,7 +382,7 @@ export default function DashboardPage() {
                         </p>
                         {activity.amount && (
                           <p className="text-sm font-medium text-green-600">
-                            +KES {formatPrice(activity.amount)}
+                            KES {formatPrice(activity.amount)}
                           </p>
                         )}
                       </div>

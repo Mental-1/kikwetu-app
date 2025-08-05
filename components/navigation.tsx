@@ -32,6 +32,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const Logo = () => {
+  const { theme } = useTheme();
+  const logoSrc = theme === 'dark' ? '/kikwetu-dark.png' : '/kikwetu-light.png';
+
+  return (
+    <Image
+      src={logoSrc}
+      alt="Kikwetu Logo"
+      width={120}
+      height={40}
+      className="h-10 w-auto"
+    />
+  );
+};
+
 /**
  * Displays a responsive navigation bar with search, theme toggle, and user-specific actions for both mobile and desktop devices.
  *
@@ -136,13 +151,7 @@ export default function Navigation() {
     <div className="container flex h-16 items-center justify-between">
       <div className="flex items-center gap-6">
         <Link href="/" className="flex items-center space-x-2">
-          <Image
-            src="/RouteMe_logo.png"
-            alt="RouteMe Logo"
-            width={96}
-            height={32}
-            className="h-6 w-6"
-          />
+          <Logo />
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           {routes.map((route) => (
@@ -179,13 +188,7 @@ export default function Navigation() {
           <SheetContent side="left">
             <div className="flex flex-col gap-6 py-4">
               <Link href="/" className="flex items-center space-x-2">
-                <Image
-                  src="/RouteMe_logo.png"
-                  alt="RouteMe Logo"
-                  width={32}
-                  height={32}
-                  className="h-6 w-6"
-                />
+                <Logo />
               </Link>
               <nav className="flex flex-col gap-4">
                 {routes.map((route) => (

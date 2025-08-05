@@ -146,7 +146,7 @@ export function ListingsClient() {
         </div>
 
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {allListings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}

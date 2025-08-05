@@ -436,6 +436,11 @@ export default function PostAdPage() {
         },
         (error) => {
           console.error("Error getting location:", error);
+          toast({
+            title: "Location Error",
+            description: "Failed to detect your location. Please enter it manually or try again.",
+            variant: "destructive",
+          });
         },
         { enableHighAccuracy: true },
       );

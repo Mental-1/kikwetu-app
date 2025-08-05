@@ -47,7 +47,7 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
                   <h3 className="font-medium text-sm sm:text-lg truncate">
                     {listing.title}
                   </h3>
-                  <p className="text-base sm:text-xl font-bold text-green-600">
+                  <p className="text-sm sm:text-xl font-bold text-green-600">
                     Ksh {formatPrice(listing.price)}
                   </p>
                 </div>

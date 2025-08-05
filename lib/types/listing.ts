@@ -74,6 +74,7 @@ export type Listing = {
   profiles: Profile;
   reviews: Review[];
   featured: boolean;
+  featured_until?: string;
 };
 
 export type Category = {

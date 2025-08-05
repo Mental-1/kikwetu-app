@@ -303,13 +303,6 @@ export default function UserListingsPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">My Listings</h1>
-          <p className="text-muted-foreground">Manage your posted items</p>
-        </div>
-      </div>
-
       <Tabs defaultValue="my-listings">
         <TabsList>
           <TabsTrigger value="my-listings">My Listings</TabsTrigger>

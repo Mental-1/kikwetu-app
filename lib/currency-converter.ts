@@ -1,7 +1,7 @@
 import { getSettings } from "@/app/settings/actions/settings-actions";
 
 // Fallback exchange rates (USD base) - update periodically
-const exchangeRates = {
+const exchangeRates: ExchangeRatesMap = {
   USD: 1,
   KES: 130, // Approximate - last updated: [date]
   EUR: 0.9, // Approximate - last updated: [date]  
@@ -26,7 +26,11 @@ export const convertPrice = (price: number, from: keyof typeof exchangeRates, to
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000; // 1 second
 
-export const getExchangeRates = async () => {
+type ExchangeRatesMap = {
+  [key: string]: number;
+};
+
+export const getExchangeRates = async (): Promise<ExchangeRatesMap | null> => {
   for (let i = 0; i < MAX_RETRIES; i++) {
     try {
       const controller = new AbortController();
@@ -57,7 +61,7 @@ export const getExchangeRates = async () => {
 
 export const formatPriceWithCurrency = async (price: number, sourceCurrency: keyof typeof exchangeRates = "KES") => {
   const settings = await getSettings();
-  const targetCurrency = settings?.preferences?.currency || "KES"; // Default to KES
+  const targetCurrency = (settings?.preferences?.currency || "KES") as keyof typeof exchangeRates;
 
   if (sourceCurrency === targetCurrency) {
     return formatPrice(price, targetCurrency); // No conversion needed if currencies are the same
@@ -69,9 +73,10 @@ export const formatPriceWithCurrency = async (price: number, sourceCurrency: key
 
   if (liveRates) {
     // Convert price from sourceCurrency to USD using live rates
-    const priceInUSD = price / (liveRates[sourceCurrency] || exchangeRates[sourceCurrency] || 1);
+    const liveRatesMap = liveRates as ExchangeRatesMap;
+    const priceInUSD = price / (liveRatesMap[sourceCurrency] || exchangeRates[sourceCurrency] || 1);
     // Convert price from USD to targetCurrency using live rates
-    convertedPrice = priceInUSD * (liveRates[targetCurrency] || exchangeRates[targetCurrency] || 1);
+    convertedPrice = priceInUSD * (liveRatesMap[targetCurrency] || exchangeRates[targetCurrency] || 1);
   } else {
     // Fallback to static exchangeRates if live rates are not available
     // Convert price from sourceCurrency to USD using static rates

@@ -2,8 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 
-import { useTheme } from "next-themes";
-
 const FooterLogo = () => {
   const { theme } = useTheme();
   const logoSrc = theme === 'dark' ? '/kikwetu-dark.png' : '/kikwetu_light.png';

@@ -25,7 +25,7 @@ import {
   useSubcategoriesByCategory,
   useCategoryMutations,
 } from "@/hooks/useCategories";
-import { formatPrice } from "@/lib/utils";
+
 
 // Define proper TypeScript interfaces
 interface PriceRange {

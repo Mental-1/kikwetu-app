@@ -8,7 +8,7 @@ const exchangeRates: ExchangeRatesMap = {
   GBP: 0.8, // Approximate - last updated: [date]
 };
 
-export const formatPrice = (price: number, currency: keyof typeof exchangeRates) => {
+export const formatPrice = (price: number, currency: string) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,

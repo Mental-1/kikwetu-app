@@ -1194,7 +1194,7 @@ function PreviewStep({
                 {formData.title || "Ad Title"}
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                Ksh {formatPrice(Number(formData.price)) || "N/A"}
+                Ksh {formatPriceWithCurrency(Number(formData.price)) || "N/A"}
               </p>
               {formData.negotiable && (
                 <span className="text-sm text-muted-foreground">

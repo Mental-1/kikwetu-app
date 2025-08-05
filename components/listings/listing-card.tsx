@@ -30,10 +30,10 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
   if (layout === "list") {
     return (
       <Link href={`/listings/${listing.id}`}>
-        <Card className="overflow-hidden border hover:shadow-md transition-shadow">
-          <CardContent className="p-0">
-            <div className="flex flex-row">
-              <div className="w-40 h-40 bg-muted flex-shrink-0">
+        <Card className="overflow-hidden border hover:shadow-md transition-shadow h-[120px]">
+          <CardContent className="p-0 h-full">
+            <div className="flex flex-row h-full">
+              <div className="w-40 h-full bg-muted flex-shrink-0">
                 <Image
                   src={listing.images?.[0] ?? "/placeholder.svg"}
                   alt={listing.title}
@@ -44,10 +44,10 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
               </div>
               <div className="p-4 flex-1 relative">
                 <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-medium text-base truncate">
+                  <h3 className="font-medium text-sm truncate">
                     {listing.title}
                   </h3>
-                  <p className="text-lg font-bold text-green-600">
+                  <p className="text-base font-bold text-green-600">
                     Ksh {formatPrice(listing.price)}
                   </p>
                 </div>

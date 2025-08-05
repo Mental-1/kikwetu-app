@@ -30,10 +30,10 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
   if (layout === "list") {
     return (
       <Link href={`/listings/${listing.id}`}>
-        <Card className="overflow-hidden border hover:shadow-md transition-shadow">
-          <CardContent className="p-0">
-            <div className="flex flex-row">
-              <div className="w-40 h-40 bg-muted flex-shrink-0">
+        <Card className="overflow-hidden border hover:shadow-md transition-shadow h-[120px] sm:h-[160px]">
+          <CardContent className="p-0 h-full">
+            <div className="flex flex-col sm:flex-row h-full">
+              <div className="w-full h-full sm:w-40 sm:h-full bg-muted flex-shrink-0">
                 <Image
                   src={listing.images?.[0] ?? "/placeholder.svg"}
                   alt={listing.title}
@@ -42,26 +42,26 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="p-4 flex-1 relative">
+              <div className="p-2 sm:p-4 flex-1 relative">
                 <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-medium text-base truncate">
+                  <h3 className="font-medium text-sm sm:text-lg truncate">
                     {listing.title}
                   </h3>
-                  <p className="text-lg font-bold text-green-600">
+                  <p className="text-base sm:text-xl font-bold text-green-600">
                     Ksh {formatPrice(listing.price)}
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1 line-clamp-2">
                   {listing.description}
                 </p>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1">
                   <Badge variant="outline" className="text-xs">
                     {listing.condition}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
+                    <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
                     {listing.location}
                   </div>
                 </div>

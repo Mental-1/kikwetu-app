@@ -46,7 +46,7 @@ export function RecentListings({ initialListings }: RecentListingsProps) {
                   {listing.title}
                 </h3>
                 <p className="text-lg font-bold text-green-600 mb-1">
-                  Ksh {formatPriceWithCurrency(listing.price)}
+                  Ksh {formatPriceWithCurrency(listing.price ?? 0)}
                 </p>
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-1">
                   {listing.description}

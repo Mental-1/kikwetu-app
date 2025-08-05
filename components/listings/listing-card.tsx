@@ -32,8 +32,8 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
       <Link href={`/listings/${listing.id}`}>
         <Card className="overflow-hidden border hover:shadow-md transition-shadow h-[120px] sm:h-[160px]">
           <CardContent className="p-0 h-full">
-            <div className="flex flex-col sm:flex-row h-full">
-              <div className="w-full h-full sm:w-40 sm:h-full bg-muted flex-shrink-0">
+            <div className="flex flex-row h-full">
+              <div className="w-40 h-full bg-muted flex-shrink-0">
                 <Image
                   src={listing.images?.[0] ?? "/placeholder.svg"}
                   alt={listing.title}

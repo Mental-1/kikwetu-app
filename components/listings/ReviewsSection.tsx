@@ -81,78 +81,71 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, revie
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Reviews</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* Review Submission Form */}
-          <div className="border p-4 rounded-md">
-            <h3 className="text-lg font-semibold mb-2">Leave a Review</h3>
-            <div className="flex items-center mb-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
-                  className={`cursor-pointer ${newRating >= star ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                  onClick={() => setNewRating(star)}
-                  onKeyDown={(e) => e.key === 'Enter' && setNewRating(star)}
-                />
-              ))}
-            </div>
-            <Textarea
-              placeholder="Write your review here..."
-              value={newReview}
-              onChange={(e) => setNewReview(e.target.value)}
-              className="mb-2"
+    <div className="space-y-4">
+      {/* Review Submission Form */}
+      <div className="border p-4 rounded-md">
+        <h3 className="text-lg font-semibold mb-2">Leave a Review</h3>
+        <div className="flex items-center mb-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              role="button"
+              tabIndex={0}
+              aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+              className={`cursor-pointer ${newRating >= star ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+              onClick={() => setNewRating(star)}
+              onKeyDown={(e) => e.key === 'Enter' && setNewRating(star)}
             />
-            <Button onClick={handleSubmitReview} disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit Review"}
-            </Button>
-          </div>
-
-          {/* Existing Reviews */}
-          {reviews.length === 0 ? (
-            <p>No reviews yet. Be the first to leave one!</p>
-          ) : (
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <div key={review.id} className="border p-4 rounded-md">
-                  <div className="flex items-center mb-2">
-                    <Avatar className="h-8 w-8 mr-2">
-                      <AvatarImage
-                        src={review.profiles.avatar_url || "/placeholder-user.jpg"}
-                        alt={review.profiles.full_name}
-                      />
-                      <AvatarFallback>
-                        {review.profiles.full_name?.charAt(0) || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{review.profiles.full_name}</p>
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`h-4 w-4 ${review.rating >= star ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground text-sm mb-2">{review.comment}</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(review.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+          ))}
         </div>
-      </CardContent>
-    </Card>
+        <Textarea
+          placeholder="Write your review here..."
+          value={newReview}
+          onChange={(e) => setNewReview(e.target.value)}
+          className="mb-2"
+        />
+        <Button onClick={handleSubmitReview} disabled={submitting}>
+          {submitting ? "Submitting..." : "Submit Review"}
+        </Button>
+      </div>
+
+      {/* Existing Reviews */}
+      {reviews.length === 0 ? (
+        <p>No reviews yet. Be the first to leave one!</p>
+      ) : (
+        <div className="space-y-4">
+          {reviews.map((review) => (
+            <div key={review.id} className="border p-4 rounded-md">
+              <div className="flex items-center mb-2">
+                <Avatar className="h-8 w-8 mr-2">
+                  <AvatarImage
+                    src={review.profiles.avatar_url || "/placeholder-user.jpg"}
+                    alt={review.profiles.full_name}
+                  />
+                  <AvatarFallback>
+                    {review.profiles.full_name?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">{review.profiles.full_name}</p>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${review.rating >= star ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-sm mb-2">{review.comment}</p>
+              <p className="text-xs text-gray-500">
+                {new Date(review.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };

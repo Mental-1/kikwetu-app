@@ -152,9 +152,11 @@ export function ListingsClient() {
             ))}
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="flex flex-col">
             {allListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} layout="list" />
+              <div key={listing.id} className="mb-4">
+                <ListingCard listing={listing} layout="list" />
+              </div>
             ))}
           </div>
         )}

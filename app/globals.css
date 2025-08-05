@@ -105,7 +105,6 @@
 
     /* Fix for Leaflet map */
     .leaflet-container {
-        z-index: 0;
     }
 
     .leaflet-control,

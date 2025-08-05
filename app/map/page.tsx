@@ -106,12 +106,14 @@ export default function MapViewPage() {
       )}
     >
       {userLocation ? (
-        <MapComponent
-          userLocation={userLocation}
-          listings={filteredListings}
-          selectedListingId={selectedListing}
-          onMarkerClick={(id) => setSelectedListing(id)}
-        />
+        <div className="relative z-0">
+          <MapComponent
+            userLocation={userLocation}
+            listings={filteredListings}
+            selectedListingId={selectedListing}
+            onMarkerClick={(id) => setSelectedListing(id)}
+          />
+        </div>
       ) : (
         <div className="w-full h-full bg-muted flex items-center justify-center">
           <div className="text-center">

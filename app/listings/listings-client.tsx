@@ -21,7 +21,7 @@ import {
 export function ListingsClient() {
   const searchParams = useSearchParams();
   const categoryId = searchParams.get('category');
-  const { filters, sortBy, updateFilters, clearFilters, setSortBy } =
+  const { filters, sortBy, updateFilters, clearFilters, updateSortBy } =
     useSearchState();
   const [userLocation, setUserLocation] = useState<{
     lat: number;
@@ -113,7 +113,7 @@ export function ListingsClient() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={updateSortBy}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>

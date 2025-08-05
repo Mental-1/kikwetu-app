@@ -85,7 +85,7 @@ export default function PostAdPage() {
     setFormData((prev) => ({ ...prev, ...data }));
   }, []);
 
-  const { data: categories = [], isLoading: categoriesLoading } =
+  const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } =
     useCategories();
   const selectedCategory = categories.find((c) => c.name === formData.category);
   const { data: subcategories = [] } = useSubcategoriesByCategory(
@@ -111,17 +111,18 @@ export default function PostAdPage() {
   // Form validation helper
   const isFormValid = () => {
     const basicFieldsValid =
-      formData.title.trim() &&
-      formData.description.trim() &&
+      formData.title.trim().length >= 3 &&
+      formData.description.trim().length >= 3 &&
       formData.category &&
-      formData.price;
+      formData.price !== "" && !isNaN(Number(formData.price)) && Number(formData.price) > 0 &&
+      formData.location.length > 0;
 
     if (selectedTier?.price > 0) {
       const paymentFieldsValid =
         formData.paymentMethod &&
         (formData.paymentMethod === "mpesa"
-          ? formData.phoneNumber
-          : formData.email);
+          ? /^[0-9]{10,15}$/.test(formData.phoneNumber)
+          : /^[^"]@"[^"]+\.[^"]+$/.test(formData.email));
       return basicFieldsValid && paymentFieldsValid;
     }
 
@@ -132,7 +133,7 @@ export default function PostAdPage() {
     if (currentStep === 0 && !isFormValid()) {
       toast({
         title: "Missing Information",
-        description: "Please fill out all required fields before proceeding.",
+        description: "Please fill out all required fields and ensure they are valid before proceeding.",
         variant: "destructive",
       });
       return;
@@ -456,6 +457,8 @@ export default function PostAdPage() {
             manualLocation={manualLocation}
             setManualLocation={setManualLocation}
             detectLocation={detectLocation}
+            categoriesError={categoriesError}
+            categoriesLoading={categoriesLoading}
           />
         );
       case "payment":
@@ -601,6 +604,8 @@ function AdDetailsStep({
   manualLocation,
   setManualLocation,
   detectLocation,
+  categoriesError,
+  categoriesLoading,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
@@ -611,6 +616,8 @@ function AdDetailsStep({
   manualLocation: string;
   setManualLocation: (val: string) => void;
   detectLocation: () => void;
+  categoriesError: any;
+  categoriesLoading: boolean;
 }) {
   const availableSubcategories = formData.category ? subcategories : [];
 
@@ -666,6 +673,13 @@ function AdDetailsStep({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="category">Category</Label>
+          {categoriesLoading && <p>Loading categories...</p>}
+          {categoriesError && (
+            <div className="text-red-500">
+              Failed to load categories. Please try again.
+            </div>
+          )}
+          {!categoriesLoading && !categoriesError && (
             <Select
               value={formData.category}
               onValueChange={(value) =>
@@ -683,6 +697,7 @@ function AdDetailsStep({
                 ))}
               </SelectContent>
             </Select>
+          )}
           </div>
           <div>
             <Label htmlFor="subcategory">Subcategory</Label>

@@ -24,18 +24,36 @@ export const convertPrice = (price: number, from: keyof typeof exchangeRates, to
   return convertedPrice;
 };
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000; // 1 second
+
 export const getExchangeRates = async () => {
-  try {
-    const response = await fetch("/api/currency");
-    if (!response.ok) {
-      throw new Error("Failed to fetch exchange rates");
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const response = await fetch("/api/currency", {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch exchange rates: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data.conversion_rates;
+    } catch (error: any) {
+      console.error(`Attempt ${i + 1} failed to fetch exchange rates:`, error.message);
+      if (i < MAX_RETRIES - 1) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      } else {
+        console.error("Max retries reached. Failed to fetch exchange rates.");
+        return null;
+      }
     }
-    const data = await response.json();
-    return data.conversion_rates;
-  } catch (error) {
-    console.error(error);
-    return null;
   }
+  return null; // Should not be reached if MAX_RETRIES > 0
 };
 
 export const formatPriceWithCurrency = async (price: number) => {

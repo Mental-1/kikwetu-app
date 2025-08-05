@@ -32,7 +32,12 @@ export async function reportUser(listingId: string, ownerId: string) {
   }
 
   // Track event with PostHog
-  const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!)
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!posthogKey) {
+    logger.warn("PostHog key not configured, skipping event tracking");
+    return { success: "User has been reported for review." };
+  }
+  const posthog = new PostHog(posthogKey);
   try {
     posthog.capture({
       distinctId: user.id,

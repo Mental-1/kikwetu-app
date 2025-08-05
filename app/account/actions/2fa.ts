@@ -10,9 +10,10 @@ export async function enable2FA() {
   });
 
   if (error) {
+    console.error("Failed to enroll 2FA:", error);
     return {
       success: false,
-      message: `Failed to enroll 2FA: ${error.message}`,
+      message: "Failed to enroll 2FA.",
       qrCode: null,
     };
   }
@@ -29,7 +30,8 @@ export async function verify2FA(code: string) {
 
   const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
   if (factorsError) {
-    return { success: false, message: `Could not list MFA factors: ${factorsError.message}` };
+    console.error('Could not list MFA factors:', factorsError);
+    return { success: false, message: 'Failed to verify 2FA. Please try again.' };
   }
 
   const unverifiedFactor = factorsData.totp.find(f => f.status === 'unverified');
@@ -43,9 +45,10 @@ export async function verify2FA(code: string) {
   });
 
   if (error) {
+    console.error('Failed to verify 2FA:', error);
     return {
       success: false,
-      message: `Failed to verify 2FA: ${error.message}`,
+      message: 'Invalid verification code. Please try again.',
     };
   }
 
@@ -61,12 +64,13 @@ export async function disable2FA(code: string) {
 
   const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
   if (factorsError) {
-      return { success: false, message: `Could not list MFA factors: ${factorsError.message}` };
+    console.error('Could not list MFA factors:', factorsError);
+    return { success: false, message: 'Failed to disable 2FA. Please try again.' };
   }
 
   const verifiedFactor = factorsData.totp.find(f => f.status === 'verified');
   if (!verifiedFactor) {
-      return { success: false, message: "No verified 2FA factor found to disable." };
+    return { success: false, message: "No verified 2FA factor found to disable." };
   }
 
   const { error: challengeError } = await supabase.auth.mfa.challengeAndVerify({
@@ -75,23 +79,25 @@ export async function disable2FA(code: string) {
   });
 
   if (challengeError) {
-    return { success: false, message: `Invalid verification code: ${challengeError.message}` };
+    console.error('Invalid verification code:', challengeError);
+    return { success: false, message: 'Invalid verification code. Please try again.' };
   }
 
   const { error: unenrollError } = await supabase.auth.mfa.unenroll({
-      factorId: verifiedFactor.id,
+    factorId: verifiedFactor.id,
   });
 
   if (unenrollError) {
-      return {
-          success: false,
-          message: `Failed to unenroll 2FA: ${unenrollError.message}`,
-      };
+    console.error('Failed to unenroll 2FA:', unenrollError);
+    return {
+      success: false,
+      message: 'Failed to disable 2FA. Please try again.',
+    };
   }
 
   revalidatePath("/account");
   return {
-      success: true,
-      message: "2FA has been successfully disabled.",
+    success: true,
+    message: "2FA has been successfully disabled.",
   };
 }

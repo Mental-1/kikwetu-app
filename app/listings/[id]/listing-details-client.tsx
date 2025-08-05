@@ -201,7 +201,7 @@ export function ListingDetailsClient({ listing }: { listing: Listing }) {
       const result = await toggleSaveListing(listing.id, user.id);
 
       if (result.success) {
-        setIsSaved(result.saved!);
+        setIsSaved(result.saved ?? false);
         toast({
           title: result.saved ? "Saved successfully" : "Removed from saved",
           description: result.saved

@@ -168,16 +168,16 @@ export function ListingsClient() {
           <p className="text-center text-muted-foreground">No more listings</p>
         )}
       </div>
-      <Button
-        onClick={scrollToTop}
-        size="icon"
-        className={`fixed bottom-4 right-4 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg transition-opacity ${
-          showBackToTop ? 'opacity-100' : 'opacity-0'
-        }`}
-        aria-label="Back to top"
-      >
-        <ChevronUp className="h-6 w-6" />
-      </Button>
+      {showBackToTop && (
+        <Button
+          onClick={scrollToTop}
+          size="icon"
+          className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg animate-in fade-in duration-200"
+          aria-label="Back to top"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </Button>
+      )}
     </div>
   );
 }

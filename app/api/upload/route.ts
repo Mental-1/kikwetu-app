@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const maxSize = type === "profile" ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
+    const profileAliases = new Set(["profile", "profiles"]);
+    const maxSize = profileAliases.has(type) ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
     const allowedTypes =
       type === "profile"
         ? ["image/jpeg", "image/png", "image/webp"]
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     const randomString = Math.random().toString(36).substring(2, 15);
     const filename = `${type}/${user.id}/${timestamp}-${randomString}.${processedExtension}`;
 
-    const bucket = type === "profile" ? "profiles" : "listings";
+    const bucket = profileAliases.has(type) ? "profiles" : "listings";
     const filePath = filename;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)

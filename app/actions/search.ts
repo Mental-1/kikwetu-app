@@ -4,6 +4,58 @@ import { getSupabaseServer } from "@/utils/supabase/server";
 import { SearchParams, ListingsResponse } from "@/lib/types/search";
 import { ListingsItem } from "@/lib/types/listing";
 
+interface RawListing {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number | null;
+  location: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  condition: string | null;
+  featured: boolean | null;
+  images: string[] | null;
+  views: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+  category_id: number | null;
+  category_name: string | null;
+  subcategory_id: number | null;
+  subcategory_name: string | null;
+  user_id: string | null;
+  seller_name: string | null;
+  seller_username: string | null;
+  seller_avatar: string | null;
+  distance_km: number | null;
+}
+
+function sanitizeListing(raw: RawListing): ListingsItem {
+  return {
+    id: raw.id || '',
+    title: raw.title || "Untitled Listing",
+    description: raw.description || null,
+    price: raw.price || null,
+    location: raw.location || null,
+    latitude: raw.latitude || null,
+    longitude: raw.longitude || null,
+    condition: raw.condition || null,
+    featured: raw.featured || false,
+    images: Array.isArray(raw.images) ? raw.images : [],
+    views: raw.views || 0,
+    created_at: raw.created_at || null,
+    updated_at: raw.updated_at || null,
+    category_id: raw.category_id || null,
+    category_name: raw.category_name || null,
+    subcategory_id: raw.subcategory_id || null,
+    subcategory_name: raw.subcategory_name || null,
+    user_id: raw.user_id || null,
+    seller_name: raw.seller_name || null,
+    seller_username: raw.seller_username || null,
+    seller_avatar: raw.seller_avatar || null,
+    distance_km: raw.distance_km || null,
+  };
+}
+
 export async function getFilteredListingsAction(
   params: SearchParams,
 ): Promise<ListingsResponse> {
@@ -44,31 +96,7 @@ export async function getFilteredListingsAction(
     const listings = data?.listings || [];
     const totalCount = data?.total_count || 0;
 
-    const sanitizedData: ListingsItem[] = (listings as any[]).map((item) => ({
-      ...item,
-      id: item.id || '',
-      title: item.title || "Untitled Listing",
-      description: item.description || null,
-      price: item.price || null,
-      location: item.location || null,
-      latitude: item.latitude || null,
-      longitude: item.longitude || null,
-      condition: item.condition || null,
-      featured: item.featured || false,
-      images: Array.isArray(item.images) ? item.images : [],
-      views: item.views || 0,
-      created_at: item.created_at || null,
-      updated_at: item.updated_at || null,
-      category_id: item.category_id || null,
-      category_name: item.category_name || null,
-      subcategory_id: item.subcategory_id || null,
-      subcategory_name: item.subcategory_name || null,
-      user_id: item.user_id || null,
-      seller_name: item.seller_name || null,
-      seller_username: item.seller_username || null,
-      seller_avatar: item.seller_avatar || null,
-      distance_km: item.distance_km || null,
-    }));
+    const sanitizedData: ListingsItem[] = listings.map(sanitizeListing);
 
     const hasMore = params.page * params.pageSize < totalCount;
 

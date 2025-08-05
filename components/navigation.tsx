@@ -36,6 +36,19 @@ const Logo = () => {
   const { theme } = useTheme();
   const logoSrc = theme === 'dark' ? '/kikwetu-dark.png' : '/kikwetu_light.png';
 
+  // Handle SSR case where theme might be undefined
+  if (!theme) {
+    return (
+      <Image
+        src="/kikwetu_light.png"
+        alt="Kikwetu Logo"
+        width={120}
+        height={40}
+        className="h-10 w-auto"
+      />
+    );
+  }
+
   return (
     <Image
       src={logoSrc}

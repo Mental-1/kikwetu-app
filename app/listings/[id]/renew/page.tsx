@@ -19,10 +19,18 @@ export default function RenewListingPage({ params }: { params: { id: string } })
 
   useEffect(() => {
     const fetchPlans = async () => {
-      const fetchedPlans = await getPlans();
-      setPlans(fetchedPlans);
-      if (fetchedPlans.length > 0) {
-        setSelectedPlan(fetchedPlans[0]);
+      try {
+        const fetchedPlans = await getPlans();
+        setPlans(fetchedPlans);
+        if (fetchedPlans.length > 0) {
+          setSelectedPlan(fetchedPlans[0]);
+        }
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load subscription plans',
+          variant: 'destructive',
+        });
       }
     };
     fetchPlans();
@@ -53,7 +61,18 @@ export default function RenewListingPage({ params }: { params: { id: string } })
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -72,8 +91,8 @@ export default function RenewListingPage({ params }: { params: { id: string } })
             <CardContent>
               <p className="text-2xl font-bold">{formatPrice(plan.price)}</p>
               <ul className="mt-4 space-y-2">
-                {((plan.features as string[]) || []).map((feature) => (
-                  <li key={feature}>{feature}</li>
+                {((plan.features as string[]) || []).map((feature, index) => (
+                  <li key={`${plan.id}-feature-${index}`}>{feature}</li>
                 ))}
               </ul>
             </CardContent>

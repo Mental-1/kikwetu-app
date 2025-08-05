@@ -35,7 +35,7 @@ export async function POST(
     if (error) {
       console.error("Error incrementing listing view:", error);
       return NextResponse.json(
-        { error: "Database Error", details: error.message },
+        { error: "Failed to update listing views" },
         { status: 500 },
       );
     }

@@ -24,6 +24,9 @@ const MapSkeleton = () => (
   </div>
 );
 
+const DEFAULT_LOCATION = { lat: -1.2921, lng: 36.8219 }; // Nairobi
+const GEOLOCATION_TIMEOUT = 10000; // 10 seconds
+
 export default function MapViewPage() {
   const [listings, setListings] = useState<MapListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<MapListing[]>([]);
@@ -52,7 +55,7 @@ export default function MapViewPage() {
           return;
         }
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 10000, // 10 seconds
+          timeout: GEOLOCATION_TIMEOUT, // 10 seconds
         });
       });
       const { latitude, longitude } = position.coords;
@@ -60,20 +63,22 @@ export default function MapViewPage() {
       return { lat: latitude, lng: longitude };
     } catch (err: any) {
       console.error("Error getting location:", err);
-      setMapError(err.message || "Could not retrieve your location.");
+      setMapError(errorMessage);
       // Default to Nairobi if location fails, so map can still load
-      setUserLocation({ lat: -1.2921, lng: 36.8219 });
+      setUserLocation(DEFAULT_LOCATION);
       return null;
     } finally {
       setIsMapLoading(false);
     }
   }, []);
 
-  const fetchListings = useCallback(async (location: UserLocation) => {
+  const INITIAL_FETCH_RADIUS_KM = 5;
+
+const fetchListings = useCallback(async (location: UserLocation) => {
     setIsSidebarLoading(true);
     setSidebarError(null);
     try {
-      const nearby = await getNearbyListings(location.lat, location.lng, 25); // Fetch initial 25km
+      const nearby = await getNearbyListings(location.lat, location.lng, INITIAL_FETCH_RADIUS_KM);
       setListings(nearby);
     } catch (err: any) {
       console.error("Error fetching listings:", err);

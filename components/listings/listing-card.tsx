@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin } from "lucide-react";
-import { formatPrice } from "@/lib/utils";
+import { formatPriceWithCurrency } from "@/lib/currency-converter";
 import { ListingsItem } from "@/lib/types/listing";
 
 interface ListingCardProps {
@@ -33,7 +33,7 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
                     {listing.title}
                   </h3>
                   <p className="text-xl font-bold text-green-600">
-                    Ksh {formatPrice(listing.price)}
+                    Ksh {formatPriceWithCurrency(listing.price)}
                   </p>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
@@ -74,7 +74,7 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
               {listing.title}
             </h3>
             <p className="text-lg font-bold text-green-600 mb-1">
-              Ksh {formatPrice(listing.price)}
+              Ksh {formatPriceWithCurrency(listing.price)}
             </p>
             <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
               {listing.description}

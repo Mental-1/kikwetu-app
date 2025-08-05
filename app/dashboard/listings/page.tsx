@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, Edit, Trash2, Eye, Star, Clock, MapPin, Calendar, TrendingUp } from "lucide-react";
+import { ListingCardWithActions } from "@/components/listings/listing-card-with-actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +57,24 @@ export default function UserListingsPage() {
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [userPlan, setUserPlan] = useState<string>("free");
 
+  const transformListingData = (l: any): Listing => ({
+    id: l.id,
+    title: l.title,
+    description: l.description ?? "",
+    price: l.price ?? 0,
+    location: l.location ?? "",
+    condition: l.condition ?? "",
+    status: l.status ?? "",
+    featured: l.featured ?? false,
+    featured_until: l.featured_until ?? undefined,
+    images: l.images ?? [],
+    views: l.views ?? 0,
+    created_at: l.created_at ?? "",
+    updated_at: l.updated_at ?? "",
+    expiry_date: l.expiry_date ?? undefined,
+    category: l.category ?? { name: "" },
+  });
+
   const fetchUserListings = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
@@ -80,25 +98,7 @@ export default function UserListingsPage() {
           variant: "destructive",
         });
       } else {
-        setListings(
-          (listings || []).map((l) => ({
-            id: l.id,
-            title: l.title,
-            description: l.description,
-            price: l.price ?? 0,
-            location: l.location ?? "",
-            condition: l.condition ?? "",
-            status: l.status ?? "",
-            featured: l.featured ?? false,
-            featured_until: l.featured_until ?? undefined,
-            images: l.images ?? [],
-            views: l.views ?? 0,
-            created_at: l.created_at ?? "",
-            updated_at: l.updated_at ?? "",
-            expiry_date: l.expiry_date ?? undefined,
-            category: l.category ?? { name: "" },
-          })),
-        );
+        setListings((listings || []).map(transformListingData));
       }
     } catch (error) {
       console.error("Error:", error);
@@ -124,23 +124,9 @@ export default function UserListingsPage() {
         });
       } else {
         setSavedListings(
-          (saved || []).map((item) => ({
-            id: item.listings[0].id,
-            title: item.listings[0].title,
-            description: item.listings[0].description,
-            price: item.listings[0].price ?? 0,
-            location: item.listings[0].location ?? "",
-            condition: item.listings[0].condition ?? "",
-            status: item.listings[0].status ?? "",
-            featured: item.listings[0].featured ?? false,
-            featured_until: item.listings[0].featured_until ?? undefined,
-            images: item.listings[0].images ?? [],
-            views: item.listings[0].views ?? 0,
-            created_at: item.listings[0].created_at ?? "",
-            updated_at: item.listings[0].updated_at ?? "",
-            expiry_date: item.listings[0].expiry_date ?? undefined,
-            category: item.listings[0].category ?? { name: "" },
-          })),
+          (saved || [])
+            .filter(item => item.listings && Array.isArray(item.listings) && item.listings.length > 0)
+            .map((item) => transformListingData(item.listings[0])),
         );
       }
     } catch (error) {
@@ -355,7 +341,7 @@ export default function UserListingsPage() {
                     </CardTitle>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl font-bold text-green-600">
-                        Ksh {formatPrice(listing.price)}
+                        {formatPrice(listing.price, 'KES')}
                       </span>
                       <Badge variant="outline">{listing.condition}</Badge>
                     </div>
@@ -452,7 +438,7 @@ export default function UserListingsPage() {
                         </AlertDialogContent>
                       </AlertDialog>
 
-                      {new Date(listing.expiry_date || 0) < new Date() && (
+                      {listing.expiry_date && new Date(listing.expiry_date) < new Date() && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -536,7 +522,7 @@ export default function UserListingsPage() {
                     </CardTitle>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl font-bold text-green-600">
-                        Ksh {formatPrice(listing.price)}
+                        {formatPrice(listing.price, 'KES')}
                       </span>
                       <Badge variant="outline">{listing.condition}</Badge>
                     </div>

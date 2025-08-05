@@ -48,6 +48,8 @@ interface ListingsFilterProps {
   clearFilters: () => void;
 }
 
+const NO_MAX_PRICE = 1000000;
+
 export const ListingsFilter = memo(
   ({ filters, updateFilters, clearFilters }: ListingsFilterProps) => {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -129,7 +131,8 @@ export const ListingsFilter = memo(
         priceRange: {
           ...filters.priceRange,
           [field]:
-            field === "max" && numericValue === 0 ? 1000000 : numericValue,
+              [field]:
+    field === "max" && numericValue === 0 ? NO_MAX_PRICE : numericValue,
         },
       });
     };
@@ -348,7 +351,7 @@ export const ListingsFilter = memo(
                   type="number"
                   placeholder="Max"
                   value={
-                    filters.priceRange.max === 1000000
+                    filters.priceRange.max === NO_MAX_PRICE
                       ? ""
                       : filters.priceRange.max
                   }

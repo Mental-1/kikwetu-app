@@ -1,11 +1,10 @@
 import "server-only";
 import { getSupabaseServer } from "@/utils/supabase/server";
 
-// Basic UUID validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { validate as isValidUUID } from 'uuid';
 
 export async function getListingById(id: string) {
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUUID(id)) {
     console.error("Invalid listing ID format:", id);
     return null;
   }

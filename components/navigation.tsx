@@ -34,7 +34,7 @@ import {
 
 const Logo = () => {
   const { theme } = useTheme();
-  const logoSrc = theme === 'dark' ? '/kikwetu-dark.png' : '/kikwetu-light.png';
+  const logoSrc = theme === 'dark' ? '/kikwetu-dark.png' : '/kikwetu_light.png';
 
   return (
     <Image

@@ -129,6 +129,14 @@ export default function PostAdPage() {
   };
 
   const handleAdvanceStep = () => {
+    if (currentStep === 0 && !isFormValid()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill out all required fields before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -545,8 +553,7 @@ export default function PostAdPage() {
                       isSubmitted ||
                       isPublishingListing ||
                       (selectedTier?.price > 0 &&
-                        (paymentStatus === "pending" ||
-                          paymentStatus === "completed"))
+                        (paymentStatus === "pending"))
                     }
                   >
                     {selectedTier?.price > 0 && paymentStatus !== "completed"
@@ -557,11 +564,7 @@ export default function PostAdPage() {
                 ) : (
                   <Button
                     onClick={handleAdvanceStep}
-                    disabled={
-                      isSubmitted ||
-                      isPublishingListing ||
-                      (currentStep === 0 && !isFormValid())
-                    }
+                    disabled={isSubmitted || isPublishingListing}
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-2" />

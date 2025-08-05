@@ -164,7 +164,7 @@ export async function sendExpiryNotification(
       },
     });
     await transporter.sendMail({
-      from: "no-reply@routeme.com",
+      from: "no-reply@kikwetu.com",
       to: userEmail,
       subject: `Your listing is expiring soon`,
       text: `Your listing "${listingTitle}" will expire in ${daysRemaining} days. Renew now to keep it active.`,

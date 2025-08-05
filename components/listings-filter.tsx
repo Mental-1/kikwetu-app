@@ -439,3 +439,5 @@ export const ListingsFilter = memo(
     );
   },
 );
+
+ListingsFilter.displayName = "ListingsFilter";

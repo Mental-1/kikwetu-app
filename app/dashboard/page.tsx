@@ -16,7 +16,7 @@ import Link from "next/link";
 import { Check, Clock, Eye, Plus, Star } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "@/components/ui/use-toast";
-import { formatPrice } from "@/lib/utils";
+import { formatPriceWithCurrency } from "@/lib/currency-converter";
 
 import {
   ListingItem,
@@ -382,7 +382,7 @@ export default function DashboardPage() {
                         </p>
                         {activity.amount && (
                           <p className="text-sm font-medium text-green-600">
-                            +KES {formatPrice(activity.amount)}
+                            KES {formatPriceWithCurrency(activity.amount)}
                           </p>
                         )}
                       </div>

@@ -167,7 +167,7 @@ export default function UserListingsPage() {
     } else if (!isLoading && !user) {
       router.push("/auth");
     }
-  }, [user, isLoading, fetchUserListings, fetchSavedListings, fetchUserPlan, router]);
+  }, [user, isLoading, fetchUserListings, fetchSavedListings, fetchUserPlan, router, toast]);
 
   const canEdit = (listing: Listing) => {
     const createdAt = new Date(listing.created_at);

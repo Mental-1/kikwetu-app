@@ -251,6 +251,40 @@ export default function PostAdPage() {
     }
   };
 
+  // Activate listing after successful payment
+  const activateListing = useCallback(async () => {
+    if (!pendingListingId) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL}/api/listings/${pendingListingId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "active",
+            paymentStatus: "paid",
+            paymentMethod: formData.paymentMethod,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to activate listing");
+      }
+    } catch (error) {
+      console.error("Error activating listing:", error);
+      toast({
+        title: "Error",
+        description:
+          "Payment processed but failed to activate listing. Contact support.",
+        variant: "destructive",
+      });
+    }
+  }, [pendingListingId, formData.paymentMethod, toast]);
+
   // Payment status monitoring
   useEffect(() => {
     if (!currentTransactionId) return;
@@ -299,41 +333,7 @@ export default function PostAdPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentTransactionId, pendingListingId, router, activateListing]);
-
-  // Activate listing after successful payment
-  const activateListing = async () => {
-    if (!pendingListingId) return;
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL}/api/listings/${pendingListingId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status: "active",
-            paymentStatus: "paid",
-            paymentMethod: formData.paymentMethod,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to activate listing");
-      }
-    } catch (error) {
-      console.error("Error activating listing:", error);
-      toast({
-        title: "Error",
-        description:
-          "Payment processed but failed to activate listing. Contact support.",
-        variant: "destructive",
-      });
-    }
-  };
+  }, [currentTransactionId, pendingListingId, router, activateListing, toast]);
 
   // Handle final submission (payment or activation for free tier)
   const handleSubmit = async () => {

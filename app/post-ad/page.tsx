@@ -213,23 +213,26 @@ export default function PostAdPage() {
       }
 
       if (selectedTier.price > 0) {
-        // Redirect to a new payment page for the created listing
-        router.push(`/listings/${result.id}/payment`);
-        setIsPublishingListing(false); // Immediately close dialog for paid listings
+        // Paid listing: Redirect to payment page immediately
+        router.push(`/listings/${result.listing.id}/payment`);
       } else {
-        setIsPublishingListing(true); // Only show for free listings
+        // Free listing: Show publishing dialog, then success, then redirect
+        setIsPublishingListing(true); // Show dialog for free listings
         toast({
           title: "Publishing Ad",
           description: "Your ad is being published. This may take a moment.",
           variant: "default",
         });
-        toast({
-          title: "Success",
-          description: "Your ad has been published successfully.",
-          variant: "default",
-          duration: 5000,
-        });
-        router.push(`/listings/${result.id}`);
+        // Delay the success toast and redirection slightly to allow dialog to show
+        setTimeout(() => {
+          toast({
+            title: "Success",
+            description: "Your ad has been published successfully.",
+            variant: "default",
+            duration: 5000,
+          });
+          router.push(`/listings/${result.listing.id}`);
+        }, 1000); // 1 second delay
       }
     } catch (error) {
       console.error("Submission Error", error);

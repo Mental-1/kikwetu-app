@@ -341,7 +341,7 @@ export default function PostAdPage() {
     if (!currentTransactionId) return;
 
     try {
-      const response = await fetch(`/api/transactions/status?id=${currentTransactionId}`);
+      const response = await fetch(`/api/payments/status?id=${currentTransactionId}`);
       const data = await response.json();
 
       if (response.ok && data.status) {

@@ -140,7 +140,7 @@ export default function PaymentPage() {
     if (!transaction?.checkout_request_id) return;
     toast({ title: "Checking Payment Status..." });
     try {
-        const response = await fetch(`/api/payments/status?checkoutRequestId=${transaction.checkout_request_id}`);
+        const response = await fetch(`/api/payments/status?id=${transaction.id}`);
         const data = await response.json();
         if (data.status !== "completed") {
             setManualCheckFailed(true);

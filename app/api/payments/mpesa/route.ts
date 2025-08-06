@@ -48,6 +48,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Check if a pending transaction already exists for this listing
+    const { data: existingTransaction, error: existingTransactionError } = await supabase
+      .from("transactions")
+      .select("id")
+      .eq("listing_id", listingId)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (existingTransactionError) {
+      logger.error({ error: existingTransactionError }, "Error checking for existing transactions");
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+
+    if (existingTransaction) {
+      logger.warn({ listingId }, "Pending transaction already exists for this listing.");
+      return NextResponse.json({ error: "A pending payment already exists for this listing. Please wait for it to complete or contact support." }, { status: 409 });
+    }
+
     // Sanitize phone number is now handled by Zod schema
     const sanitizedPhoneNumber = phoneNumber;
 
@@ -141,8 +159,8 @@ export async function POST(request: NextRequest) {
       PartyB: process.env.MPESA_PARTY_B,
       PhoneNumber: sanitizedPhoneNumber,
       CallBackURL: process.env.MPESA_CALLBACK_URL,
-      AccountReference: listingId ? `RouteMe-${user.id}-${listingId}` : `RouteMe-${user.id}`,
-      TransactionDesc: "RouteMe Payment",
+      AccountReference: `Kikwetu-${listingId}`,
+      TransactionDesc: `Payment for listing ${listingId}`,
     };
     logger.debug({ stkPayload }, "STK Push Payload:");
 

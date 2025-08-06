@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       if (existingTransaction.status === "completed") {
         logger.warn(
           { CheckoutRequestID },
-          "Duplicate M-Pesa callback received for already completed transaction.",
+          "Duplicate M-Pesa callback received for already processed transaction.",
         );
         return NextResponse.json({ success: true });
       }
@@ -147,32 +147,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send notification to user
     if (status === "completed") {
-      logger.info("Payment completed. Preparing to send notification.");
+      logger.info("Payment completed. Preparing to activate listing and send notification.");
       const { data: transaction, error: fetchTransactionError } = await supabase
         .from("transactions")
-        .select("user_id, amount")
+        .select("user_id, amount, listing_id")
         .eq("checkout_request_id", CheckoutRequestID)
         .single();
 
-      if (fetchTransactionError) {
-        logger.error({ fetchTransactionError, CheckoutRequestID }, "Failed to fetch transaction for notification.");
-      } else if (transaction?.user_id) {
-        logger.info(`Sending notification to user ${transaction.user_id} for CheckoutRequestID: ${CheckoutRequestID}`);
-        const { error: notificationError } = await supabase.from("notifications").insert({
-          user_id: transaction.user_id,
-          title: "Payment Successful",
-          message: `Your payment of KES ${transaction.amount} has been processed successfully.`,
-          type: "payment",
-        });
-        if (notificationError) {
-          logger.error({ notificationError, userId: transaction.user_id }, "Failed to send notification.");
-        } else {
-          logger.info(`Notification sent successfully to user ${transaction.user_id}.`);
-        }
+      if (fetchTransactionError || !transaction) {
+        logger.error({ fetchTransactionError, CheckoutRequestID }, "Failed to fetch transaction for notification and listing activation.");
       } else {
-        logger.warn({ CheckoutRequestID }, "User ID not found for transaction, skipping notification.");
+        // Activate the listing
+        if (transaction.listing_id) {
+          const { error: updateError } = await supabase
+            .from('listings')
+            .update({ status: 'active', payment_status: 'paid' })
+            .eq('id', transaction.listing_id);
+
+          if (updateError) {
+            logger.error({ updateError, listingId: transaction.listing_id }, "Failed to activate listing.");
+          } else {
+            logger.info({ listingId: transaction.listing_id }, "Listing activated successfully.");
+          }
+        }
+
+        // Send notification to user
+        if (transaction.user_id) {
+          logger.info(`Sending notification to user ${transaction.user_id} for CheckoutRequestID: ${CheckoutRequestID}`);
+          const { error: notificationError } = await supabase.from("notifications").insert({
+            user_id: transaction.user_id,
+            title: "Payment Successful",
+            message: `Your payment of KES ${transaction.amount} has been processed successfully.`,
+            type: "payment",
+          });
+          if (notificationError) {
+            logger.error({ notificationError, userId: transaction.user_id }, "Failed to send notification.");
+          } else {
+            logger.info(`Notification sent successfully to user ${transaction.user_id}.`);
+          }
+        } else {
+          logger.warn({ CheckoutRequestID }, "User ID not found for transaction, skipping notification.");
+        }
       }
     }
 

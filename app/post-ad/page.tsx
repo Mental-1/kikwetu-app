@@ -299,7 +299,7 @@ export default function PostAdPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentTransactionId, pendingListingId, router]);
+  }, [currentTransactionId, pendingListingId, router, activateListing]);
 
   // Activate listing after successful payment
   const activateListing = async () => {
@@ -1302,7 +1302,7 @@ function PreviewStep({
       <h2 className="text-xl font-semibold">Preview Your Ad</h2>
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          <strong>Next Step:</strong> After reviewing your ad, clicking "Next"
+          <strong>Next Step:</strong> After reviewing your ad, click &quot;Next&quot;
           will create a draft listing and take you to the payment step. Your
           listing will be saved but not published until payment is completed.
         </p>

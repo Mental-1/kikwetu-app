@@ -230,7 +230,7 @@ export default function PostAdPage() {
         throw new Error(result.error || "Failed to create listing");
       }
 
-      setPendingListingId(result.id);
+      setPendingListingId(result.listing.id);
 
       toast({
         title: "Draft Created",

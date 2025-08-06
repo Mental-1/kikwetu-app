@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import pino from "pino";
 
 const logger = pino({
-  level: "info", // Force info level for all environments to ensure visibility
+  level: process.env.NODE_ENV === "development" ? "debug" : "info",
 });
 
 /**

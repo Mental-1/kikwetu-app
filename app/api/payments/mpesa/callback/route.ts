@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import pino from "pino";
 
 const logger = pino({
-  level: "debug",
+  level: process.env.NODE_ENV === "development" ? "debug" : "info",
 });
 
 /**
@@ -15,6 +15,14 @@ const logger = pino({
  */
 export async function POST(request: NextRequest) {
   logger.info("--- M-Pesa Callback Route Invoked ---");
+
+  const expectedToken = process.env.MPESA_CALLBACK_TOKEN;
+  const callbackToken = request.nextUrl.searchParams.get("token");
+
+  if (!expectedToken || callbackToken !== expectedToken) {
+    logger.warn("Unauthorized M-Pesa callback attempt. Invalid or missing token.");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await request.text();
     logger.debug({ body }, "Raw Callback Body:");

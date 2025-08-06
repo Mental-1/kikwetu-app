@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Optional: Verify amount matches listing price
-    if (listing.price && Math.abs(listing.price - amount) > 0.01) {
+    const PRICE_TOLERANCE = 1; // Allow 1 KES difference for rounding
+    if (listing.price && Math.abs(listing.price - amount) > PRICE_TOLERANCE) {
       logger.error(
         {
           providedAmount: amount,

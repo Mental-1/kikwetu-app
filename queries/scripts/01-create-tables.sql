@@ -159,22 +159,18 @@ CREATE TABLE reviews (
 
 -- Transactions table
 CREATE TABLE transactions (
-    id SERIAL PRIMARY KEY,
-    buyer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    seller_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
-    amount DECIMAL(12, 2) NOT NULL,
-    fee_amount DECIMAL(12, 2) DEFAULT 0,
-    net_amount DECIMAL(12, 2) NOT NULL,
-    currency VARCHAR(3) DEFAULT 'USD',
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    listing_id UUID REFERENCES listings(id) ON DELETE SET NULL,
+    amount NUMERIC(10, 2) NOT NULL,
     payment_method payment_method NOT NULL,
-    payment_reference VARCHAR(255),
-    status transaction_status DEFAULT 'pending',
-    type transaction_type DEFAULT 'sale',
-    notes TEXT,
-    completed_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    status VARCHAR(255) NOT NULL,
+    reference VARCHAR(255),
+    checkout_request_id VARCHAR(255) UNIQUE,
+    merchant_request_id VARCHAR(255),
+    phone_number VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Add the foreign key reference for reviews.transaction_id

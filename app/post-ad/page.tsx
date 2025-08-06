@@ -61,6 +61,7 @@ const steps = [
 export default function PostAdPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [pendingListingId, setPendingListingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -85,8 +86,11 @@ export default function PostAdPage() {
     setFormData((prev) => ({ ...prev, ...data }));
   }, []);
 
-  const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } =
-    useCategories();
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
   const selectedCategory = categories.find((c) => c.name === formData.category);
   const { data: subcategories = [] } = useSubcategoriesByCategory(
     selectedCategory?.id || null,
@@ -114,7 +118,9 @@ export default function PostAdPage() {
       formData.title.trim().length >= 3 &&
       formData.description.trim().length >= 3 &&
       formData.category &&
-      formData.price !== "" && !isNaN(Number(formData.price)) && Number(formData.price) > 0 &&
+      formData.price !== "" &&
+      !isNaN(Number(formData.price)) &&
+      Number(formData.price) > 0 &&
       formData.location.length > 0;
 
     if (selectedTier?.price > 0) {
@@ -122,22 +128,29 @@ export default function PostAdPage() {
         formData.paymentMethod &&
         (formData.paymentMethod === "mpesa"
           ? /^[0-9]{10,15}$/.test(formData.phoneNumber)
-          : /^[^"]@"[^"]+\.[^"]+$/.test(formData.email));
+          : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email));
       return basicFieldsValid && paymentFieldsValid;
     }
 
     return basicFieldsValid;
   };
 
-  const handleAdvanceStep = () => {
+  const handleAdvanceStep = async () => {
     if (currentStep === 0 && !isFormValid()) {
       toast({
         title: "Missing Information",
-        description: "Please fill out all required fields and ensure they are valid before proceeding.",
+        description:
+          "Please fill out all required fields and ensure they are valid before proceeding.",
         variant: "destructive",
       });
       return;
     }
+
+    // Create pending listing after preview step (step 3)
+    if (currentStep === 3) {
+      await createPendingListing();
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -149,6 +162,7 @@ export default function PostAdPage() {
     }
   };
 
+  const [isCreatingListing, setIsCreatingListing] = useState(false);
   const [isPublishingListing, setIsPublishingListing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
   const [currentTransactionId, setCurrentTransactionId] = useState<
@@ -159,8 +173,119 @@ export default function PostAdPage() {
     formData.location,
   );
 
-  const methodStepIndex = steps.findIndex((step) => step.id === "method");
+  // Create pending listing after preview step
+  const createPendingListing = async () => {
+    if (pendingListingId) return; // Already created
 
+    setIsCreatingListing(true);
+
+    try {
+      // Upload media first
+      const uploadedMediaResults = await uploadBufferedMedia(
+        formData.mediaUrls,
+        "listings",
+      );
+      const finalMediaUrls = uploadedMediaResults.map((res) => res.url);
+
+      const listingData = {
+        title: formData.title,
+        description: formData.description,
+        price: Number.parseFloat(formData.price) || null,
+        category_id:
+          categories.find((cat) => cat.name === formData.category)?.id || null,
+        subcategory_id: formData.subcategory
+          ? Number.parseInt(formData.subcategory)
+          : null,
+        location: displayLocation,
+        latitude: latitude,
+        longitude: longitude,
+        condition: formData.condition,
+        images: finalMediaUrls,
+        tags: formData.tags,
+        paymentTier: formData.paymentTier,
+        paymentStatus: "pending", // Always start as pending
+        paymentMethod: null, // Will be set when payment is processed
+        status: "pending", // Pending until payment is completed
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+        negotiable: formData.negotiable,
+        plan_id: selectedTier.id,
+      };
+
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_APP_URL + "/api/listings",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(listingData),
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to create listing");
+      }
+
+      setPendingListingId(result.id);
+
+      toast({
+        title: "Draft Created",
+        description:
+          "Your listing draft has been saved. Complete payment to publish.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error creating pending listing:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create listing draft. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsCreatingListing(false);
+    }
+  };
+
+  // Activate listing after successful payment
+  const activateListing = useCallback(async () => {
+    if (!pendingListingId) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL}/api/listings/${pendingListingId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "active",
+            paymentStatus: "paid",
+            paymentMethod: formData.paymentMethod,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to activate listing");
+      }
+    } catch (error) {
+      console.error("Error activating listing:", error);
+      toast({
+        title: "Error",
+        description:
+          "Payment processed but failed to activate listing. Contact support.",
+        variant: "destructive",
+      });
+    }
+  }, [pendingListingId, formData.paymentMethod, toast]);
+
+  // Payment status monitoring
   useEffect(() => {
     if (!currentTransactionId) return;
 
@@ -175,25 +300,30 @@ export default function PostAdPage() {
           table: "transactions",
           filter: `id=eq.${currentTransactionId}`,
         },
-        (payload) => {
+        async (payload) => {
           const newStatus = payload.new.status as PaymentStatus;
           setPaymentStatus(newStatus);
 
           if (newStatus === "completed") {
+            await activateListing();
             toast({
               title: "Payment Confirmed",
               description:
-                "Your payment has been successfully processed! You can now submit your ad.",
+                "Your payment has been processed and your ad is now live!",
               variant: "default",
             });
             channel.unsubscribe();
+
+            // Redirect to the listing
+            if (pendingListingId) {
+              router.push(`/listings/${pendingListingId}`);
+            }
           } else if (newStatus === "failed" || newStatus === "cancelled") {
             toast({
               title: "Payment Failed",
               description: "Your payment was not successful. Please try again.",
               variant: "destructive",
             });
-            setCurrentStep(methodStepIndex);
             channel.unsubscribe();
           }
         },
@@ -203,11 +333,22 @@ export default function PostAdPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentTransactionId, methodStepIndex]);
+  }, [currentTransactionId, pendingListingId, router, activateListing, toast]);
 
+  // Handle final submission (payment or activation for free tier)
   const handleSubmit = async () => {
     if (isSubmitted || isPublishingListing || paymentStatus === "pending")
       return;
+
+    if (!pendingListingId) {
+      toast({
+        title: "Error",
+        description: "No listing found. Please go back and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitted(true);
 
     if (!selectedTier) {
@@ -220,8 +361,56 @@ export default function PostAdPage() {
       return;
     }
 
-    if (selectedTier.price > 0 && paymentStatus !== "completed") {
+    // Handle free tier - just activate the listing
+    if (selectedTier.price === 0) {
+      setIsPublishingListing(true);
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_APP_URL}/api/listings/${pendingListingId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              status: "active",
+              paymentStatus: "free",
+              paymentMethod: null,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to activate listing");
+        }
+
+        toast({
+          title: "Success",
+          description: "Your ad has been published successfully!",
+          variant: "default",
+          duration: 5000,
+        });
+
+        router.push(`/listings/${pendingListingId}`);
+      } catch (error) {
+        console.error("Error activating free listing:", error);
+        toast({
+          title: "Error",
+          description: "Failed to publish your ad. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsPublishingListing(false);
+        setIsSubmitted(false);
+      }
+      return;
+    }
+
+    // Handle paid tier - initiate payment
+    if (selectedTier.price > 0) {
       setPaymentStatus("pending");
+
       try {
         const paymentResult = await processPayment(
           selectedTier,
@@ -245,7 +434,7 @@ export default function PostAdPage() {
         toast({
           title: "Payment Initiated",
           description:
-            "Your payment is being processed. We are awaiting confirmation.",
+            "Your payment is being processed. Please wait for confirmation.",
           variant: "default",
         });
         setIsSubmitted(false);
@@ -262,125 +451,11 @@ export default function PostAdPage() {
         return;
       }
     }
-
-    if (selectedTier.price > 0 && paymentStatus !== "completed") {
-      toast({
-        title: "Action Required",
-        description: "Please complete the payment first.",
-        variant: "destructive",
-      });
-      setIsSubmitted(false);
-      return;
-    }
-
-    setIsPublishingListing(true);
-    toast({
-      title: "Publishing Ad",
-      description: "Your ad is being published. This may take a moment.",
-      variant: "default",
-    });
-
-    try {
-      const uploadedMediaResults = await uploadBufferedMedia(
-        formData.mediaUrls,
-        "listings",
-      );
-      const finalMediaUrls = uploadedMediaResults.map((res) => res.url);
-
-      const listingData = {
-        title: formData.title,
-        description: formData.description,
-        price: Number.parseFloat(formData.price) || null,
-        category_id:
-          categories.find((cat) => cat.name === formData.category)?.id || null,
-        subcategory_id: formData.subcategory
-          ? Number.parseInt(formData.subcategory)
-          : null,
-        location: displayLocation,
-        latitude: latitude,
-        longitude: longitude,
-        condition: formData.condition,
-        images: finalMediaUrls,
-        tags: formData.tags,
-        paymentTier: formData.paymentTier,
-        paymentStatus: selectedTier.price > 0 ? "paid" : "free",
-        paymentMethod: formData.paymentMethod,
-        status: "active",
-        phoneNumber: formData.phoneNumber,
-        email: formData.email,
-        negotiable: formData.negotiable,
-        plan_id: selectedTier.id,
-      };
-
-      const response = await fetch(
-        process.env.NEXT_PUBLIC_APP_URL + "/api/listings",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(listingData),
-        },
-      );
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast({
-          title: "Failed to Create Listing",
-          description:
-            result.error || "An error occurred while submitting your ad.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Success",
-        description: "Your ad has been published successfully.",
-        variant: "default",
-        duration: 5000,
-      });
-      router.push(`/listings/${result.id}`);
-    } catch (error) {
-      console.error("Submission Error", error);
-      toast({
-        title: "Error",
-        description: "An error occurred while publishing your ad.",
-        variant: "destructive",
-        duration: 5000,
-      });
-    } finally {
-      setIsSubmitted(false);
-      setIsPublishingListing(false);
-    }
   };
 
-  const processPayment = async (tier: any, paymentMethod: string) => {
-    const supabase = getSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { success: false, error: "User not authenticated." };
-    }
-
-    const { data: transaction, error: transactionError } = await supabase
-      .from("transactions")
-      .insert({
-        user_id: user.id,
-        payment_method: paymentMethod,
-        amount: tier.price,
-        status: "pending",
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (transactionError || !transaction) {
-      console.error("Error creating pending transaction:", transactionError);
-      return { success: false, error: "Failed to create pending transaction." };
+  const processPayment = async (tier: Plan, paymentMethod: string) => {
+    if (!pendingListingId) {
+      return { success: false, error: "No listing ID found." };
     }
 
     const paymentData = {
@@ -388,7 +463,7 @@ export default function PostAdPage() {
       phoneNumber: formData.phoneNumber,
       email: formData.email,
       description: `Kikwetu Listing - ${tier.name} Plan`,
-      transactionId: transaction.id,
+      listingId: pendingListingId,
     };
 
     let endpoint = "";
@@ -400,28 +475,35 @@ export default function PostAdPage() {
         endpoint = "/api/payments/paystack";
         break;
       default:
-        throw new Error("Invalid payment method");
-    }
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(paymentData),
-    });
-    const responseData = await response.json();
-
-    let externalId = null;
-    if (paymentMethod === "mpesa") {
-      externalId = responseData.checkoutRequestId;
+        return { success: false, error: "Invalid payment method" };
     }
 
-    return {
-      success: true,
-      ...responseData,
-      transactionId: transaction.id,
-      externalId: externalId,
-    };
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: responseData.error || "Payment failed",
+        };
+      }
+
+      return {
+        success: true,
+        ...responseData,
+      };
+    } catch (error) {
+      console.error("Payment request error:", error);
+      return { success: false, error: "Network error during payment" };
+    }
   };
 
   const detectLocation = () => {
@@ -438,7 +520,8 @@ export default function PostAdPage() {
           console.error("Error getting location:", error);
           toast({
             title: "Location Error",
-            description: "Failed to detect your location. Please enter it manually or try again.",
+            description:
+              "Failed to detect your location. Please enter it manually or try again.",
             variant: "destructive",
           });
         },
@@ -498,6 +581,7 @@ export default function PostAdPage() {
             updateFormData={updateFormData}
             plans={plans}
             paymentStatus={paymentStatus}
+            pendingListingId={pendingListingId}
           />
         );
       default:
@@ -547,7 +631,11 @@ export default function PostAdPage() {
                 <Button
                   variant="outline"
                   onClick={handleBack}
-                  disabled={currentStep === 0 || paymentStatus === "pending"}
+                  disabled={
+                    currentStep === 0 ||
+                    paymentStatus === "pending" ||
+                    isCreatingListing
+                  }
                 >
                   <ChevronLeft className="h-4 w-4 mr-2" />
                   Back
@@ -560,21 +648,27 @@ export default function PostAdPage() {
                       !isFormValid() ||
                       isSubmitted ||
                       isPublishingListing ||
-                      (selectedTier?.price > 0 &&
-                        (paymentStatus === "pending"))
+                      !pendingListingId ||
+                      (selectedTier?.price > 0 && paymentStatus === "pending")
                     }
                   >
-                    {selectedTier?.price > 0 && paymentStatus !== "completed"
-                      ? "Pay"
-                      : "Submit Ad"}
+                    {isPublishingListing
+                      ? "Publishing..."
+                      : selectedTier?.price > 0 && paymentStatus !== "completed"
+                        ? "Pay & Publish"
+                        : "Publish Ad"}
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
                   <Button
                     onClick={handleAdvanceStep}
-                    disabled={isSubmitted || isPublishingListing}
+                    disabled={
+                      isSubmitted || isPublishingListing || isCreatingListing
+                    }
                   >
-                    Next
+                    {isCreatingListing && currentStep === 3
+                      ? "Creating..."
+                      : "Next"}
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 )}
@@ -584,13 +678,17 @@ export default function PostAdPage() {
         </div>
       </div>
 
-      <Dialog open={isPublishingListing} onOpenChange={setIsPublishingListing}>
+      <Dialog open={isCreatingListing || isPublishingListing}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogTitle>Publishing Ad...</DialogTitle>
+          <DialogTitle>
+            {isCreatingListing ? "Creating Draft..." : "Publishing Ad..."}
+          </DialogTitle>
           <div className="flex flex-col items-center justify-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
             <p className="text-muted-foreground">
-              Your ad is being published. This may take a moment.
+              {isCreatingListing
+                ? "Creating your listing draft..."
+                : "Publishing your ad..."}
             </p>
           </div>
         </DialogContent>
@@ -678,31 +776,31 @@ function AdDetailsStep({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="category">Category</Label>
-          {categoriesLoading && <p>Loading categories...</p>}
-          {categoriesError && (
-            <div className="text-red-500">
-              Failed to load categories. Please try again.
-            </div>
-          )}
-          {!categoriesLoading && !categoriesError && (
-            <Select
-              value={formData.category}
-              onValueChange={(value) =>
-                updateFormData({ category: value, subcategory: "" })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+            {categoriesLoading && <p>Loading categories...</p>}
+            {categoriesError && (
+              <div className="text-red-500">
+                Failed to load categories. Please try again.
+              </div>
+            )}
+            {!categoriesLoading && !categoriesError && (
+              <Select
+                value={formData.category}
+                onValueChange={(value) =>
+                  updateFormData({ category: value, subcategory: "" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div>
             <Label htmlFor="subcategory">Subcategory</Label>
@@ -1021,11 +1119,13 @@ function PaymentMethodStep({
   updateFormData,
   plans,
   paymentStatus,
+  pendingListingId,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
   plans: Plan[];
   paymentStatus: PaymentStatus;
+  pendingListingId: string | null;
 }) {
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
@@ -1035,8 +1135,12 @@ function PaymentMethodStep({
       <div className="space-y-6">
         <h2 className="text-xl font-semibold">Payment</h2>
         <div className="text-center py-8">
-          <p className="text-lg">Your selected plan is free!</p>
+          <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
+          <p className="text-lg font-medium">Your selected plan is free!</p>
           <p className="text-muted-foreground">No payment required.</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Listing ID: {pendingListingId || "Pending..."}
+          </p>
         </div>
       </div>
     );
@@ -1048,11 +1152,13 @@ function PaymentMethodStep({
 
       <Dialog open={paymentStatus === "pending"}>
         <DialogContent className="w-3/4 sm:max-w-[425px]">
-          <DialogTitle>Awaiting Payment Confirmation</DialogTitle>
+          <DialogTitle>Processing Payment</DialogTitle>
           <div className="flex flex-col items-center justify-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
-            <p className="text-muted-foreground">
-              Please wait while we confirm your payment.
+            <p className="text-muted-foreground text-center">
+              Please wait while we process your payment.
+              <br />
+              <span className="text-sm">Listing ID: {pendingListingId}</span>
             </p>
           </div>
         </DialogContent>
@@ -1063,13 +1169,16 @@ function PaymentMethodStep({
         <p className="text-2xl font-bold text-green-600">
           Ksh {selectedTier.price}
         </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Listing ID: {pendingListingId || "Pending..."}
+        </p>
       </div>
 
       {paymentStatus === "completed" && (
         <div className="flex items-center justify-center p-4 rounded-lg bg-green-100 border border-green-300 text-green-800">
           <CheckCircle2 className="h-5 w-5 mr-3" />
           <p className="font-medium">
-            Payment Confirmed. You can now submit your ad.
+            Payment Confirmed. Your ad will be published shortly.
           </p>
         </div>
       )}
@@ -1185,12 +1294,19 @@ function PreviewStep({
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
   const selectedCategory = categories.find(
-    (cat) => cat.id === Number.parseInt(formData.category, 10),
+    (cat) => cat.name === formData.category,
   );
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Preview Your Ad</h2>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Next Step:</strong> After reviewing your ad, click &quot;Next&quot;
+          will create a draft listing and take you to the payment step. Your
+          listing will be saved but not published until payment is completed.
+        </p>
+      </div>
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
@@ -1244,13 +1360,27 @@ function PreviewStep({
                 <span className="font-medium">Plan:</span> {selectedTier?.name}
               </div>
             </div>
+            {formData.tags && formData.tags.length > 0 && (
+              <div>
+                <span className="font-medium text-sm">Tags:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {formData.tags.map((tag: string, index: number) => (
+                    <span
+                      key={index}
+                      className="bg-muted px-2 py-1 rounded-full text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          By submitting this ad, you agree to our Terms of Service and Privacy
-          Policy.
+          By proceeding, you agree to our Terms of Service and Privacy Policy.
         </p>
       </div>
     </div>

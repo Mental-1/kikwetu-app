@@ -202,12 +202,7 @@ export async function createListingAction(
 
     const validatedData = validationResult.data;
 
-    if (!formData.paymentConfirmed) {
-      return {
-        success: false,
-        message: "Payment failed. Please try again.",
-      };
-    }
+    
 
     const { category, subcategory } = await validateCategories(
       validatedData.category,

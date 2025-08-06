@@ -158,12 +158,7 @@ export default function PostAdPage() {
       return;
     }
 
-    setIsPublishingListing(true);
-    toast({
-      title: "Publishing Ad",
-      description: "Your ad is being published. This may take a moment.",
-      variant: "default",
-    });
+    
 
     try {
       const uploadedMediaResults = await uploadBufferedMedia(
@@ -220,7 +215,14 @@ export default function PostAdPage() {
       if (selectedTier.price > 0) {
         // Redirect to a new payment page for the created listing
         router.push(`/listings/${result.id}/payment`);
+        setIsPublishingListing(false); // Immediately close dialog for paid listings
       } else {
+        setIsPublishingListing(true); // Only show for free listings
+        toast({
+          title: "Publishing Ad",
+          description: "Your ad is being published. This may take a moment.",
+          variant: "default",
+        });
         toast({
           title: "Success",
           description: "Your ad has been published successfully.",

@@ -283,7 +283,7 @@ export default function PostAdPage() {
         variant: "destructive",
       });
     }
-  }, [pendingListingId, formData.paymentMethod, toast]);
+  }, [pendingListingId, formData.paymentMethod]);
 
   // Payment status monitoring
   useEffect(() => {
@@ -333,7 +333,7 @@ export default function PostAdPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentTransactionId, pendingListingId, router, activateListing, toast]);
+  }, [currentTransactionId, pendingListingId, router, activateListing]);
 
   // Handle final submission (payment or activation for free tier)
   const handleSubmit = async () => {

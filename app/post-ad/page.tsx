@@ -379,6 +379,7 @@ export default function PostAdPage() {
     } else {
       setShowRetryButton(false);
       setShowSupportDetails(false);
+      return; // Explicitly return void
     }
   }, [paymentStatus, currentTransactionId]);
 

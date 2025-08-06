@@ -168,6 +168,8 @@ export default function PostAdPage() {
   const [currentTransactionId, setCurrentTransactionId] = useState<
     string | null
   >(null);
+  const [showRetryButton, setShowRetryButton] = useState(false);
+  const [showSupportDetails, setShowSupportDetails] = useState(false);
 
   const { displayLocation, latitude, longitude } = formatLocationData(
     formData.location,
@@ -334,6 +336,52 @@ export default function PostAdPage() {
       supabase.removeChannel(channel);
     };
   }, [currentTransactionId, pendingListingId, router, activateListing]);
+
+  const checkTransactionStatus = useCallback(async () => {
+    if (!currentTransactionId) return;
+
+    try {
+      const response = await fetch(`/api/transactions/status?id=${currentTransactionId}`);
+      const data = await response.json();
+
+      if (response.ok && data.status) {
+        setPaymentStatus(data.status);
+        if (data.status === "pending") {
+          // If still pending after retry, show support details after 30 seconds
+          const supportTimer = setTimeout(() => {
+            setShowSupportDetails(true);
+          }, 30000);
+          return () => clearTimeout(supportTimer);
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch transaction status. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error checking transaction status:", error);
+      toast({
+        title: "Error",
+        description: "Network error while checking status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [currentTransactionId]);
+
+  useEffect(() => {
+    if (paymentStatus === "pending" && currentTransactionId) {
+      const timer = setTimeout(() => {
+        setShowRetryButton(true);
+      }, 60000); // Show retry button after 60 seconds
+
+      return () => clearTimeout(timer);
+    } else {
+      setShowRetryButton(false);
+      setShowSupportDetails(false);
+    }
+  }, [paymentStatus, currentTransactionId]);
 
   // Handle final submission (payment or activation for free tier)
   const handleSubmit = async () => {
@@ -582,6 +630,9 @@ export default function PostAdPage() {
             plans={plans}
             paymentStatus={paymentStatus}
             pendingListingId={pendingListingId}
+            showRetryButton={showRetryButton}
+            showSupportDetails={showSupportDetails}
+            onRetryPayment={checkTransactionStatus}
           />
         );
       default:
@@ -1120,12 +1171,18 @@ function PaymentMethodStep({
   plans,
   paymentStatus,
   pendingListingId,
+  showRetryButton,
+  showSupportDetails,
+  onRetryPayment,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
   plans: Plan[];
   paymentStatus: PaymentStatus;
   pendingListingId: string | null;
+  showRetryButton: boolean;
+  showSupportDetails: boolean;
+  onRetryPayment: () => void;
 }) {
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
@@ -1195,6 +1252,22 @@ function PaymentMethodStep({
         <div className="flex items-center justify-center p-4 rounded-lg bg-red-100 border border-red-300 text-red-800">
           <XCircle className="h-5 w-5 mr-3" />
           <p className="font-medium">Payment Failed. Please try again.</p>
+        </div>
+      )}
+
+      {paymentStatus === "pending" && showRetryButton && (
+        <div className="text-center mt-4">
+          <Button onClick={onRetryPayment} className="mb-2">
+            Check Payment Status
+          </Button>
+          {showSupportDetails && (
+            <p className="text-sm text-muted-foreground">
+              Payment still pending. Please contact support with Listing ID:{" "}
+              {pendingListingId}
+              <br />
+              Email: support@kikwetu.com
+            </p>
+          )}
         </div>
       )}
 

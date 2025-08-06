@@ -23,7 +23,10 @@ export async function POST(request: NextRequest) {
     const validatedData = paystackPaymentSchema.safeParse(body);
 
     if (!validatedData.success) {
-      logger.error({ errors: validatedData.error }, "Invalid request body validation failed.");
+      logger.error(
+        { errors: validatedData.error },
+        "Invalid request body validation failed.",
+      );
       return NextResponse.json(
         {
           error: "Invalid request body",
@@ -33,6 +36,8 @@ export async function POST(request: NextRequest) {
       );
     }
     logger.info("Request body validated successfully.");
+
+    const { email, amount, listingId } = validatedData.data;
 
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -49,18 +54,24 @@ export async function POST(request: NextRequest) {
     // Initialize PayStack transaction
     logger.info("Attempting to initialize PayStack transaction.");
     const paystackRequestBody = JSON.stringify({
-      email: validatedData.data.email,
-      amount: validatedData.data.amount * 100,
+      email: email,
+      amount: amount * 100,
       currency: "KES",
       reference: `bidsy_${user.id}_${Date.now()}`,
       callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/paystack/callback`,
       metadata: {
         user_id: user.id,
+        listing_id: listingId,
         custom_fields: [
           {
             display_name: "User ID",
             variable_name: "user_id",
             value: user.id,
+          },
+          {
+            display_name: "Listing ID",
+            variable_name: "listing_id",
+            value: listingId,
           },
         ],
       },
@@ -83,7 +94,10 @@ export async function POST(request: NextRequest) {
     logger.debug({ paystackApiResponse: data }, "PayStack API Response:");
 
     if (!data.status) {
-      logger.error({ paystackError: data.message }, "PayStack initialization failed.");
+      logger.error(
+        { paystackError: data.message },
+        "PayStack initialization failed.",
+      );
       throw new Error(data.message || "PayStack initialization failed");
     }
     logger.info("PayStack transaction initialized successfully.");
@@ -95,10 +109,11 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         payment_method: "paystack",
-        amount: validatedData.data.amount,
+        amount: amount,
         status: "pending",
-        email: validatedData.data.email,
+        email: email,
         reference: data.data.reference,
+        listing_id: listingId,
       })
       .select()
       .single();
@@ -107,7 +122,10 @@ export async function POST(request: NextRequest) {
       logger.error({ dbError }, "Failed to save transaction to database.");
       throw new Error("Failed to save transaction");
     }
-    logger.info({ transactionId: transaction.id }, "Transaction saved to database successfully.");
+    logger.info(
+      { transactionId: transaction.id },
+      "Transaction saved to database successfully.",
+    );
 
     logger.info("Returning success response with authorization URL.");
     return NextResponse.json({

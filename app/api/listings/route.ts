@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
+import pino from "pino";
+
+const logger = pino({
+  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+});
 
 /**
  * Retrieves listing data, either a single listing by ID or a paginated list of listings.
@@ -107,6 +112,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    logger.info({ body }, "Received POST /api/listings request body");
 
     // 1. Fetch the category from the database using the ID
     const categoryId = body.category_id;
@@ -151,6 +157,8 @@ export async function POST(request: Request) {
       plan_id: body.plan_id || null,
     };
 
+    logger.debug({ listingData }, "Listing data before insertion:");
+
     const { data, error } = await supabase
       .from("listings")
       .insert([listingData])
@@ -158,7 +166,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error("Error creating listing:", error);
+      logger.error({ error }, "Error creating listing:");
       return NextResponse.json(
         { error: "Internal server error occurred while creating listing" },
         { status: 500 },
@@ -173,9 +181,9 @@ export async function POST(request: Request) {
       .single();
 
     if (profileError) {
-      console.error(
+      logger.error(
+        { profileError },
         "Error fetching user profile for listing count:",
-        profileError,
       );
       // Log the error but don't block the listing creation response
     }
@@ -188,7 +196,7 @@ export async function POST(request: Request) {
       .eq("id", user.id);
 
     if (updateError) {
-      console.error("Error updating user listing count:", updateError);
+      logger.error({ updateError }, "Error updating user listing count:");
     }
 
     revalidatePath("/listings");
@@ -199,7 +207,7 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (err: any) {
-    console.error("Server error in POST /api/listings:", err);
+    logger.error({ err }, "Server error in POST /api/listings:");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

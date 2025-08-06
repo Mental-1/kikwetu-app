@@ -348,10 +348,9 @@ export default function PostAdPage() {
         setPaymentStatus(data.status);
         if (data.status === "pending") {
           // If still pending after retry, show support details after 30 seconds
-          const supportTimer = setTimeout(() => {
+          setTimeout(() => {
             setShowSupportDetails(true);
           }, 30000);
-          return () => clearTimeout(supportTimer);
         }
       } else {
         toast({

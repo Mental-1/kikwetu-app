@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import pino from "pino";
 
 const logger = pino({
-  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+  level: "debug", // Force debug level for all environments to ensure visibility
 });
 
 /**
@@ -17,6 +17,7 @@ const logger = pino({
  * @returns A JSON response indicating success or an error with the appropriate HTTP status code
  */
 export async function POST(request: NextRequest) {
+  logger.info("--- M-Pesa Callback Route Invoked ---"); // Added this log
   logger.info("--- M-Pesa Callback Received ---");
   try {
     const signature = request.headers.get("x-mpesa-signature");
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
       .digest("hex");
 
     logger.debug({ expectedSignature }, "Expected Signature:");
+    logger.debug("MPESA_SECRET_KEY (masked):", process.env.MPESA_SECRET_KEY ? `${process.env.MPESA_SECRET_KEY.substring(0, 5)}...` : "not set");
 
     if (!signature || signature !== expectedSignature) {
       logger.error("Signature validation failed.");

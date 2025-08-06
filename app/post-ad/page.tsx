@@ -430,7 +430,8 @@ export default function PostAdPage() {
           return;
         }
 
-        setCurrentTransactionId(paymentResult.transactionId);
+        setCurrentTransactionId(paymentResult.transaction.id);
+        console.log("currentTransactionId set to:", paymentResult.transaction.id);
         toast({
           title: "Payment Initiated",
           description:

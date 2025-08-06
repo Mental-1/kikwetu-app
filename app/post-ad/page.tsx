@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { MediaBufferInput } from "@/components/post-ad/media-buffer-input";
 import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
@@ -680,12 +680,12 @@ export default function PostAdPage() {
       </div>
 
       <Dialog open={isCreatingListing || isPublishingListing}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogTitle>
+        <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
+          <DialogTitle className="text-center">
             {isCreatingListing ? "Creating Draft..." : "Publishing Ad..."}
           </DialogTitle>
-          <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Clock className="h-12 w-12 text-orange-500 mb-4 animate-pulse" />
             <p className="text-muted-foreground">
               {isCreatingListing
                 ? "Creating your listing draft..."
@@ -1152,10 +1152,18 @@ function PaymentMethodStep({
       <h2 className="text-xl font-semibold">Payment Method</h2>
 
       <Dialog open={paymentStatus === "pending"}>
-        <DialogContent className="w-3/4 sm:max-w-[425px]">
-          <DialogTitle>Processing Payment</DialogTitle>
-          <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+        <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
+          <DialogTitle className="text-center">Processing Payment</DialogTitle>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            {paymentStatus === "pending" && (
+              <Clock className="h-12 w-12 text-orange-500 mb-4 animate-pulse" />
+            )}
+            {paymentStatus === "completed" && (
+              <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+            )}
+            {(paymentStatus === "failed" || paymentStatus === "cancelled") && (
+              <XCircle className="h-12 w-12 text-red-500 mb-4" />
+            )}
             <p className="text-muted-foreground text-center">
               Please wait while we process your payment.
               <br />

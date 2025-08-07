@@ -87,6 +87,7 @@ function AccountDetails() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
   const [twoFASaving, setTwoFASaving] = useState(false);
+  const [verificationCodeError, setVerificationCodeError] = useState(false);
 
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail, setNewEmail] = useState("");
@@ -215,6 +216,16 @@ function AccountDetails() {
   };
 
   const handleVerify2FA = async () => {
+    if (!verificationCode) {
+      setVerificationCodeError(true);
+      toast({
+        title: "Error",
+        description: "Verification code is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setVerificationCodeError(false);
     setTwoFASaving(true);
     const { success, message } = await verify2FA(verificationCode);
     setTwoFASaving(false);
@@ -237,6 +248,16 @@ function AccountDetails() {
   };
 
   const handleDisable2FA = async () => {
+    if (!verificationCode) {
+      setVerificationCodeError(true);
+      toast({
+        title: "Error",
+        description: "Verification code is required to disable 2FA.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setVerificationCodeError(false);
     setTwoFASaving(true);
     const { success, message } = await disable2FA(verificationCode);
     setTwoFASaving(false);
@@ -722,9 +743,16 @@ function AccountDetails() {
                     <Input
                       id="verification-code"
                       value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
+                      onChange={(e) => {
+                        setVerificationCode(e.target.value);
+                        setVerificationCodeError(false);
+                      }}
                       placeholder="Enter code from app"
+                      className={verificationCodeError ? "border-destructive" : ""}
                     />
+                    {verificationCodeError && (
+                      <p className="text-sm text-destructive mt-1">Verification code is required.</p>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -744,9 +772,16 @@ function AccountDetails() {
                   <Input
                     id="disable-code"
                     value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
+                    onChange={(e) => {
+                      setVerificationCode(e.target.value);
+                      setVerificationCodeError(false);
+                    }}
                     placeholder="Enter code from app to disable"
+                    className={verificationCodeError ? "border-destructive" : ""}
                   />
+                  {verificationCodeError && (
+                    <p className="text-sm text-destructive mt-1">Verification code is required.</p>
+                  )}
                 </div>
               </div>
             )}

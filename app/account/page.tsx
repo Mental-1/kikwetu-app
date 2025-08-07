@@ -688,7 +688,7 @@ function AccountDetails() {
             >
               Cancel
             </Button>
-            <Button onClick={handleChangePassword} disabled={passwordSaving}>
+            <Button onClick={handleChangePassword} disabled={passwordSaving} className="mb-4">
               {passwordSaving ? "Saving..." : "Change Password"}
             </Button>
           </DialogFooter>
@@ -726,22 +726,12 @@ function AccountDetails() {
                       placeholder="Enter code from app"
                     />
                   </div>
-                  <Button
-                    onClick={handleVerify2FA}
-                    disabled={twoFASaving}
-                    className="mt-4"
-                  >
-                    {twoFASaving ? "Verifying..." : "Verify and Enable 2FA"}
-                  </Button>
                 </div>
               ) : (
                 <div className="text-center">
                   <p className="mb-4">
                     Enable two-factor authentication for added security.
                   </p>
-                  <Button onClick={handleEnable2FA} disabled={twoFASaving}>
-                    {twoFASaving ? "Generating..." : "Enable 2FA"}
-                  </Button>
                 </div>
               )
             ) : (
@@ -758,18 +748,32 @@ function AccountDetails() {
                     placeholder="Enter code from app to disable"
                   />
                 </div>
-                <Button
-                  onClick={handleDisable2FA}
-                  disabled={twoFASaving}
-                  variant="destructive"
-                  className="mt-4"
-                >
-                  {twoFASaving ? "Disabling..." : "Disable 2FA"}
-                </Button>
               </div>
             )}
           </div>
           <DialogFooter className="flex justify-end gap-2">
+            {!is2FAEnabled ? (
+              qrCode ? (
+                <Button
+                  onClick={handleVerify2FA}
+                  disabled={twoFASaving}
+                >
+                  {twoFASaving ? "Verifying..." : "Verify and Enable 2FA"}
+                </Button>
+              ) : (
+                <Button onClick={handleEnable2FA} disabled={twoFASaving}>
+                  {twoFASaving ? "Generating..." : "Enable 2FA"}
+                </Button>
+              )
+            ) : (
+              <Button
+                onClick={handleDisable2FA}
+                disabled={twoFASaving}
+                variant="destructive"
+              >
+                {twoFASaving ? "Disabling..." : "Disable 2FA"}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setShow2FAModal(false)}>
               Close
             </Button>
@@ -799,7 +803,7 @@ function AccountDetails() {
             <Button variant="outline" onClick={() => setShowEmailModal(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEmailChange} disabled={emailSaving}>
+            <Button onClick={handleEmailChange} disabled={emailSaving} className="mb-4">
               {emailSaving ? "Saving..." : "Change Email"}
             </Button>
           </DialogFooter>

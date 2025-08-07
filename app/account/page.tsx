@@ -681,7 +681,7 @@ function AccountDetails() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="mt-4">
             <Button
               variant="outline"
               onClick={() => setShowPasswordModal(false)}
@@ -769,7 +769,7 @@ function AccountDetails() {
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShow2FAModal(false)}>
               Close
             </Button>
@@ -795,7 +795,7 @@ function AccountDetails() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setShowEmailModal(false)}>
               Cancel
             </Button>

@@ -163,6 +163,9 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to get M-Pesa access token");
     }
 
+    // Generate unique transaction token
+    const transactionToken = `TXN-${crypto.randomUUID().replace(/-/g, "").substring(0, 16)}`;
+
     // Save initial transaction to database with pending status
     const { data: initialTransaction, error: dbError } = await supabase
       .from("transactions")
@@ -173,12 +176,16 @@ export async function POST(request: NextRequest) {
         status: "pending",
         phone_number: validatedData.data.phoneNumber,
         listing_id: listingId,
+        transaction_token: transactionToken, // Add this field
       })
       .select()
       .single();
 
     if (dbError) {
-      logger.error({ dbError }, "Failed to save initial transaction to database:");
+      logger.error(
+        { dbError },
+        "Failed to save initial transaction to database:",
+      );
       throw new Error("Failed to save initial transaction");
     }
 
@@ -199,8 +206,8 @@ export async function POST(request: NextRequest) {
       PartyB: process.env.MPESA_PARTY_B,
       PhoneNumber: sanitizedPhoneNumber,
       CallBackURL: process.env.MPESA_CALLBACK_URL,
-      AccountReference: `Kikwetu-${listingId}`,
-      TransactionDesc: `Payment for listing ${listingId}`,
+      AccountReference: transactionToken,
+      TransactionDesc: `Payment for listing ${listingId} (${transactionToken})`,
     };
     logger.debug({ stkPayload }, "STK Push Payload:");
 
@@ -288,7 +295,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
-      logger.error({ updateError }, "Failed to update transaction with STK details:");
+      logger.error(
+        { updateError },
+        "Failed to update transaction with STK details:",
+      );
       // Log the error but don't prevent the response, as the initial transaction is saved
     }
 

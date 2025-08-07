@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Search } from "lucide-react";
 import { MediaBufferInput } from "@/components/post-ad/media-buffer-input";
 import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
@@ -205,9 +205,9 @@ export default function PostAdPage() {
         images: finalMediaUrls,
         tags: formData.tags,
         paymentTier: formData.paymentTier,
-        paymentStatus: "pending", // Always start as pending
-        paymentMethod: null, // Will be set when payment is processed
-        status: "pending", // Pending until payment is completed
+        paymentStatus: selectedTier.price === 0 ? "paid" : "unpaid",
+        paymentMethod: null,
+        status: selectedTier.price === 0 ? "active" : "pending",
         phoneNumber: formData.phoneNumber,
         email: formData.email,
         negotiable: formData.negotiable,
@@ -979,7 +979,7 @@ function AdDetailsStep({
       </div>
 
       <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           <DialogTitle>Set Location</DialogTitle>
           <div className="space-y-4">
             <div>
@@ -990,24 +990,26 @@ function AdDetailsStep({
                 value={manualLocation}
                 onChange={(e) => setManualLocation(e.target.value)}
               />
+            </div>
+            <div className="flex justify-between gap-2">
               <Button
-                className="mt-2"
+                className="flex-1"
                 onClick={() => {
                   updateFormData({ location: manualLocation });
                   setLocationDialogOpen(false);
                 }}
                 disabled={!manualLocation.trim()}
               >
-                Use this location
+                Use Manual
               </Button>
-            </div>
-            <div className="flex items-center gap-2">
               <Button
-                variant="secondary"
+                className="flex-1"
+                variant="outline"
                 onClick={detectLocation}
                 type="button"
               >
-                Detect Location Automatically
+                <Search className="h-4 w-4 mr-2" />
+                Detect
               </Button>
             </div>
           </div>

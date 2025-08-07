@@ -1,4 +1,4 @@
-use client";
+'use client';
 
 import { useState, useMemo, useEffect, memo } from "react";
 import { Filter as FilterIcon, Search, X, AlertCircle } from "lucide-react";

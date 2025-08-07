@@ -163,6 +163,30 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to get M-Pesa access token");
     }
 
+    // Save initial transaction to database with pending status
+    const { data: initialTransaction, error: dbError } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: user.id,
+        payment_method: "mpesa",
+        amount: validatedData.data.amount,
+        status: "pending",
+        phone_number: validatedData.data.phoneNumber,
+        listing_id: listingId,
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      logger.error({ dbError }, "Failed to save initial transaction to database:");
+      throw new Error("Failed to save initial transaction");
+    }
+
+    logger.info(
+      { transactionId: initialTransaction.id },
+      "Initial transaction saved to database.",
+    );
+
     // Initiate STK Push
     const stkPayload = {
       BusinessShortCode: process.env.MPESA_BUSINESS_SHORT_CODE,
@@ -200,6 +224,11 @@ export async function POST(request: NextRequest) {
       );
       const stkResponseText = await stkResponse.text();
       logger.error({ body: stkResponseText }, "STK response body:");
+      // Update transaction status to failed if STK push fails
+      await supabase
+        .from("transactions")
+        .update({ status: "failed" })
+        .eq("id", initialTransaction.id);
       throw new Error(`M-Pesa STK push failed: ${stkResponse.statusText}`);
     }
 
@@ -208,11 +237,21 @@ export async function POST(request: NextRequest) {
       stkData = await stkResponse.json();
     } catch (error) {
       logger.error({ error }, "Failed to parse STK response:");
+      // Update transaction status to failed if STK push response is invalid
+      await supabase
+        .from("transactions")
+        .update({ status: "failed" })
+        .eq("id", initialTransaction.id);
       throw new Error("Invalid STK push response from M-Pesa");
     }
 
     if (!stkData.ResponseCode) {
       logger.error({ stkData }, "STK response missing ResponseCode:");
+      // Update transaction status to failed if STK push response is invalid
+      await supabase
+        .from("transactions")
+        .update({ status: "failed" })
+        .eq("id", initialTransaction.id);
       throw new Error("Invalid STK push response format");
     }
 
@@ -221,6 +260,11 @@ export async function POST(request: NextRequest) {
         { stkData },
         "M-Pesa STK push failed with non-zero ResponseCode:",
       );
+      // Update transaction status to failed if STK push fails
+      await supabase
+        .from("transactions")
+        .update({ status: "failed" })
+        .eq("id", initialTransaction.id);
       throw new Error(stkData.ResponseDescription || "M-Pesa payment failed");
     }
 
@@ -232,37 +276,32 @@ export async function POST(request: NextRequest) {
       "STK Push initiated successfully.",
     );
 
-    // Save transaction to database
-    const { data: transaction, error: dbError } = await supabase
+    // Update the transaction with CheckoutRequestID and MerchantRequestID
+    const { data: updatedTransaction, error: updateError } = await supabase
       .from("transactions")
-      .insert({
-        user_id: user.id,
-        payment_method: "mpesa",
-        amount: validatedData.data.amount,
-        status: "pending",
-        phone_number: validatedData.data.phoneNumber,
+      .update({
         checkout_request_id: stkData.CheckoutRequestID,
         merchant_request_id: stkData.MerchantRequestID,
-        listing_id: listingId,
       })
+      .eq("id", initialTransaction.id)
       .select()
       .single();
 
-    if (dbError) {
-      logger.error({ dbError }, "Failed to save transaction to database:");
-      throw new Error("Failed to save transaction");
+    if (updateError) {
+      logger.error({ updateError }, "Failed to update transaction with STK details:");
+      // Log the error but don't prevent the response, as the initial transaction is saved
     }
 
     logger.info(
-      { transactionId: transaction.id },
-      "Transaction saved to database.",
+      { transactionId: initialTransaction.id },
+      "Transaction updated with STK details.",
     );
 
     return NextResponse.json({
       success: true,
       message: "Payment initiated successfully",
       checkoutRequestId: stkData.CheckoutRequestID,
-      transaction: transaction,
+      transaction: updatedTransaction || initialTransaction, // Return the updated transaction if available
     });
   } catch (error) {
     logger.error({ error }, "M-Pesa payment error:");

@@ -57,22 +57,112 @@ export async function POST(request: NextRequest) {
 
     const supabase = await getSupabaseRouteHandler(cookies);
 
-    // Check for existing transaction
-    const { data: existingTransaction, error: fetchError } = await supabase
+    // Extract AccountReference (our transaction token) from callback
+    let transactionToken = null;
+    if (CallbackMetadata?.Item) {
+      const accountRefItem = CallbackMetadata.Item.find(
+        (item: any) => item.Name === "AccountReference",
+      );
+      if (accountRefItem) {
+        transactionToken = accountRefItem.Value;
+      }
+    }
+
+    let existingTransaction = null;
+
+    // PRIMARY: Match by CheckoutRequestID (fastest)
+    const { data: primaryResult, error: primaryError } = await supabase
       .from("transactions")
       .select("*")
       .eq("checkout_request_id", CheckoutRequestID)
       .single();
 
-    if (fetchError) {
+    if (!primaryError && primaryResult) {
+      existingTransaction = primaryResult;
+      logger.info(
+        { transactionId: primaryResult.id },
+        "Found transaction by CheckoutRequestID",
+      );
+    }
+
+    // BULLETPROOF FALLBACK: Match by transaction token
+    if (!existingTransaction && transactionToken) {
+      logger.info(
+        { transactionToken },
+        "Primary lookup failed, using transaction token...",
+      );
+
+      const { data: tokenResult, error: tokenError } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("transaction_token", transactionToken)
+        .eq("status", "pending")
+        .single();
+
+      if (!tokenError && tokenResult) {
+        existingTransaction = tokenResult;
+
+        logger.info(
+          {
+            transactionId: tokenResult.id,
+            matchMethod: "transaction_token",
+          },
+          "Found transaction by token - BULLETPROOF match",
+        );
+
+        // Update with the CheckoutRequestID that was missing
+        if (!tokenResult.checkout_request_id) {
+          const { error: updateIdError } = await supabase
+            .from("transactions")
+            .update({ checkout_request_id: CheckoutRequestID })
+            .eq("id", tokenResult.id);
+
+          if (updateIdError) {
+            logger.error(
+              { updateIdError },
+              "Failed to update with CheckoutRequestID",
+            );
+          }
+        }
+      } else {
+        logger.error(
+          {
+            tokenError,
+            transactionToken,
+          },
+          "Token-based lookup also failed",
+        );
+      }
+    }
+
+    // FINAL FALLBACK: If no transaction found by CheckoutRequestID or transactionToken
+    if (!existingTransaction) {
+      // Store for investigation
+      const { error: orphanError } = await supabase
+        .from("orphaned_callbacks")
+        .insert({
+          checkout_request_id: CheckoutRequestID,
+          result_code: ResultCode,
+          result_description: ResultDesc,
+          callback_metadata: CallbackMetadata,
+          raw_callback: parsedBody,
+          transaction_token: transactionToken,
+          created_at: new Date().toISOString(),
+        });
+
       logger.error(
-        { fetchError, CheckoutRequestID },
-        "Error fetching existing transaction:",
+        {
+          CheckoutRequestID,
+          transactionToken,
+          orphanStored: !orphanError,
+        },
+        "CRITICAL: All matching methods failed",
       );
-      return NextResponse.json(
-        { error: "Transaction not found" },
-        { status: 404 },
-      );
+
+      return NextResponse.json({
+        success: true,
+        message: "Callback stored for investigation",
+      });
     }
 
     if (

@@ -45,6 +45,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 
 // Type definitions
@@ -647,9 +648,9 @@ function AccountDetails() {
 
       {/* Password Change Modal */}
       <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
-        <DialogContent>
+        <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
+            <DialogTitle className="text-center">Change Password</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -696,9 +697,9 @@ function AccountDetails() {
 
       {/* 2FA Modal */}
       <Dialog open={show2FAModal} onOpenChange={setShow2FAModal}>
-        <DialogContent>
+        <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Two-Factor Authentication</DialogTitle>
+            <DialogTitle className="text-center">Two-Factor Authentication</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {!is2FAEnabled ? (
@@ -707,6 +708,7 @@ function AccountDetails() {
                   <p className="mb-4">
                     Scan the QR code with your authenticator app:
                   </p>
+                  <Separator className="my-4" />
                   <Image
                     src={qrCode}
                     alt="QR Code"
@@ -714,6 +716,7 @@ function AccountDetails() {
                     height={192}
                     className="mx-auto w-48 h-48"
                   />
+                  <Separator className="my-4" />
                   <div className="space-y-2 mt-4">
                     <Label htmlFor="verification-code">Verification Code</Label>
                     <Input
@@ -776,9 +779,9 @@ function AccountDetails() {
 
       {/* Email Change Modal */}
       <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
-        <DialogContent>
+        <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Change Email Address</DialogTitle>
+            <DialogTitle className="text-center">Change Email Address</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

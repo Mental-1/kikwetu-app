@@ -13,9 +13,9 @@ const FooterLogo = () => {
       <Image
         src="/kikwetu_light.png"
         alt="Kikwetu Logo"
-        width={180}
-        height={60}
-        className="h-15 w-auto"
+        width={144}
+        height={48}
+        className="h-12 w-auto"
       />
     );
   }
@@ -24,9 +24,9 @@ const FooterLogo = () => {
     <Image
       src={logoSrc}
       alt="Kikwetu Logo"
-      width={180}
-      height={60}
-      className="h-15 w-auto"
+      width={144}
+      height={48}
+      className="h-12 w-auto"
     />
   );
 };

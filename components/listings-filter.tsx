@@ -25,7 +25,7 @@ import {
   useSubcategoriesByCategory,
   useCategoryMutations,
 } from "@/hooks/useCategories";
-
+import debounce from "lodash.debounce";
 
 // Define proper TypeScript interfaces
 interface PriceRange {
@@ -53,7 +53,13 @@ const NO_MAX_PRICE = 1000000;
 export const ListingsFilter = memo(
   ({ filters, updateFilters, clearFilters }: ListingsFilterProps) => {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
-    const [searchInput, setSearchInput] = useState("");
+    const [searchInput, setSearchInput] = useState(filters.searchQuery);
+    const [minPrice, setMinPrice] = useState<string>(
+      filters.priceRange.min > 0 ? String(filters.priceRange.min) : "",
+    );
+    const [maxPrice, setMaxPrice] = useState<string>(
+      filters.priceRange.max < NO_MAX_PRICE ? String(filters.priceRange.max) : "",
+    );
 
     // Use the category hooks
     const {
@@ -77,10 +83,31 @@ export const ListingsFilter = memo(
     const { prefetchCategories, prefetchSubcategories } =
       useCategoryMutations();
 
-    // Initialize search input with current search query
+    const debouncedUpdatePrice = useMemo(
+      () =>
+        debounce((priceRange: PriceRange) => {
+          updateFilters({ priceRange });
+        }, 500),
+      [updateFilters],
+    );
+
+    useEffect(() => {
+      const min = Number(minPrice) || 0;
+      const max = Number(maxPrice);
+      debouncedUpdatePrice({ min, max: max === 0 ? NO_MAX_PRICE : max });
+    }, [minPrice, maxPrice, debouncedUpdatePrice]);
+
     useEffect(() => {
       setSearchInput(filters.searchQuery);
-    }, [filters.searchQuery]);
+      setMinPrice(
+        filters.priceRange.min > 0 ? String(filters.priceRange.min) : "",
+      );
+      setMaxPrice(
+        filters.priceRange.max < NO_MAX_PRICE
+          ? String(filters.priceRange.max)
+          : "",
+      );
+    }, [filters]);
 
     // Prefetch categories and subcategories on component mount for better UX
     useEffect(() => {
@@ -126,14 +153,11 @@ export const ListingsFilter = memo(
     };
 
     const handlePriceChange = (field: "min" | "max", value: string) => {
-      const numericValue = Number(value) || 0;
-      updateFilters({
-        priceRange: {
-          ...filters.priceRange,
-          [field]:
-    field === "max" && numericValue === 0 ? NO_MAX_PRICE : numericValue,
-        },
-      });
+      if (field === "min") {
+        setMinPrice(value);
+      } else {
+        setMaxPrice(value);
+      }
     };
 
     const handleDistanceChange = (newDistance: number[]) => {
@@ -349,7 +373,7 @@ export const ListingsFilter = memo(
                 <Input
                   type="number"
                   placeholder="Min"
-                  value={filters.priceRange.min || ""}
+                  value={minPrice}
                   onChange={(e) => handlePriceChange("min", e.target.value)}
                   className="w-full"
                   min="0"
@@ -358,11 +382,7 @@ export const ListingsFilter = memo(
                 <Input
                   type="number"
                   placeholder="Max"
-                  value={
-                    filters.priceRange.max === NO_MAX_PRICE
-                      ? ""
-                      : filters.priceRange.max
-                  }
+                  value={maxPrice}
                   onChange={(e) => handlePriceChange("max", e.target.value)}
                   className="w-full"
                   min="0"

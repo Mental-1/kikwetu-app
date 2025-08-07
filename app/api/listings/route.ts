@@ -138,7 +138,7 @@ export async function POST(request: Request) {
     ] as const;
 
     // 2. Construct a clean listing data object, ensuring all IDs are numeric
-    const isFreeListing = Number(body.price) === 0;
+    
 
     const listingData = {
       user_id: user.id,
@@ -152,8 +152,8 @@ export async function POST(request: Request) {
       longitude: body.longitude || null,
       category_id: category.id, // Use the fetched numeric category ID
       subcategory_id: body.subcategory_id ? Number(body.subcategory_id) : null,
-      status: isFreeListing ? "active" : "pending",
-      payment_status: isFreeListing ? "paid" : "unpaid",
+      status: ALLOWED_STATUSES.includes(body.status) ? body.status : "pending",
+      payment_status: body.paymentStatus || "unpaid",
       images: Array.isArray(body.images) ? body.images : [],
       tags: Array.isArray(body.tags) ? body.tags : [],
       condition: body.condition || "used",

@@ -42,9 +42,9 @@ const Logo = () => {
       <Image
         src="/kikwetu_light.png"
         alt="Kikwetu Logo"
-        width={432}
-        height={144}
-        className="h-36 w-auto"
+        width={180}
+        height={60}
+        className="h-15 w-auto"
       />
     );
   }
@@ -53,9 +53,9 @@ const Logo = () => {
     <Image
       src={logoSrc}
       alt="Kikwetu Logo"
-      width={360}
-      height={120}
-      className="h-30 w-auto"
+      width={180}
+      height={60}
+      className="h-15 w-auto"
     />
   );
 };

@@ -276,6 +276,15 @@ export async function POST(request: NextRequest) {
       "STK Push initiated successfully.",
     );
 
+    logger.debug(
+      {
+        initialTransactionId: initialTransaction.id,
+        stkCheckoutRequestID: stkData.CheckoutRequestID,
+        stkMerchantRequestID: stkData.MerchantRequestID,
+      },
+      "Attempting to update transaction with STK details.",
+    );
+
     // Update the transaction with CheckoutRequestID and MerchantRequestID
     const { data: updatedTransaction, error: updateError } = await supabase
       .from("transactions")

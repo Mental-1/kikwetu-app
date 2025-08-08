@@ -28,6 +28,7 @@ import {
   Trash2,
   Loader2,
   TriangleAlert,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
@@ -961,7 +962,7 @@ function AccountDetails() {
 
           {deleteStep === 'deleting' && (
             <div className="space-y-4 py-4 text-center">
-              <Loader2 className="h-16 w-16 animate-spin text-destructive mx-auto" />
+              <Clock className="h-16 w-16 text-yellow-500 mx-auto animate-pulse" />
               <p className="text-muted-foreground">Deleting...</p>
             </div>
           )}

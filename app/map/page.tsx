@@ -128,7 +128,7 @@ const fetchListings = useCallback(async (location: UserLocation) => {
         <div className="relative w-full h-full">
           {mapError && (
             <div
-              className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/50"
+              className="absolute inset-0 z-overlay flex items-center justify-center bg-black/50"
               role="alert"
               aria-live="assertive"
             >

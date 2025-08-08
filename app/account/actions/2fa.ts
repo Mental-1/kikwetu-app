@@ -23,6 +23,14 @@ export async function enable2FA(): Promise<Enable2FAResponse> {
     };
   }
 
+  if (!data?.totp?.qr_code || !data?.totp?.secret) {
+    return {
+      success: false,
+      message: "Failed to enroll 2FA.",
+      qrCode: null,
+      secret: null,
+    };
+  }
   return {
     success: true,
     message: "Scan the QR code with your authenticator app and enter the code to verify.",

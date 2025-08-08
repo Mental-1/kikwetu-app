@@ -86,7 +86,7 @@ function AccountDetails() {
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   const [show2FAModal, setShow2FAModal] = useState(false);
-  const [is2FAEnabled, setIs2FAEnabled] = useState(profile?.mfa_enabled || false);
+  const [is2FAEnabled, setIs2FAEnabled] = useState(profile?.mfa_enabled ?? false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
@@ -107,12 +107,6 @@ function AccountDetails() {
       setFormData(accountData.formData);
     }
   }, [accountData]);
-
-  useEffect(() => {
-    if (profile?.mfa_enabled !== undefined) {
-      setIs2FAEnabled(profile.mfa_enabled);
-    }
-  }, [profile?.mfa_enabled]);
 
   const handleSave = async () => {
     if (!user || !formData) return;

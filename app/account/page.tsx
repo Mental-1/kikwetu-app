@@ -29,6 +29,7 @@ import {
   Loader2,
   TriangleAlert,
   Clock,
+  Clipboard,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
@@ -787,7 +788,22 @@ function AccountDetails() {
                   <Separator className="my-4" />
                   <div className="text-center text-sm text-muted-foreground break-all">
                     <p className="mb-2">Or copy this code into your authenticator app:</p>
-                    <code className="font-mono bg-muted p-2 rounded-md select-all">{secret}</code>
+                    <div className="relative flex items-center justify-center">
+                      <div className="overflow-x-auto whitespace-nowrap rounded-md bg-muted p-2 font-mono text-xs sm:text-sm">
+                        {secret}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-1/2 -translate-y-1/2"
+                        onClick={() => {
+                          navigator.clipboard.writeText(secret || '');
+                          toast({ title: "Copied to clipboard" });
+                        }}
+                      >
+                        <Clipboard className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <Separator className="my-4" />
                   <div className="space-y-2 mt-4">

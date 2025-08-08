@@ -113,7 +113,7 @@ export const paystackPaymentSchema = z.object({
   email: createSanitizedEmail(),
   amount: z
     .number()
-    .min(100, "Amount must be at least 100 KES")
+    .min(10, "Amount must be at least 10 KES")
     .max(10000000, "Amount exceeds limit"),
   listingId: z.string().uuid(), // Added listingId
 });

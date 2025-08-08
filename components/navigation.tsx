@@ -266,6 +266,7 @@ export default function Navigation() {
   );
 
   return (
+    // The z-index value of 1001 is intentionally set above 1000 to reserve this range for top-level chrome elements.
     <header className="sticky top-0 z-[1001] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <DesktopNav />
     </header>

@@ -43,7 +43,7 @@ const fallbackCategories: CategoryWithIcon[] = [
 /**
  * Renders a section displaying a grid of category cards, fetching category data using the useCategories hook.
  *
- * Shows a loading skeleton while fetching data. Each card links to a filtered listings page for the selected category. Includes a header with a "View All" button that navigates to the listings page.
+ * Shows a loading skeleton while fetching data. Each card links to a filtered listings page for the selected category.
  */
 export default function CategoriesSection() {
   const { data: categories, isLoading, error, refetch } = useCategories();
@@ -57,7 +57,8 @@ export default function CategoriesSection() {
   }
 
   return (
-    <>
+    <section aria-labelledby="categories-heading">
+      <h2 id="categories-heading" className="sr-only">Categories</h2>
       {error && !categories?.length && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
@@ -72,7 +73,7 @@ export default function CategoriesSection() {
       <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
         {categoriesToDisplay.map((category) => (
           <Link key={category.id} href={`/listings?category=${category.id}`}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer border-3 border-muted bg-muted/50">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-[3px] border-border bg-muted/50">
               <CardContent className="p-3 text-center">
                 <div className="text-2xl mb-1">{category.icon || "📦"}</div>
                 <h3 className="text-xs font-medium truncate">
@@ -83,6 +84,6 @@ export default function CategoriesSection() {
           </Link>
         ))}
       </div>
-    </>
+    </section>
   );
 }

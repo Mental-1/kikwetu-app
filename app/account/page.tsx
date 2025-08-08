@@ -961,9 +961,17 @@ function AccountDetails() {
           )}
 
           {deleteStep === 'deleting' && (
-            <div className="space-y-4 py-4 text-center">
-              <Clock className="h-16 w-16 text-yellow-500 mx-auto animate-pulse" />
-              <p className="text-muted-foreground">Deleting...</p>
+            <div
+              className="space-y-4 py-4 text-center"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <Clock
+                className="h-16 w-16 text-destructive mx-auto animate-pulse"
+                aria-hidden="true"
+              />
+              <p className="text-destructive">Deleting...</p>
             </div>
           )}
 

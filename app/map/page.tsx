@@ -149,7 +149,6 @@ const fetchListings = useCallback(async (location: UserLocation) => {
         </div>
       );
     }
-    }
     return null; // Should not be reached
   };
 

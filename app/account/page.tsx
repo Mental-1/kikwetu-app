@@ -961,18 +961,16 @@ function AccountDetails() {
           )}
 
           {deleteStep === 'deleting' && (
-            <div
-              className="space-y-4 py-4 text-center"
-              role="status"
-              aria-live="polite"
+            <output
+              className="flex flex-col items-center space-y-4 py-4 text-center"
               aria-busy="true"
             >
               <Clock
                 className="h-16 w-16 text-destructive mx-auto animate-pulse"
                 aria-hidden="true"
               />
-              <p className="text-destructive">Deleting...</p>
-            </div>
+              <span className="text-destructive">Deleting...</span>
+            </output>
           )}
 
           {deleteStep === 'success' && (

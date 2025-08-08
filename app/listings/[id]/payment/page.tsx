@@ -115,7 +115,26 @@ export default function PaymentPage() {
       }
 
       setTransaction(result.transaction);
-      toast({ title: "Payment Initiated", description: "Please check your phone to complete the payment." });
+
+      if (paymentMethod === "paystack") {
+        const url = result?.authorization_url;
+        if (typeof url === "string" && /^https?:\/\//.test(url)) {
+          toast({ title: "Redirecting to Paystack", description: "Complete your payment on the Paystack page." });
+          window.location.assign(url);
+          return;
+        }
+        // Fallback: missing/invalid URL
+        toast({
+          title: "Paystack initialization failed",
+          description: "No valid authorization URL received. Please try again.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      } else {
+        // Only show generic toast if not Paystack or if Paystack failed to redirect
+        toast({ title: "Payment Initiated", description: "Please check your phone to complete the payment." });
+      }
 
       setTimeout(() => {
         if (transaction?.status !== "completed") {

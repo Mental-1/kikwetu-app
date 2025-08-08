@@ -30,11 +30,11 @@ export function ListingMediaGallery({ images, videos = [], className }: MediaGal
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-muted max-w-full mx-auto max-h-[70vh]">
+      <div className="relative overflow-hidden rounded-lg bg-muted max-w-full mx-auto max-h-[70vh] aspect-video sm:aspect-[4/3] lg:aspect-[16/10]">
         {currentMedia.type === "image" ? (
-          <Image src={currentMedia.src || "/placeholder.svg"} alt="Listing image" fill className="object-contain" />
+          <Image src={currentMedia.src || "/placeholder.svg"} alt="Listing image" fill className="object-contain" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
         ) : (
-          <video src={currentMedia.src} controls className="w-full h-full object-cover" />
+          <video src={currentMedia.src} controls className="w-full h-full object-contain" />
         )}
 
         {allMedia.length > 1 && (

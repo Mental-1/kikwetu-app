@@ -3,7 +3,11 @@
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function enable2FA() {
+type Enable2FAResponse = 
+  | { success: true; message: string; qrCode: string; secret: string; } 
+  | { success: false; message: string; qrCode: null; secret: null; };
+
+export async function enable2FA(): Promise<Enable2FAResponse> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
@@ -15,13 +19,23 @@ export async function enable2FA() {
       success: false,
       message: "Failed to enroll 2FA.",
       qrCode: null,
+      secret: null,
     };
   }
 
+  if (!data?.totp?.qr_code || !data?.totp?.secret) {
+    return {
+      success: false,
+      message: "Failed to enroll 2FA.",
+      qrCode: null,
+      secret: null,
+    };
+  }
   return {
     success: true,
     message: "Scan the QR code with your authenticator app and enter the code to verify.",
     qrCode: data.totp.qr_code,
+    secret: data.totp.secret,
   };
 }
 

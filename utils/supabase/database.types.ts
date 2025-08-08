@@ -110,6 +110,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cleanup_logs: {
+        Row: {
+          created_at: string | null
+          deleted_listings: number | null
+          deleted_transactions: number | null
+          error_message: string | null
+          executed_at: string | null
+          execution_time: unknown | null
+          id: number
+          operation_type: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_listings?: number | null
+          deleted_transactions?: number | null
+          error_message?: string | null
+          executed_at?: string | null
+          execution_time?: unknown | null
+          id?: number
+          operation_type: string
+          status: string
+        }
+        Update: {
+          created_at?: string | null
+          deleted_listings?: number | null
+          deleted_transactions?: number | null
+          error_message?: string | null
+          executed_at?: string | null
+          execution_time?: unknown | null
+          id?: number
+          operation_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           buyer_id: string | null
@@ -465,6 +501,68 @@ export type Database = {
         }
         Relationships: []
       }
+      orphaned_callbacks: {
+        Row: {
+          amount: number | null
+          callback_metadata: Json | null
+          checkout_request_id: string
+          created_at: string | null
+          id: string
+          investigation_notes: string | null
+          mpesa_receipt_number: string | null
+          notes: string | null
+          phone_number: string | null
+          raw_callback: Json | null
+          resolved_at: string | null
+          resolved_transaction_id: string | null
+          result_code: number
+          result_description: string | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          callback_metadata?: Json | null
+          checkout_request_id: string
+          created_at?: string | null
+          id?: string
+          investigation_notes?: string | null
+          mpesa_receipt_number?: string | null
+          notes?: string | null
+          phone_number?: string | null
+          raw_callback?: Json | null
+          resolved_at?: string | null
+          resolved_transaction_id?: string | null
+          result_code: number
+          result_description?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          callback_metadata?: Json | null
+          checkout_request_id?: string
+          created_at?: string | null
+          id?: string
+          investigation_notes?: string | null
+          mpesa_receipt_number?: string | null
+          notes?: string | null
+          phone_number?: string | null
+          raw_callback?: Json | null
+          resolved_at?: string | null
+          resolved_transaction_id?: string | null
+          result_code?: number
+          result_description?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orphaned_callbacks_resolved_transaction_id_fkey"
+            columns: ["resolved_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           created_at: string | null
@@ -505,6 +603,7 @@ export type Database = {
         Row: {
           authenticated: boolean | null
           avatar_url: string | null
+          banned_until: string | null
           bio: string | null
           birth_date: string | null
           created_at: string | null
@@ -522,6 +621,7 @@ export type Database = {
           listing_updates: boolean
           location: string | null
           marketing_emails: boolean
+          mfa_enabled: boolean | null
           nationality: string | null
           new_messages: boolean
           phone: string | null
@@ -547,6 +647,7 @@ export type Database = {
         Insert: {
           authenticated?: boolean | null
           avatar_url?: string | null
+          banned_until?: string | null
           bio?: string | null
           birth_date?: string | null
           created_at?: string | null
@@ -564,6 +665,7 @@ export type Database = {
           listing_updates?: boolean
           location?: string | null
           marketing_emails?: boolean
+          mfa_enabled?: boolean | null
           nationality?: string | null
           new_messages?: boolean
           phone?: string | null
@@ -589,6 +691,7 @@ export type Database = {
         Update: {
           authenticated?: boolean | null
           avatar_url?: string | null
+          banned_until?: string | null
           bio?: string | null
           birth_date?: string | null
           created_at?: string | null
@@ -606,6 +709,7 @@ export type Database = {
           listing_updates?: boolean
           location?: string | null
           marketing_emails?: boolean
+          mfa_enabled?: boolean | null
           nationality?: string | null
           new_messages?: boolean
           phone?: string | null
@@ -741,6 +845,7 @@ export type Database = {
           phone_number: string | null
           reference: string | null
           status: string
+          transaction_token: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -756,6 +861,7 @@ export type Database = {
           phone_number?: string | null
           reference?: string | null
           status?: string
+          transaction_token?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -771,6 +877,7 @@ export type Database = {
           phone_number?: string | null
           reference?: string | null
           status?: string
+          transaction_token?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -801,6 +908,10 @@ export type Database = {
         Args: { user_uuid: string; listing_uuid: string }
         Returns: boolean
       }
+      cleanup_abandoned_transactions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       cleanup_old_notifications: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -822,9 +933,31 @@ export type Database = {
             }
         Returns: undefined
       }
+      delete_abandoned_listings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          deleted_transactions: number
+          deleted_listings: number
+          execution_time: unknown
+          error_message: string
+        }[]
+      }
       feature_listing: {
         Args: { listing_uuid: string; duration_days?: number }
         Returns: boolean
+      }
+      get_cleanup_stats: {
+        Args: { days_back?: number }
+        Returns: {
+          total_runs: number
+          successful_runs: number
+          failed_runs: number
+          total_transactions_deleted: number
+          total_listings_deleted: number
+          avg_execution_time: unknown
+          last_successful_run: string
+          last_failed_run: string
+        }[]
       }
       get_filtered_listings: {
         Args: {
@@ -842,30 +975,7 @@ export type Database = {
           p_radius_km?: number
           p_search_query?: string
         }
-        Returns: {
-          id: string
-          title: string
-          description: string
-          price: number
-          location: string
-          latitude: number
-          longitude: number
-          condition: string
-          featured: boolean
-          images: string[]
-          views: number
-          created_at: string
-          updated_at: string
-          category_id: number
-          category_name: string
-          subcategory_id: number
-          subcategory_name: string
-          user_id: string
-          seller_name: string
-          seller_username: string
-          seller_avatar: string
-          distance_km: number
-        }[]
+        Returns: Json
       }
       get_listings_within_radius: {
         Args: {
@@ -912,6 +1022,26 @@ export type Database = {
         }
         Returns: string
       }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       handle_expired_listings: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -922,6 +1052,15 @@ export type Database = {
           views: number
         }[]
       }
+      manual_cleanup_abandoned_listings: {
+        Args: { confirm_deletion?: boolean }
+        Returns: {
+          deleted_transactions: number
+          deleted_listings: number
+          execution_time: unknown
+          error_message: string
+        }[]
+      }
       mark_all_notifications_as_read: {
         Args: { user_uuid?: string }
         Returns: number
@@ -929,6 +1068,10 @@ export type Database = {
       mark_notification_as_read: {
         Args: { notification_id: string }
         Returns: boolean
+      }
+      renew_listing: {
+        Args: { listing_id: string; plan_id: string }
+        Returns: undefined
       }
       reverse_geocode: {
         Args: { lat: number; lng: number }
@@ -945,6 +1088,36 @@ export type Database = {
           postal_code: string | null
           state: string | null
         }[]
+      }
+      search_listings_with_fuzzy: {
+        Args: {
+          p_page?: number
+          p_page_size?: number
+          p_sort_by?: string
+          p_sort_order?: string
+          p_categories?: number[]
+          p_subcategories?: number[]
+          p_conditions?: string[]
+          p_min_price?: number
+          p_max_price?: number
+          p_user_latitude?: number
+          p_user_longitude?: number
+          p_radius_km?: number
+          p_search_query?: string
+        }
+        Returns: Json
+      }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
       }
       unfeature_expired_listings: {
         Args: Record<PropertyKey, never>

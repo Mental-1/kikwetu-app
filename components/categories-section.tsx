@@ -73,7 +73,7 @@ export default function CategoriesSection() {
       <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
         {categoriesToDisplay.map((category) => (
           <Link key={category.id} href={`/listings?category=${category.id}`}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer border-[1px] border-border bg-muted/50">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border border-border bg-muted/50">
               <CardContent className="p-3 text-center">
                 <div className="text-2xl mb-1">{category.icon || "📦"}</div>
                 <h3 className="text-xs font-medium truncate">

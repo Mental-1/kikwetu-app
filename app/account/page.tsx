@@ -789,21 +789,41 @@ function AccountDetails() {
                   <div className="text-center text-sm text-muted-foreground break-all">
                     <p className="mb-2">Or copy this code into your authenticator app:</p>
                     <div className="relative flex items-center justify-center">
-                      <div className="overflow-x-auto whitespace-nowrap rounded-md bg-muted p-2 font-mono text-xs sm:text-sm">
-                        {secret}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-1/2 -translate-y-1/2"
-                        onClick={() => {
-                          navigator.clipboard.writeText(secret || '');
-                          toast({ title: "Copied to clipboard" });
-                        }}
-                      >
-                        <Clipboard className="h-4 w-4" />
-                      </Button>
-                    </div>
+  <div className="overflow-x-auto whitespace-nowrap break-normal rounded-md bg-muted p-2 pr-8 font-mono text-xs sm:text-sm select-all">
+    {secret}
+  </div>
+  <Button
+    variant="ghost"
+    size="icon"
+    aria-label="Copy 2FA secret"
+    title="Copy 2FA secret"
+    className="absolute right-2 top-1/2 -translate-y-1/2"
+    onClick={async () => {
+      if (!secret) return;
+      try {
+        if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(secret);
+        } else {
+          // Fallback for non-secure contexts / older browsers
+          const ta = document.createElement("textarea");
+          ta.value = secret;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+        toast({ title: "Copied to clipboard" });
+      } catch {
+        toast({ title: "Copy failed", description: "Please copy the code manually.", variant: "destructive" });
+      }
+    }}
+  >
+    <Clipboard className="h-4 w-4" />
+  </Button>
+</div>
                   </div>
                   <Separator className="my-4" />
                   <div className="space-y-2 mt-4">

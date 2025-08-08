@@ -13,7 +13,7 @@ import { DEFAULT_FILTERS } from "@/lib/search-utils";
 export default async function HomePage() {
   const { data: initialListings } = await getFilteredListingsAction({
     page: 1,
-    pageSize: 8,
+    pageSize: 20,
     filters: DEFAULT_FILTERS,
     sortBy: "newest",
   });

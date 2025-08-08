@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         .from("transactions")
         .update({
           status: transactionStatus,
-          reference: gateway_response || reference,
+          reference: reference,
           updated_at: new Date().toISOString(),
         })
         .eq("reference", reference);

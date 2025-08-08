@@ -27,6 +27,7 @@ import {
   User,
   Trash2,
   Loader2,
+  TriangleAlert,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
@@ -59,7 +60,7 @@ interface FormData {
 }
 
 function AccountDetails() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: accountData } = useSuspenseQuery({
@@ -85,6 +86,7 @@ function AccountDetails() {
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
   const [twoFASaving, setTwoFASaving] = useState(false);
   const [verificationCodeError, setVerificationCodeError] = useState(false);
@@ -92,6 +94,11 @@ function AccountDetails() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [emailSaving, setEmailSaving] = useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<'confirm' | 'deleting' | 'success'>('confirm');
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (accountData?.formData) {
@@ -105,6 +112,7 @@ function AccountDetails() {
     setSaving(true);
     await updateAccount(formData);
     await queryClient.invalidateQueries({ queryKey: ["accountData", user.id] });
+    await refreshProfile();
     setSaving(false);
     toast({
       title: "Success",
@@ -112,9 +120,38 @@ function AccountDetails() {
     });
   };
 
-  const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete your account?")) {
-      await deleteAccount();
+  const handleDelete = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirmation = async () => {
+    if (deleteConfirmation !== "delete") {
+      toast({
+        title: "Error",
+        description: "Please type 'delete' to confirm.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteStep('deleting');
+
+    const result = await deleteAccount();
+
+    if (result.success) {
+      setDeleteStep('success');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000); // 2-second delay before redirect
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to delete account.",
+        variant: "destructive",
+      });
+      setIsDeleting(false);
+      setDeleteStep('confirm');
     }
   };
 
@@ -129,6 +166,7 @@ function AccountDetails() {
         await queryClient.invalidateQueries({
           queryKey: ["accountData", user.id],
         });
+        await refreshProfile();
         toast({
           title: "Profile picture updated",
           description: "Your profile picture has been successfully updated.",
@@ -198,10 +236,11 @@ function AccountDetails() {
 
   const handleEnable2FA = async () => {
     setTwoFASaving(true);
-    const { success, message, qrCode } = await enable2FA();
+    const { success, message, qrCode, secret } = await enable2FA();
     setTwoFASaving(false);
     if (success && qrCode) {
       setQrCode(qrCode);
+      setSecret(secret || null);
       toast({
         title: "Success",
         description: message,
@@ -738,6 +777,11 @@ function AccountDetails() {
                     className="mx-auto w-48 h-48"
                   />
                   <Separator className="my-4" />
+                  <div className="text-center text-sm text-muted-foreground break-all">
+                    <p className="mb-2">Or copy this code into your authenticator app:</p>
+                    <code className="font-mono bg-muted p-2 rounded-md select-all">{secret}</code>
+                  </div>
+                  <Separator className="my-4" />
                   <div className="space-y-2 mt-4">
                     <Label htmlFor="verification-code">Verification Code</Label>
                     <Input
@@ -842,6 +886,62 @@ function AccountDetails() {
               {emailSaving ? "Saving..." : "Change Email"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Modal */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="w-[75%] mx-auto rounded-lg sm:max-w-[425px]">
+          {deleteStep === 'confirm' && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-center text-destructive">Are you sure?</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4 text-center">
+                <TriangleAlert className="h-16 w-16 text-destructive mx-auto" />
+                <p className="text-muted-foreground">
+                  This action is permanent and cannot be undone.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="delete-confirmation">Please type &quot;delete&quot; to confirm.</Label>
+                  <Input
+                    id="delete-confirmation"
+                    value={deleteConfirmation}
+                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter className="mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteConfirmation}
+                  disabled={deleteConfirmation !== "delete"}
+                >
+                  Delete Me
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+
+          {deleteStep === 'deleting' && (
+            <div className="space-y-4 py-4 text-center">
+              <Loader2 className="h-16 w-16 animate-spin text-destructive mx-auto" />
+              <p className="text-muted-foreground">Deleting...</p>
+            </div>
+          )}
+
+          {deleteStep === 'success' && (
+            <div className="space-y-4 py-4 text-center">
+              <h2 className="text-2xl font-bold">Goodbye 👋</h2>
+              <p className="text-muted-foreground">Till we meet again.</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

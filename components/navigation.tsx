@@ -42,9 +42,9 @@ const Logo = () => {
       <Image
         src="/kikwetu_light.png"
         alt="Kikwetu Logo"
-        width={144}
-        height={48}
-        className="h-12 w-auto"
+        width={216}
+        height={72}
+        className="h-18 w-auto"
       />
     );
   }
@@ -53,9 +53,9 @@ const Logo = () => {
     <Image
       src={logoSrc}
       alt="Kikwetu Logo"
-      width={120}
-      height={40}
-      className="h-10 w-auto"
+      width={180}
+      height={60}
+      className="h-15 w-auto"
     />
   );
 };
@@ -198,7 +198,7 @@ export default function Navigation() {
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left">
+          <SheetContent side="left" className="z-[1002]">
             <div className="flex flex-col gap-6 py-4">
               <Link href="/" className="flex items-center space-x-2">
                 <Logo />
@@ -266,7 +266,7 @@ export default function Navigation() {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-[1001] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <DesktopNav />
     </header>
   );

@@ -30,7 +30,7 @@ export function ListingMediaGallery({ images, videos = [], className }: MediaGal
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-muted max-w-full mx-auto max-h-[70vh]">
+      <div className="relative overflow-hidden rounded-lg bg-muted max-w-full mx-auto max-h-[70vh]">
         {currentMedia.type === "image" ? (
           <Image src={currentMedia.src || "/placeholder.svg"} alt="Listing image" fill className="object-contain" />
         ) : (

@@ -117,6 +117,11 @@ export default function PaymentPage() {
       setTransaction(result.transaction);
       toast({ title: "Payment Initiated", description: "Please check your phone to complete the payment." });
 
+      if (paymentMethod === "paystack" && result.authorization_url) {
+        router.push(result.authorization_url);
+        return;
+      }
+
       setTimeout(() => {
         if (transaction?.status !== "completed") {
             setShowTimeoutOptions(true);

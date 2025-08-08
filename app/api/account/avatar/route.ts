@@ -49,9 +49,10 @@ export async function PUT(request: Request) {
   }
 
   try {
+    const cacheBustedUrl = `${avatarUrl}?t=${new Date().getTime()}`;
     const { error } = await supabase
       .from("profiles")
-      .update({ avatar_url: avatarUrl })
+      .update({ avatar_url: cacheBustedUrl })
       .eq("id", user.id);
 
     if (error) {

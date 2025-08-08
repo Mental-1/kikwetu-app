@@ -22,6 +22,7 @@ export async function enable2FA() {
     success: true,
     message: "Scan the QR code with your authenticator app and enter the code to verify.",
     qrCode: data.totp.qr_code,
+    secret: data.totp.secret,
   };
 }
 

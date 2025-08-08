@@ -125,11 +125,15 @@ const fetchListings = useCallback(async (location: UserLocation) => {
 
     if (userLocation) {
       return (
-        <>
+        <div className="relative w-full h-full">
           {mapError && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+            <div
+              className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/50"
+              role="alert"
+              aria-live="assertive"
+            >
               <div className="w-3/4 sm:max-w-sm mx-auto p-4 bg-background rounded-lg shadow-md text-center">
-                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <AlertCircle aria-hidden="true" className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-destructive mb-2">Map Error</h3>
                 <p className="text-muted-foreground mb-4">{mapError}</p>
                 <Button onClick={loadMapData}>Try Again</Button>
@@ -142,8 +146,9 @@ const fetchListings = useCallback(async (location: UserLocation) => {
             selectedListingId={selectedListing}
             onMarkerClick={(id) => setSelectedListing(id)}
           />
-        </>
+        </div>
       );
+    }
     }
     return null; // Should not be reached
   };

@@ -49,7 +49,9 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const cacheBustedUrl = `${avatarUrl}?t=${new Date().getTime()}`;
+    const url = new URL(avatarUrl);
+    url.searchParams.set("t", Date.now().toString());
+    const cacheBustedUrl = url.toString();
     const { error } = await supabase
       .from("profiles")
       .update({ avatar_url: cacheBustedUrl })

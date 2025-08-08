@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 type Enable2FAResponse = 
   | { success: true; message: string; qrCode: string; secret: string; } 
-  | { success: false; message: string; qrCode: null; secret?: never; };
+  | { success: false; message: string; qrCode: null; secret: null; };
 
 export async function enable2FA(): Promise<Enable2FAResponse> {
   const supabase = await getSupabaseServer();
@@ -19,6 +19,7 @@ export async function enable2FA(): Promise<Enable2FAResponse> {
       success: false,
       message: "Failed to enroll 2FA.",
       qrCode: null,
+      secret: null,
     };
   }
 

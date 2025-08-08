@@ -155,8 +155,9 @@ function AccountDetails() {
         description: e?.message || "Failed to delete account.",
         variant: "destructive",
       });
-      setIsDeleting(false);
       setDeleteStep('confirm');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -749,7 +750,7 @@ function AccountDetails() {
           </div>
           <DialogFooter className="mt-4">
             <Button
-              variant="destructive"
+              variant="outline"
               onClick={() => setShowPasswordModal(false)}
             >
               Cancel
@@ -860,7 +861,7 @@ function AccountDetails() {
               </Button>
             )}
             <Button
-              variant="destructive"
+              variant="outline"
               onClick={() => {
                 setShow2FAModal(false);
                 setQrCode(null);
@@ -894,7 +895,7 @@ function AccountDetails() {
             </div>
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="destructive" onClick={() => setShowEmailModal(false)}>
+            <Button variant="outline" onClick={() => setShowEmailModal(false)}>
               Cancel
             </Button>
             <Button onClick={handleEmailChange} disabled={emailSaving} className="mb-4">

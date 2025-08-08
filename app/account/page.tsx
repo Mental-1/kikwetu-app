@@ -147,7 +147,7 @@ function AccountDetails() {
     } else {
       toast({
         title: "Error",
-        description: result.error || "Failed to delete account.",
+        description: result.message || "Failed to delete account.",
         variant: "destructive",
       });
       setIsDeleting(false);

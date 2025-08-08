@@ -19,11 +19,6 @@ const config = {
   		}
   	},
   	extend: {
-  		zIndex: {
-  			header: '1001',
-  			menu: '1003',
-  			overlay: '1004',
-  		},
   		colors: {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',

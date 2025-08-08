@@ -115,10 +115,15 @@ export default function PaymentPage() {
       }
 
       setTransaction(result.transaction);
-      toast({ title: "Payment Initiated", description: "Please check your phone to complete the payment." });
 
-      if (paymentMethod === "paystack" && result.authorization_url) {
-        router.push(result.authorization_url);
+      if (paymentMethod === "paystack") {
+        toast({ title: "Redirecting to Paystack", description: "Complete your payment on the Paystack page." });
+      } else {
+        toast({ title: "Payment Initiated", description: "Please check your phone to complete the payment." });
+      }
+
+      if (paymentMethod === "paystack" && typeof result.authorization_url === "string") {
+        window.location.assign(result.authorization_url);
         return;
       }
 

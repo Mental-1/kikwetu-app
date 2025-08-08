@@ -47,6 +47,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 
 // Type definitions
@@ -62,6 +63,7 @@ interface FormData {
 function AccountDetails() {
   const { user, profile, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { data: accountData } = useSuspenseQuery({
     queryKey: ["accountData", user?.id],
@@ -137,17 +139,20 @@ function AccountDetails() {
     setIsDeleting(true);
     setDeleteStep('deleting');
 
-    const result = await deleteAccount();
-
-    if (result.success) {
-      setDeleteStep('success');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 2000); // 2-second delay before redirect
-    } else {
+    try {
+      const result = await deleteAccount();
+      if (result?.success) {
+        setDeleteStep('success');
+        setTimeout(() => {
+          router.replace('/');
+        }, 2000);
+      } else {
+        throw new Error(result?.message || 'Failed to delete account.');
+      }
+    } catch (e: any) {
       toast({
         title: "Error",
-        description: result.message || "Failed to delete account.",
+        description: e?.message || "Failed to delete account.",
         variant: "destructive",
       });
       setIsDeleting(false);
@@ -272,6 +277,7 @@ function AccountDetails() {
       setIs2FAEnabled(true);
       setShow2FAModal(false);
       setQrCode(null);
+      setSecret(null);
       setVerificationCode("");
       toast({
         title: "Success",
@@ -743,7 +749,7 @@ function AccountDetails() {
           </div>
           <DialogFooter className="mt-4">
             <Button
-              variant="outline"
+              variant="destructive"
               onClick={() => setShowPasswordModal(false)}
             >
               Cancel
@@ -853,7 +859,16 @@ function AccountDetails() {
                 {twoFASaving ? "Disabling..." : "Disable 2FA"}
               </Button>
             )}
-            <Button variant="outline" onClick={() => setShow2FAModal(false)}>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShow2FAModal(false);
+                setQrCode(null);
+                setSecret(null);
+                setVerificationCode("");
+                setVerificationCodeError(false);
+              }}
+            >
               Close
             </Button>
           </DialogFooter>
@@ -879,7 +894,7 @@ function AccountDetails() {
             </div>
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowEmailModal(false)}>
+            <Button variant="destructive" onClick={() => setShowEmailModal(false)}>
               Cancel
             </Button>
             <Button onClick={handleEmailChange} disabled={emailSaving} className="mb-4">
@@ -890,8 +905,22 @@ function AccountDetails() {
       </Dialog>
 
       {/* Delete Account Modal */}
-      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="w-[75%] mx-auto rounded-lg sm:max-w-[425px]">
+      <Dialog
+        open={showDeleteModal}
+        onOpenChange={(open) => {
+          if (!isDeleting) setShowDeleteModal(open);
+          if (!open) {
+            setDeleteStep('confirm');
+            setDeleteConfirmation('');
+            setIsDeleting(false);
+          }
+        }}
+      >
+        <DialogContent
+          className="w-[75%] mx-auto rounded-lg sm:max-w-[425px]"
+          onEscapeKeyDown={(e) => isDeleting && e.preventDefault()}
+          onInteractOutside={(e) => isDeleting && e.preventDefault()}
+        >
           {deleteStep === 'confirm' && (
             <>
               <DialogHeader>

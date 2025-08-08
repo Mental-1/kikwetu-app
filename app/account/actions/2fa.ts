@@ -3,7 +3,11 @@
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function enable2FA() {
+type Enable2FAResponse = 
+  | { success: true; message: string; qrCode: string; secret: string; } 
+  | { success: false; message: string; qrCode: null; secret?: never; };
+
+export async function enable2FA(): Promise<Enable2FAResponse> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",

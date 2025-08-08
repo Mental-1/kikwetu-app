@@ -13,7 +13,7 @@ import { DEFAULT_FILTERS } from "@/lib/search-utils";
 export default async function HomePage() {
   const { data: initialListings } = await getFilteredListingsAction({
     page: 1,
-    pageSize: 20,
+    pageSize: 10,
     filters: DEFAULT_FILTERS,
     sortBy: "newest",
   });
@@ -38,9 +38,19 @@ export default async function HomePage() {
       </section>
 
       {/* Categories Section */}
-      <Suspense fallback={<CategoriesSkeleton />}>
-        <CategoriesSection />
-      </Suspense>
+      <section className="py-10">
+        <div className="container px-4">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Categories</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/listings">View All</Link>
+            </Button>
+          </div>
+          <Suspense fallback={<CategoriesSkeleton />}>
+            <CategoriesSection />
+          </Suspense>
+        </div>
+      </section>
       {/* Recent Listings Section */}
       <section className="py-10">
         <div className="container px-4">

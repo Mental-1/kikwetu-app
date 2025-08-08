@@ -57,40 +57,32 @@ export default function CategoriesSection() {
   }
 
   return (
-    <section className="py-10">
-      <div className="container px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Categories</h2>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/listings">View All</Link>
-          </Button>
-        </div>
-        {error && !categories?.length && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex justify-between items-center">
-              Failed to load categories from server. Displaying fallback data.
-              <Button onClick={() => refetch()} variant="outline" size="sm">
-                Retry
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-        <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-          {categoriesToDisplay.map((category) => (
-            <Link key={category.id} href={`/listings?category=${category.id}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer border-3 border-muted bg-muted/50">
-                <CardContent className="p-3 text-center">
-                  <div className="text-2xl mb-1">{category.icon || "📦"}</div>
-                  <h3 className="text-xs font-medium truncate">
-                    {category.name}
-                  </h3>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+    <>
+      {error && !categories?.length && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex justify-between items-center">
+            Failed to load categories from server. Displaying fallback data.
+            <Button onClick={() => refetch()} variant="outline" size="sm">
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+        {categoriesToDisplay.map((category) => (
+          <Link key={category.id} href={`/listings?category=${category.id}`}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-3 border-muted bg-muted/50">
+              <CardContent className="p-3 text-center">
+                <div className="text-2xl mb-1">{category.icon || "📦"}</div>
+                <h3 className="text-xs font-medium truncate">
+                  {category.name}
+                </h3>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
-    </section>
+    </>
   );
 }

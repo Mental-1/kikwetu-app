@@ -117,7 +117,7 @@ export default function Navigation() {
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56 z-menu" align="end" forceMount>
+        <DropdownMenuContent className="w-56 z-[1002]" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">
@@ -198,7 +198,7 @@ export default function Navigation() {
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="z-menu">
+          <SheetContent side="left" className="z-[1002]">
             <div className="flex flex-col gap-6 py-4">
               <Link href="/" className="flex items-center space-x-2">
                 <Logo />
@@ -266,7 +266,7 @@ export default function Navigation() {
   );
 
   return (
-    <header className="sticky top-0 z-header w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-[1001] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <DesktopNav />
     </header>
   );

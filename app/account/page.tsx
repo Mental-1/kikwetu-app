@@ -52,24 +52,42 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { TwoFAProvider, useTwoFA } from '@/contexts/two-fa-context';
-import { copyText } from '@/lib/utils/clipboard';
+import { TwoFAProvider, useTwoFA } from "@/contexts/two-fa-context";
+import { copyText } from "@/lib/utils/clipboard";
 import dynamic from "next/dynamic";
 
-const EmailVerificationModal = dynamic(() => import('@/components/verifications/VerificationModals').then(mod => mod.EmailVerificationModal), {
-  loading: () => null,
-  ssr: false
-});
+const EmailVerificationModal = dynamic(
+  () =>
+    import("@/components/verifications/VerificationModals").then(
+      (mod) => mod.EmailVerificationModal,
+    ),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
-const PhoneVerificationModal = dynamic(() => import('@/components/verifications/VerificationModals').then(mod => mod.PhoneVerificationModal), {
-  loading: () => null,
-  ssr: false
-});
+const PhoneVerificationModal = dynamic(
+  () =>
+    import("@/components/verifications/VerificationModals").then(
+      (mod) => mod.PhoneVerificationModal,
+    ),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
-const IdentityVerificationModal = dynamic(() => import('@/components/verifications/VerificationModals').then(mod => mod.IdentityVerificationModal), {
-  loading: () => null,
-  ssr: false
-});
+const IdentityVerificationModal = dynamic(
+  () =>
+    import("@/components/verifications/VerificationModals").then(
+      (mod) => mod.IdentityVerificationModal,
+    ),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 // Type definitions
 interface FormData {
@@ -108,7 +126,9 @@ function AccountDetails() {
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   const [show2FAModal, setShow2FAModal] = useState(false);
-  const [is2FAEnabled, setIs2FAEnabled] = useState(profile?.mfa_enabled ?? false);
+  const [is2FAEnabled, setIs2FAEnabled] = useState(
+    profile?.mfa_enabled ?? false,
+  );
   const [verificationCode, setVerificationCode] = useState("");
   const [twoFASaving, setTwoFASaving] = useState(false);
   const [verificationCodeError, setVerificationCodeError] = useState(false);
@@ -118,14 +138,18 @@ function AccountDetails() {
   const [emailSaving, setEmailSaving] = useState(false);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteStep, setDeleteStep] = useState<'confirm' | 'deleting' | 'success'>('confirm');
+  const [deleteStep, setDeleteStep] = useState<
+    "confirm" | "deleting" | "success"
+  >("confirm");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
-  const [showPhoneVerificationModal, setShowPhoneVerificationModal] = useState(false);
-  const [showIdentityVerificationModal, setShowIdentityVerificationModal] = useState(false);
+  const [showEmailVerificationModal, setShowEmailVerificationModal] =
+    useState(false);
+  const [showPhoneVerificationModal, setShowPhoneVerificationModal] =
+    useState(false);
+  const [showIdentityVerificationModal, setShowIdentityVerificationModal] =
+    useState(false);
   const [showSecret, setShowSecret] = useState(false);
-
 
   useEffect(() => {
     if (accountData?.formData) {
@@ -162,17 +186,17 @@ function AccountDetails() {
     }
 
     setIsDeleting(true);
-    setDeleteStep('deleting');
+    setDeleteStep("deleting");
 
     try {
       const result = await deleteAccount();
       if (result?.success) {
-        setDeleteStep('success');
+        setDeleteStep("success");
         setTimeout(() => {
-          router.replace('/');
+          router.replace("/");
         }, 2000);
       } else {
-        throw new Error(result?.message || 'Failed to delete account.');
+        throw new Error(result?.message || "Failed to delete account.");
       }
     } catch (e: any) {
       toast({
@@ -180,7 +204,7 @@ function AccountDetails() {
         description: e?.message || "Failed to delete account.",
         variant: "destructive",
       });
-      setDeleteStep('confirm');
+      setDeleteStep("confirm");
     } finally {
       setIsDeleting(false);
     }
@@ -278,7 +302,11 @@ function AccountDetails() {
         toast({ title: "Error", description: message, variant: "destructive" });
       }
     } catch {
-      toast({ title: "Error", description: "Failed to enable 2FA.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to enable 2FA.",
+        variant: "destructive",
+      });
     } finally {
       setTwoFASaving(false);
     }
@@ -315,7 +343,11 @@ function AccountDetails() {
         });
       }
     } catch {
-      toast({ title: "Error", description: "Failed to verify 2FA.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to verify 2FA.",
+        variant: "destructive",
+      });
     } finally {
       setTwoFASaving(false);
     }
@@ -344,7 +376,11 @@ function AccountDetails() {
         toast({ title: "Error", description: message, variant: "destructive" });
       }
     } catch {
-      toast({ title: "Error", description: "Failed to disable 2FA.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to disable 2FA.",
+        variant: "destructive",
+      });
     } finally {
       setTwoFASaving(false);
       clearTwoFAState();
@@ -470,7 +506,9 @@ function AccountDetails() {
                     <p className="text-xs text-muted-foreground">Items Sold</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-primary">{profile?.listing_count || 0}</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {profile?.listing_count || 0}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       Active Listings
                     </p>
@@ -623,7 +661,7 @@ function AccountDetails() {
                   <div>
                     <h4 className="font-medium">Password</h4>
                     <p className="text-sm text-muted-foreground">
-                      Last changed 3 months ago
+                      Last changed 1 month ago
                     </p>
                   </div>
                   <Button
@@ -669,11 +707,17 @@ function AccountDetails() {
                     <div>
                       <h4 className="font-medium">Email Verification</h4>
                       <p className="text-sm text-muted-foreground">
-                        {profile?.email_verified ? "Your email is verified" : "Your email is not verified"}
+                        {profile?.email_verified
+                          ? "Your email is verified"
+                          : "Your email is not verified"}
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setShowEmailVerificationModal(true)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEmailVerificationModal(true)}
+                  >
                     {profile?.email_verified ? "Resend verification" : "Verify"}
                   </Button>
                 </div>
@@ -711,7 +755,12 @@ function AccountDetails() {
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" disabled title="Coming soon">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    title="Coming soon"
+                  >
                     Coming soon
                   </Button>
                 </div>
@@ -788,7 +837,11 @@ function AccountDetails() {
             >
               Cancel
             </Button>
-            <Button onClick={handleChangePassword} disabled={passwordSaving} className="mb-4">
+            <Button
+              onClick={handleChangePassword}
+              disabled={passwordSaving}
+              className="mb-4"
+            >
               {passwordSaving ? "Saving..." : "Change Password"}
             </Button>
           </DialogFooter>
@@ -799,117 +852,126 @@ function AccountDetails() {
       <Dialog open={show2FAModal} onOpenChange={setShow2FAModal}>
         <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-center">Two-Factor Authentication</DialogTitle>
+            <DialogTitle className="text-center">
+              Two-Factor Authentication
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            {!is2FAEnabled ? (
-              qrCode ? (
-                <div className="text-center">
-                  <p className="mb-4">
-                    Scan the QR code with your authenticator app:
-                  </p>
-                  <Separator className="my-4" />
-                  <Image
-                    src={qrCode}
-                    alt="QR Code"
-                    width={192}
-                    height={192}
-                    className="mx-auto w-48 h-48"
-                  />
-                  <Separator className="my-4" />
-                  <div className="text-center text-sm text-muted-foreground break-all">
-                    <p className="mb-2">Or copy this code into your authenticator app:</p>
-                    <div className="relative flex items-center justify-center max-w-full group">
-                      <div className={cn("overflow-x-auto whitespace-nowrap break-normal rounded-md bg-muted p-2 pr-8 font-mono text-xs sm:text-sm select-all",
-                        !showSecret && "blur-sm group-hover:blur-none transition"
-                      )}>
-                        {secret}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Copy 2FA secret"
-                        title="Copy 2FA secret"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 h-full"
-                        onClick={async () => {
-                          if (!secret) return;
-                          try {
-                            await copyText(secret);
-                            toast({ title: "Copied to clipboard" });
-                          } catch {
-                            toast({ title: "Copy failed", description: "Please copy the code manually.", variant: "destructive" });
-                          }
-                        }}
-                      >
-                        <Clipboard className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={() => setShowSecret(!showSecret)}
-                      className="mt-2"
-                    >
-                      {showSecret ? "Hide" : "Reveal"}
-                    </Button>
-                    </div>
-                  </div>
-                  <Separator className="my-4" />
-                  <div className="space-y-2 mt-4">
-                    <Label htmlFor="verification-code">Verification Code</Label>
-                    <Input
-                      id="verification-code"
-                      value={verificationCode}
-                      onChange={(e) => {
-                        setVerificationCode(e.target.value);
-                        setVerificationCodeError(false);
-                      }}
-                      placeholder="Enter code from app"
-                      className={cn("w-full", { "border-destructive": verificationCodeError })}
-                    />
-                    {verificationCodeError && (
-                      <p className="text-sm text-destructive mt-1">Verification code is required.</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <p className="mb-4">
-                    Enable two-factor authentication for added security.
-                  </p>
-                </div>
-              )
-            ) : (
+          {!is2FAEnabled ? (
+            qrCode ? (
               <div className="text-center">
                 <p className="mb-4">
-                  Two-Factor Authentication is currently enabled.
+                  Scan the QR code with your authenticator app:
                 </p>
+                <Separator className="my-4" />
+                <Image
+                  src={qrCode}
+                  alt="QR Code"
+                  width={192}
+                  height={192}
+                  className="mx-auto w-48 h-48"
+                />
+                <Separator className="my-4" />
+                <div className="text-center text-sm text-muted-foreground break-all">
+                  <p className="mb-2">
+                    Or copy this code into your authenticator app:
+                  </p>
+                  <div className="relative flex items-center justify-center max-w-full group">
+                    <div
+                      className={cn(
+                        "overflow-x-auto whitespace-nowrap break-normal rounded-md bg-muted p-2 pr-8 font-mono text-xs sm:text-sm select-all",
+                        !showSecret &&
+                          "blur-sm group-hover:blur-none transition",
+                      )}
+                    >
+                      {secret}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Copy 2FA secret"
+                      title="Copy 2FA secret"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-full"
+                      onClick={async () => {
+                        if (!secret) return;
+                        try {
+                          await copyText(secret);
+                          toast({ title: "Copied to clipboard" });
+                        } catch {
+                          toast({
+                            title: "Copy failed",
+                            description: "Please copy the code manually.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Clipboard className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => setShowSecret(!showSecret)}
+                    className="mt-2"
+                  >
+                    {showSecret ? "Hide" : "Reveal"}
+                  </Button>
+                </div>
+                <Separator className="my-4" />
                 <div className="space-y-2 mt-4">
-                  <Label htmlFor="disable-code">Verification Code</Label>
+                  <Label htmlFor="verification-code">Verification Code</Label>
                   <Input
-                    id="disable-code"
+                    id="verification-code"
                     value={verificationCode}
                     onChange={(e) => {
                       setVerificationCode(e.target.value);
                       setVerificationCodeError(false);
                     }}
-                    placeholder="Enter code from app to disable"
-                    className={verificationCodeError ? "border-destructive" : ""}
+                    placeholder="Enter code from app"
                   />
                   {verificationCodeError && (
-                    <p className="text-sm text-destructive mt-1">Verification code is required.</p>
+                    <p className="text-sm text-destructive mt-1">
+                      Verification code is required.
+                    </p>
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            ) : (
+              <div className="text-center">
+                <p className="mb-4">
+                  Enable two-factor authentication for added security.
+                </p>
+              </div>
+            )
+          ) : (
+            <div className="text-center">
+              <p className="mb-4">
+                Two-Factor Authentication is currently enabled.
+              </p>
+              <div className="space-y-2 mt-4">
+                <Label htmlFor="disable-code">Verification Code</Label>
+                <Input
+                  id="disable-code"
+                  value={verificationCode}
+                  onChange={(e) => {
+                    setVerificationCode(e.target.value);
+                    setVerificationCodeError(false);
+                  }}
+                  placeholder="Enter code from app to disable"
+                  className={verificationCodeError ? "border-destructive" : ""}
+                />
+                {verificationCodeError && (
+                  <p className="text-sm text-destructive mt-1">
+                    Verification code is required.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
           <DialogFooter className="flex justify-end gap-2">
             {!is2FAEnabled ? (
               qrCode ? (
-                <Button
-                  onClick={handleVerify2FA}
-                  disabled={twoFASaving}
-                >
+                <Button onClick={handleVerify2FA} disabled={twoFASaving}>
                   {twoFASaving ? "Verifying..." : "Verify and Enable 2FA"}
                 </Button>
               ) : (
@@ -943,7 +1005,9 @@ function AccountDetails() {
       <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
         <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-center">Change Email Address</DialogTitle>
+            <DialogTitle className="text-center">
+              Change Email Address
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -961,7 +1025,11 @@ function AccountDetails() {
             <Button variant="outline" onClick={() => setShowEmailModal(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEmailChange} disabled={emailSaving} className="mb-4">
+            <Button
+              onClick={handleEmailChange}
+              disabled={emailSaving}
+              className="mb-4"
+            >
               {emailSaving ? "Saving..." : "Change Email"}
             </Button>
           </DialogFooter>
@@ -974,8 +1042,8 @@ function AccountDetails() {
         onOpenChange={(open) => {
           if (!isDeleting) setShowDeleteModal(open);
           if (!open) {
-            setDeleteStep('confirm');
-            setDeleteConfirmation('');
+            setDeleteStep("confirm");
+            setDeleteConfirmation("");
             setIsDeleting(false);
           }
         }}
@@ -985,10 +1053,12 @@ function AccountDetails() {
           onEscapeKeyDown={(e) => isDeleting && e.preventDefault()}
           onInteractOutside={(e) => isDeleting && e.preventDefault()}
         >
-          {deleteStep === 'confirm' && (
+          {deleteStep === "confirm" && (
             <div>
               <DialogHeader>
-                <DialogTitle className="text-center text-destructive">Are you sure?</DialogTitle>
+                <DialogTitle className="text-center text-destructive">
+                  Are you sure?
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4 text-center">
                 <TriangleAlert className="h-16 w-16 text-destructive mx-auto" />
@@ -996,7 +1066,9 @@ function AccountDetails() {
                   This action is permanent and cannot be undone.
                 </p>
                 <div className="space-y-2">
-                  <Label htmlFor="delete-confirmation">Please type &quot;delete&quot; to confirm.</Label>
+                  <Label htmlFor="delete-confirmation">
+                    Please type &quot;delete&quot; to confirm.
+                  </Label>
                   <Input
                     id="delete-confirmation"
                     value={deleteConfirmation}
@@ -1022,7 +1094,7 @@ function AccountDetails() {
             </div>
           )}
 
-          {deleteStep === 'deleting' && (
+          {deleteStep === "deleting" && (
             <div className="flex flex-col items-center space-y-4 py-4 text-center">
               <Clock
                 className="h-16 w-16 text-destructive mx-auto animate-pulse"
@@ -1032,7 +1104,7 @@ function AccountDetails() {
             </div>
           )}
 
-          {deleteStep === 'success' && (
+          {deleteStep === "success" && (
             <div className="space-y-4 py-4 text-center">
               <h2 className="text-2xl font-bold">Goodbye 👋</h2>
               <p className="text-muted-foreground">Till we meet again.</p>
@@ -1042,13 +1114,23 @@ function AccountDetails() {
       </Dialog>
 
       {showEmailVerificationModal && (
-        <EmailVerificationModal showModal={showEmailVerificationModal} setShowModal={setShowEmailVerificationModal} userEmail={user?.email || ""} />
+        <EmailVerificationModal
+          showModal={showEmailVerificationModal}
+          setShowModal={setShowEmailVerificationModal}
+          userEmail={user?.email || ""}
+        />
       )}
       {showPhoneVerificationModal && (
-        <PhoneVerificationModal showModal={showPhoneVerificationModal} setShowModal={setShowPhoneVerificationModal} />
+        <PhoneVerificationModal
+          showModal={showPhoneVerificationModal}
+          setShowModal={setShowPhoneVerificationModal}
+        />
       )}
       {showIdentityVerificationModal && (
-        <IdentityVerificationModal showModal={showIdentityVerificationModal} setShowModal={setShowIdentityVerificationModal} />
+        <IdentityVerificationModal
+          showModal={showIdentityVerificationModal}
+          setShowModal={setShowIdentityVerificationModal}
+        />
       )}
     </div>
   );

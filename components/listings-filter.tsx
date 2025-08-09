@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, memo, useCallback, useRef } from "react";
 import { Filter as FilterIcon, Search, X, AlertCircle } from "lucide-react";
-import { debounce } from "lodash";
+import debounce from "lodash.debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -63,10 +63,6 @@ export const ListingsFilter = memo(
           : filters.priceRange.max || "",
     });
 
-    // Use refs to maintain debounced function instances
-    const debouncedSearchRef = useRef<ReturnType<typeof debounce> | null>(null);
-    const debouncedPriceRef = useRef<ReturnType<typeof debounce> | null>(null);
-
     // Use the category hooks
     const {
       data: categories = [],
@@ -92,31 +88,25 @@ export const ListingsFilter = memo(
     // Memoized condition options to prevent unnecessary re-renders
     const conditionOptions = useMemo(() => ["new", "used", "refurbished"], []);
 
-    // Create debounced functions with useCallback to prevent recreation
-    const debouncedSearchUpdate = useCallback(
+    const debouncedSearchUpdate = useRef(
       debounce((query: string) => {
         updateFilters({ searchQuery: query.trim() });
-      }, DEBOUNCE_DELAY),
-      [updateFilters],
-    );
+      }, DEBOUNCE_DELAY)
+    ).current;
 
-    const debouncedPriceUpdate = useCallback(
+    const debouncedPriceUpdate = useRef(
       debounce((priceRange: PriceRange) => {
         updateFilters({ priceRange });
-      }, DEBOUNCE_DELAY),
-      [updateFilters],
-    );
+      }, DEBOUNCE_DELAY)
+    ).current;
 
-    // Store debounced functions in refs to avoid cleanup issues
+    // Cleanup debounced functions on unmount
     useEffect(() => {
-      debouncedSearchRef.current = debouncedSearchUpdate;
-      debouncedPriceRef.current = debouncedPriceUpdate;
-
       return () => {
-        debouncedSearchRef.current?.cancel();
-        debouncedPriceRef.current?.cancel();
+        debouncedSearchUpdate?.cancel();
+        debouncedPriceUpdate?.cancel();
       };
-    }, [debouncedSearchUpdate, debouncedPriceUpdate]);
+    }, []);
 
     // Initialize search input with current search query
     useEffect(() => {
@@ -142,17 +132,17 @@ export const ListingsFilter = memo(
 
     const handleSearchChange = useCallback((value: string) => {
       setSearchInput(value);
-      debouncedSearchRef.current?.(value);
-    }, []);
+      debouncedSearchUpdate?.(value);
+    }, [debouncedSearchUpdate]);
 
     const handleSearchSubmit = useCallback(
       (e: React.FormEvent) => {
         e.preventDefault();
         // Cancel debounced call and update immediately
-        debouncedSearchRef.current?.cancel();
+        debouncedSearchUpdate?.cancel();
         updateFilters({ searchQuery: searchInput.trim() });
       },
-      [searchInput, updateFilters],
+      [searchInput, updateFilters, debouncedSearchUpdate],
     );
 
     const handleCategoryChange = useCallback(
@@ -210,10 +200,10 @@ export const ListingsFilter = memo(
             max: field === "max" && maxValue === 0 ? NO_MAX_PRICE : maxValue,
           };
 
-          debouncedPriceRef.current?.(newPriceRange);
+          debouncedPriceUpdate?.(newPriceRange);
         }
       },
-      [priceInputs],
+      [priceInputs, debouncedPriceUpdate],
     );
 
     const handleDistanceChange = useCallback(
@@ -225,9 +215,9 @@ export const ListingsFilter = memo(
 
     const clearSearchQuery = useCallback(() => {
       setSearchInput("");
-      debouncedSearchRef.current?.cancel();
+      debouncedSearchUpdate?.cancel();
       updateFilters({ searchQuery: "" });
-    }, [updateFilters]);
+    }, [updateFilters, debouncedSearchUpdate]);
 
     const hasActiveFilters = useMemo(
       () =>

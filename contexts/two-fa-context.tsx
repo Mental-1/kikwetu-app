@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo } from 'react';
 
 interface TwoFAContextType {
   qrCode: string | null;
@@ -38,11 +38,12 @@ export function TwoFAProvider({ children }: { children: ReactNode }) {
     [qrCode, secret]
   );
 
-  return (
+    return (
     <TwoFAContext.Provider value={value}>
       {children}
     </TwoFAContext.Provider>
   );
+}
 
 export function useTwoFA() {
   const context = useContext(TwoFAContext);

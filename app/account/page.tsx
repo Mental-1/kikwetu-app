@@ -986,7 +986,7 @@ function AccountDetails() {
           onInteractOutside={(e) => isDeleting && e.preventDefault()}
         >
           {deleteStep === 'confirm' && (
-            <>
+            <div>
               <DialogHeader>
                 <DialogTitle className="text-center text-destructive">Are you sure?</DialogTitle>
               </DialogHeader>
@@ -1019,20 +1019,17 @@ function AccountDetails() {
                   Delete Me
                 </Button>
               </DialogFooter>
-            </>
+            </div>
           )}
 
           {deleteStep === 'deleting' && (
-            <output
-              className="flex flex-col items-center space-y-4 py-4 text-center"
-              aria-busy="true"
-            >
+            <div className="flex flex-col items-center space-y-4 py-4 text-center">
               <Clock
                 className="h-16 w-16 text-destructive mx-auto animate-pulse"
                 aria-hidden="true"
               />
               <span className="text-destructive">Deleting...</span>
-            </output>
+            </div>
           )}
 
           {deleteStep === 'success' && (
@@ -1045,17 +1042,16 @@ function AccountDetails() {
       </Dialog>
 
       {showEmailVerificationModal && (
-  <EmailVerificationModal showModal={showEmailVerificationModal} setShowModal={setShowEmailVerificationModal} userEmail={user?.email || ""} />
-)}
+        <EmailVerificationModal showModal={showEmailVerificationModal} setShowModal={setShowEmailVerificationModal} userEmail={user?.email || ""} />
+      )}
       {showPhoneVerificationModal && (
-  <PhoneVerificationModal showModal={showPhoneVerificationModal} setShowModal={setShowPhoneVerificationModal} />
-)}
+        <PhoneVerificationModal showModal={showPhoneVerificationModal} setShowModal={setShowPhoneVerificationModal} />
+      )}
       {showIdentityVerificationModal && (
-  <IdentityVerificationModal showModal={showIdentityVerificationModal} setShowModal={setShowIdentityVerificationModal} />
-)}
+        <IdentityVerificationModal showModal={showIdentityVerificationModal} setShowModal={setShowIdentityVerificationModal} />
+      )}
     </div>
   );
-}
 }
 
 /**

@@ -80,7 +80,7 @@ export function EmailVerificationModal({
           <Button variant="outline" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSendLink} disabled={isSending || !email} className="mb-4">
+          <Button onClick={handleSendLink} disabled={isSending || !email || !/^\S+@\S+\.\S+$/.test(email)} className="mb-4">
             {isSending ? "Sending..." : "Send Verification Link"}
           </Button>
         </DialogFooter>
@@ -130,8 +130,10 @@ export function PhoneVerificationModal({
   const [isVerifying, setIsVerifying] = useState(false);
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const sanitized = e.target.value.replace(/[^\d]/g, "");
-    setPhoneNumber(sanitized);
+    const v = e.target.value;
+    const hasPlus = v.startsWith("+");
+    const digitsOnly = v.replace(/[^\d]/g, "");
+    setPhoneNumber(hasPlus ? `+${digitsOnly}` : digitsOnly);
   };
 
   const handleSendCode = async () => {
@@ -160,6 +162,7 @@ export function PhoneVerificationModal({
 
   return (
     <Dialog open={showModal} onOpenChange={(open) => {
+      if (isSending || isVerifying) return;
       if (!open) {
         setStep(1);
         setPhoneNumber("");
@@ -194,7 +197,7 @@ export function PhoneVerificationModal({
                 id="verification-code"
                 type="text"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) => setCode(e.target.value.replace(/[^\d]/g, ""))}
                 maxLength={6}
                 placeholder="Enter the 6-digit code"
               />
@@ -206,7 +209,7 @@ export function PhoneVerificationModal({
             Cancel
           </Button>
           {step === 1 ? (
-            <Button onClick={handleSendCode} disabled={isSending || !phoneNumber} className="mb-4">
+            <Button onClick={handleSendCode} disabled={isSending || phoneNumber.length < 10} className="mb-4">
               {isSending ? "Sending..." : "Send Code"}
             </Button>
           ) : (

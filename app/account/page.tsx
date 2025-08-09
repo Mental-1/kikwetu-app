@@ -9,7 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from " @/components/ui/Input";
+import { cn } from " @/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,9 +52,24 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { EmailVerificationModal, PhoneVerificationModal, IdentityVerificationModal } from '@/components/verifications/VerificationModals';
 import { TwoFAProvider, useTwoFA } from '@/contexts/two-fa-context';
 import { copyText } from '@/lib/utils/clipboard';
+import dynamic from "next/dynamic";
+
+const EmailVerificationModal = dynamic(() => import('@/components/verifications/VerificationModals').then(mod => mod.EmailVerificationModal), {
+  loading: () => null,
+  ssr: false
+});
+
+const PhoneVerificationModal = dynamic(() => import('@/components/verifications/VerificationModals').then(mod => mod.PhoneVerificationModal), {
+  loading: () => null,
+  ssr: false
+});
+
+const IdentityVerificationModal = dynamic(() => import('@/components/verifications/VerificationModals').then(mod => mod.IdentityVerificationModal), {
+  loading: () => null,
+  ssr: false
+});
 
 // Type definitions
 interface FormData {
@@ -108,6 +124,7 @@ function AccountDetails() {
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
   const [showPhoneVerificationModal, setShowPhoneVerificationModal] = useState(false);
   const [showIdentityVerificationModal, setShowIdentityVerificationModal] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
 
   useEffect(() => {
@@ -250,21 +267,20 @@ function AccountDetails() {
 
   const handleEnable2FA = async () => {
     setTwoFASaving(true);
-    const { success, message, qrCode, secret } = await enable2FA();
-    setTwoFASaving(false);
-    if (success && qrCode && secret) {
-      setQrCode(qrCode);
-      setSecret(secret);
-      toast({
-        title: "Success",
-        description: message,
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+    try {
+      const { success, message, qrCode, secret } = await enable2FA();
+      if (success && qrCode && secret) {
+        setQrCode(qrCode);
+        // Consider not persisting `secret` in context; if kept, auto-clear via TTL (see snippet below).
+        setSecret(secret);
+        toast({ title: "Success", description: message });
+      } else {
+        toast({ title: "Error", description: message, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to enable 2FA.", variant: "destructive" });
+    } finally {
+      setTwoFASaving(false);
     }
   };
 
@@ -312,23 +328,21 @@ function AccountDetails() {
     }
     setVerificationCodeError(false);
     setTwoFASaving(true);
-    const { success, message } = await disable2FA(verificationCode);
-    setTwoFASaving(false);
-    if (success) {
-      setIs2FAEnabled(false);
-      setShow2FAModal(false);
-      setVerificationCode("");
+    try {
+      const { success, message } = await disable2FA(verificationCode);
+      if (success) {
+        setIs2FAEnabled(false);
+        setShow2FAModal(false);
+        setVerificationCode("");
+        toast({ title: "Success", description: message });
+      } else {
+        toast({ title: "Error", description: message, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to disable 2FA.", variant: "destructive" });
+    } finally {
+      setTwoFASaving(false);
       clearTwoFAState();
-      toast({
-        title: "Success",
-        description: message,
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
     }
   };
 
@@ -650,7 +664,7 @@ function AccountDetails() {
                     <div>
                       <h4 className="font-medium">Email Verification</h4>
                       <p className="text-sm text-muted-foreground">
-                        Your email is verified
+                        {profile?.email_verified ? "Your email is verified" : "Your email is not verified"}
                       </p>
                     </div>
                   </div>
@@ -671,8 +685,12 @@ function AccountDetails() {
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setShowPhoneVerificationModal(true)}>
-                    Verify
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPhoneVerificationModal(true)}
+                  >
+                    {profile?.phone_verified ? "Change number" : "Verify"}
                   </Button>
                 </div>
 
@@ -688,8 +706,8 @@ function AccountDetails() {
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setShowIdentityVerificationModal(true)}>
-                    Verify
+                  <Button variant="outline" size="sm" disabled title="Coming soon">
+                    Coming soon
                   </Button>
                 </div>
               </CardContent>
@@ -797,7 +815,9 @@ function AccountDetails() {
                   <div className="text-center text-sm text-muted-foreground break-all">
                     <p className="mb-2">Or copy this code into your authenticator app:</p>
                     <div className="relative flex items-center justify-center max-w-full">
-                      <div className="overflow-x-auto whitespace-nowrap break-normal rounded-md bg-muted p-2 pr-8 font-mono text-xs sm:text-sm select-all">
+                      <div className={cn("overflow-x-auto whitespace-nowrap break-normal rounded-md bg-muted p-2 pr-8 font-mono text-xs sm:text-sm select-all",
+                        !showSecret && "blur-sm group-hover:blur-none transition"
+                      )}>
                         {secret}
                       </div>
                       <Button
@@ -819,6 +839,15 @@ function AccountDetails() {
                         <Clipboard className="h-4 w-4" />
                       </Button>
                     </div>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => setShowSecret(!showSecret)}
+                      className="mt-2"
+                    >
+                      {showSecret ? "Hide" : "Reveal"}
+                    </Button>
+                    </div>
                   </div>
                   <Separator className="my-4" />
                   <div className="space-y-2 mt-4">
@@ -831,7 +860,7 @@ function AccountDetails() {
                         setVerificationCodeError(false);
                       }}
                       placeholder="Enter code from app"
-                      className={`w-full ${verificationCodeError ? "border-destructive" : ""}`}
+                      className={cn("w-full", { "border-destructive": verificationCodeError })}
                     />
                     {verificationCodeError && (
                       <p className="text-sm text-destructive mt-1">Verification code is required.</p>
@@ -1010,9 +1039,15 @@ function AccountDetails() {
         </DialogContent>
       </Dialog>
 
-      <EmailVerificationModal showModal={showEmailVerificationModal} setShowModal={setShowEmailVerificationModal} userEmail={user?.email || ""} />
-      <PhoneVerificationModal showModal={showPhoneVerificationModal} setShowModal={setShowPhoneVerificationModal} />
-      <IdentityVerificationModal showModal={showIdentityVerificationModal} setShowModal={setShowIdentityVerificationModal} />
+      {showEmailVerificationModal && (
+  <EmailVerificationModal showModal={showEmailVerificationModal} setShowModal={setShowEmailVerificationModal} userEmail={user?.email || ""} />
+)}
+      {showPhoneVerificationModal && (
+  <PhoneVerificationModal showModal={showPhoneVerificationModal} setShowModal={setShowPhoneVerificationModal} />
+)}
+      {showIdentityVerificationModal && (
+  <IdentityVerificationModal showModal={showIdentityVerificationModal} setShowModal={setShowIdentityVerificationModal} />
+)}
     </div>
   );
 }

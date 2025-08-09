@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface TwoFAContextType {
   qrCode: string | null;
@@ -21,6 +21,15 @@ export function TwoFAProvider({ children }: { children: ReactNode }) {
     setQrCode(null);
     setSecret(null);
   };
+
+  useEffect(() => {
+    if (!secret) return;
+    const timer = window.setTimeout(() => {
+      // Only clear the secret; keep QR if you still want to show it.
+      setSecret(null);
+    }, 5 * 60 * 1000); // 5 minutes
+    return () => clearTimeout(timer);
+  }, [secret]);
 
   return (
     <TwoFAContext.Provider value={{ qrCode, secret, setQrCode, setSecret, clearTwoFAState }}>

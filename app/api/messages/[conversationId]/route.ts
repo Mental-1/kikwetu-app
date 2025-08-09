@@ -3,9 +3,23 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { MessageEncryption } from "@/lib/encryption";
 import { z } from "zod";
 import { cookies } from "next/headers";
-import pino from 'pino';
+import pino from "pino";
 
-const logger = pino();
+const logger = pino({
+  level: process.env.LOG_LEVEL ?? "info",
+  base: undefined,
+  redact: {
+    paths: [
+      "req.headers.authorization",
+      "request.headers.authorization",
+      "headers.authorization",
+      "headers.cookie",
+      "cookie",
+      "authorization",
+    ],
+    remove: true,
+  },
+});
 
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
@@ -31,6 +45,8 @@ export async function POST(
     const { conversationId } = params;
     const body = await request.json();
     const { content } = sendMessageSchema.parse(body);
+
+    const log = logger.child({ conversationId, senderId: user.id });
 
     // 1. Fetch the conversation and verify the user is part of it
     const { data: conversation, error: convError } = await supabase
@@ -70,7 +86,7 @@ export async function POST(
       .single();
 
     if (messageError) {
-      logger.error({ err: messageError, conversationId, senderId: user.id }, "Error saving message");
+      log.error({ err: messageError }, "Error saving message");
       return NextResponse.json(
         { error: "Failed to send message" },
         { status: 500 },
@@ -88,7 +104,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    logger.error({ err: error }, "Message API error");
+    log.error({ err: error }, "Message API error");
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
     }
@@ -117,6 +133,8 @@ export async function GET(
     }
 
     const { conversationId } = params;
+
+    const log = logger.child({ conversationId });
 
     // 1. Verify the user is part of this conversation
     const { data: conversation, error: convError } = await supabase
@@ -147,7 +165,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (messagesError) {
-      logger.error({ err: messagesError, conversationId }, "Error fetching messages");
+      log.error({ err: messagesError }, "Error fetching messages");
       return NextResponse.json(
         { error: "Failed to fetch messages" },
         { status: 500 },
@@ -157,7 +175,7 @@ export async function GET(
     // 3. Return encrypted messages (frontend will decrypt them)
     return NextResponse.json(encryptedMessages || []);
   } catch (error) {
-    logger.error({ err: error }, "Get messages API error");
+    log.error({ err: error }, "Get messages API error");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

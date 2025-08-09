@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, Trash2, MoreHorizontal } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";

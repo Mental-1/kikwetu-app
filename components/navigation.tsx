@@ -95,6 +95,45 @@ export default function Navigation() {
     },
   ];
 
+  const mobileRoutes = [
+    {
+      href: "/",
+      label: "Home",
+      active: pathname === "/",
+      icon: <Home className="mr-2 h-4 w-4" />,
+    },
+    {
+      href: "/listings",
+      label: "Listings",
+      active: pathname === "/listings",
+      icon: <List className="mr-2 h-4 w-4" />,
+    },
+    {
+      href: "/map",
+      label: "Map View",
+      active: pathname === "/map",
+      icon: <Map className="mr-2 h-4 w-4" />,
+    },
+    {
+      href: "/account",
+      label: "Account",
+      active: pathname === "/account",
+      icon: <User className="mr-2 h-4 w-4" />,
+    },
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      active: pathname === "/dashboard",
+      icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
+    },
+    {
+      href: "/post-ad",
+      label: "Post Ad",
+      active: pathname === "/post-ad",
+      icon: <Plus className="mr-2 h-4 w-4" />,
+    },
+  ];
+
   const userRoutes = [
     {
       href: "/account",
@@ -230,7 +269,7 @@ export default function Navigation() {
               </Link>
               <Separator />
               <nav className="flex flex-col gap-4">
-                {routes.map((route) => (
+                {mobileRoutes.map((route) => (
                   <Link
                     key={route.href}
                     href={route.href}

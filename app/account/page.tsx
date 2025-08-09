@@ -51,6 +51,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { EmailVerificationModal, PhoneVerificationModal, IdentityVerificationModal } from '@/components/verifications/VerificationModals';
 
 // Type definitions
 interface FormData {
@@ -103,12 +104,30 @@ function AccountDetails() {
   const [deleteStep, setDeleteStep] = useState<'confirm' | 'deleting' | 'success'>('confirm');
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+  const [showPhoneVerificationModal, setShowPhoneVerificationModal] = useState(false);
+  const [showIdentityVerificationModal, setShowIdentityVerificationModal] = useState(false);
+
 
   useEffect(() => {
     if (accountData?.formData) {
       setFormData(accountData.formData);
     }
   }, [accountData]);
+
+  useEffect(() => {
+    if (show2FAModal) {
+      const storedQrCode = sessionStorage.getItem("qrCode");
+      const storedSecret = sessionStorage.getItem("secret");
+      if (storedQrCode && storedSecret) {
+        setQrCode(storedQrCode);
+        setSecret(storedSecret);
+      }
+    } else {
+      sessionStorage.removeItem("qrCode");
+      sessionStorage.removeItem("secret");
+    }
+  }, [show2FAModal]);
 
   const handleSave = async () => {
     if (!user || !formData) return;
@@ -246,9 +265,11 @@ function AccountDetails() {
     setTwoFASaving(true);
     const { success, message, qrCode, secret } = await enable2FA();
     setTwoFASaving(false);
-    if (success && qrCode) {
+    if (success && qrCode && secret) {
       setQrCode(qrCode);
-      setSecret(secret || null);
+      setSecret(secret);
+      sessionStorage.setItem("qrCode", qrCode);
+      sessionStorage.setItem("secret", secret);
       toast({
         title: "Success",
         description: message,
@@ -282,6 +303,8 @@ function AccountDetails() {
       setQrCode(null);
       setSecret(null);
       setVerificationCode("");
+      sessionStorage.removeItem("qrCode");
+      sessionStorage.removeItem("secret");
       toast({
         title: "Success",
         description: message,
@@ -313,6 +336,8 @@ function AccountDetails() {
       setIs2FAEnabled(false);
       setShow2FAModal(false);
       setVerificationCode("");
+      sessionStorage.removeItem("qrCode");
+      sessionStorage.removeItem("secret");
       toast({
         title: "Success",
         description: message,
@@ -648,7 +673,9 @@ function AccountDetails() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant="secondary">Verified</Badge>
+                  <Button variant="outline" size="sm" onClick={() => setShowEmailVerificationModal(true)}>
+                    Verify
+                  </Button>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -663,7 +690,7 @@ function AccountDetails() {
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => setShowPhoneVerificationModal(true)}>
                     Verify
                   </Button>
                 </div>
@@ -680,7 +707,7 @@ function AccountDetails() {
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => setShowIdentityVerificationModal(true)}>
                     Verify
                   </Button>
                 </div>
@@ -788,42 +815,42 @@ function AccountDetails() {
                   <Separator className="my-4" />
                   <div className="text-center text-sm text-muted-foreground break-all">
                     <p className="mb-2">Or copy this code into your authenticator app:</p>
-                    <div className="relative flex items-center justify-center">
-  <div className="overflow-x-auto whitespace-nowrap break-normal rounded-md bg-muted p-2 pr-8 font-mono text-xs sm:text-sm select-all">
-    {secret}
-  </div>
-  <Button
-    variant="ghost"
-    size="icon"
-    aria-label="Copy 2FA secret"
-    title="Copy 2FA secret"
-    className="absolute right-2 top-1/2 -translate-y-1/2"
-    onClick={async () => {
-      if (!secret) return;
-      try {
-        if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(secret);
-        } else {
-          // Fallback for non-secure contexts / older browsers
-          const ta = document.createElement("textarea");
-          ta.value = secret;
-          ta.style.position = "fixed";
-          ta.style.opacity = "0";
-          document.body.appendChild(ta);
-          ta.focus();
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-        }
-        toast({ title: "Copied to clipboard" });
-      } catch {
-        toast({ title: "Copy failed", description: "Please copy the code manually.", variant: "destructive" });
-      }
-    }}
-  >
-    <Clipboard className="h-4 w-4" />
-  </Button>
-</div>
+                    <div className="relative flex items-center justify-center max-w-full">
+                      <div className="overflow-x-auto whitespace-nowrap break-normal rounded-md bg-muted p-2 pr-8 font-mono text-xs sm:text-sm select-all">
+                        {secret}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Copy 2FA secret"
+                        title="Copy 2FA secret"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-full"
+                        onClick={async () => {
+                          if (!secret) return;
+                          try {
+                            if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
+                              await navigator.clipboard.writeText(secret);
+                            } else {
+                              // Fallback for non-secure contexts / older browsers
+                              const ta = document.createElement("textarea");
+                              ta.value = secret;
+                              ta.style.position = "fixed";
+                              ta.style.opacity = "0";
+                              document.body.appendChild(ta);
+                              ta.focus();
+                              ta.select();
+                              document.execCommand("copy");
+                              document.body.removeChild(ta);
+                            }
+                            toast({ title: "Copied to clipboard" });
+                          } catch {
+                            toast({ title: "Copy failed", description: "Please copy the code manually.", variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <Clipboard className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <Separator className="my-4" />
                   <div className="space-y-2 mt-4">
@@ -836,7 +863,7 @@ function AccountDetails() {
                         setVerificationCodeError(false);
                       }}
                       placeholder="Enter code from app"
-                      className={verificationCodeError ? "border-destructive" : ""}
+                      className={`w-full ${verificationCodeError ? "border-destructive" : ""}`}
                     />
                     {verificationCodeError && (
                       <p className="text-sm text-destructive mt-1">Verification code is required.</p>
@@ -901,10 +928,6 @@ function AccountDetails() {
               variant="outline"
               onClick={() => {
                 setShow2FAModal(false);
-                setQrCode(null);
-                setSecret(null);
-                setVerificationCode("");
-                setVerificationCodeError(false);
               }}
             >
               Close
@@ -1017,6 +1040,10 @@ function AccountDetails() {
           )}
         </DialogContent>
       </Dialog>
+
+      <EmailVerificationModal showModal={showEmailVerificationModal} setShowModal={setShowEmailVerificationModal} />
+      <PhoneVerificationModal showModal={showPhoneVerificationModal} setShowModal={setShowPhoneVerificationModal} />
+      <IdentityVerificationModal showModal={showIdentityVerificationModal} setShowModal={setShowIdentityVerificationModal} />
     </div>
   );
 }

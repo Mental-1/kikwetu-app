@@ -4,6 +4,9 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { z, ZodError } from "zod";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/utils/supabase/database.types";
+import pino from 'pino';
+
+const logger = pino();
 
 type Schema = Database["public"];
 
@@ -42,7 +45,7 @@ export async function GET(req: NextRequest) {
     .single();
 
   if (error) {
-    console.error("Error fetching account data:", error);
+    logger.error({ error }, "Error fetching account data");
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -89,8 +92,10 @@ export async function POST(req: NextRequest) {
       .update(validatedData)
       .eq("id", userId);
 
+    logger.info("Update result:", { data, error });
+
     if (error) {
-      console.error("Error updating account:", error);
+      logger.error({ error }, "Error updating account");
       return NextResponse.json(
         { error: "Internal Server Error" },
         { status: 500 },
@@ -102,7 +107,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    console.error("Error parsing request body:", error);
+    logger.error({ error }, "Error parsing request body");
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -121,7 +126,7 @@ export async function DELETE(req: NextRequest) {
   const { error } = await supabase.from("profiles").delete().eq("id", userId);
 
   if (error) {
-    console.error("Error deleting account:", error);
+    logger.error({ error }, "Error deleting account");
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

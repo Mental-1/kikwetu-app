@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Trash2 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MessageEncryption } from "@/lib/encryption";
 import { useAuth } from "@/contexts/auth-context";
@@ -15,6 +15,7 @@ import { ConversationListSkeleton } from "@/components/skeletons/conversations-s
 import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation"; // Import useSearchParams
+import { DeleteConversationModal } from "@/components/messages/DeleteConversationModal";
 
 interface User {
   id: string;
@@ -101,6 +102,16 @@ async function sendMessage(
   return response.json();
 }
 
+async function deleteConversation(conversationId: string) {
+  const response = await fetch(`/api/messages/conversations/${conversationId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete conversation");
+  }
+  return response.json();
+}
+
 export default function MessagesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -109,6 +120,8 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const searchParams = useSearchParams();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
 
   // Web Worker instance
   const decryptorWorker = useRef<Worker | null>(null);
@@ -205,6 +218,20 @@ export default function MessagesPage() {
     setNewMessage("");
   };
 
+  const deleteConversationMutation = useMutation({
+    mutationFn: deleteConversation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setShowDeleteModal(false);
+      setSelectedConversation(null);
+    },
+  });
+
+  const handleDeleteConversation = () => {
+    if (!conversationToDelete) return;
+    deleteConversationMutation.mutate(conversationToDelete.id);
+  };
+
   const renderConversationList = () => {
     if (isLoadingConversations) return <ConversationListSkeleton />;
     if (conversationsError) return <p className="text-red-500 p-4">{conversationsError.message}</p>;
@@ -224,10 +251,15 @@ export default function MessagesPage() {
           const otherUser =
             user?.id === convo.seller.id ? convo.buyer : convo.seller;
           return (
-            <li key={convo.id}>
+            <li key={convo.id} className="border rounded-lg mb-2">
               <button
                 type="button"
                 onClick={() => setSelectedConversation(convo)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setConversationToDelete(convo);
+                  setShowDeleteModal(true);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
@@ -277,7 +309,7 @@ export default function MessagesPage() {
         ? selectedConversation.buyer
         : selectedConversation.seller;
     return (
-      <>
+      <div className="flex flex-col h-full">
         <div className="p-4 border-b flex items-center">
           {!isDesktop && (
             <button
@@ -296,6 +328,18 @@ export default function MessagesPage() {
             className="w-10 h-10 rounded-full mr-4"
           />
           <h2 className="text-xl font-bold">{otherUser.username}</h2>
+          {isDesktop && (
+            <button
+              type="button"
+              onClick={() => {
+                setConversationToDelete(selectedConversation);
+                setShowDeleteModal(true);
+              }}
+              className="ml-auto p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              <Trash2 className="h-5 w-5 text-destructive" />
+            </button>
+          )}
         </div>
         <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900">
           {messages.map((msg) => {
@@ -319,7 +363,7 @@ export default function MessagesPage() {
             );
           })}
         </div>
-        <div className="p-4 border-t bg-white dark:bg-black">
+        <div className="p-4 border-t bg-white dark:bg-black sticky bottom-0">
           <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
             <input
               type="text"
@@ -334,7 +378,7 @@ export default function MessagesPage() {
             </button>
           </form>
         </div>
-      </>
+      </div>
     );
   };
 
@@ -382,6 +426,12 @@ export default function MessagesPage() {
           {renderConversationList()}
         </div>
       )}
+      <DeleteConversationModal
+        showModal={showDeleteModal}
+        setShowModal={setShowDeleteModal}
+        onDelete={handleDeleteConversation}
+        isDeleting={deleteConversationMutation.isPending}
+      />
     </div>
   );
 }

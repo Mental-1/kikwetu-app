@@ -32,6 +32,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { conversationId: string } },
 ) {
+  const baseLog = logger.child({ route: "messages:POST", conversationId: params?.conversationId });
   try {
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -46,7 +47,7 @@ export async function POST(
     const body = await request.json();
     const { content } = sendMessageSchema.parse(body);
 
-    const log = logger.child({ conversationId, senderId: user.id });
+    const log = baseLog.child({ senderId: user.id });
 
     // 1. Fetch the conversation and verify the user is part of it
     const { data: conversation, error: convError } = await supabase
@@ -104,7 +105,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    log.error({ err: error }, "Message API error");
+    baseLog.error({ err: error }, "Message API error");
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
     }
@@ -122,6 +123,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { conversationId: string } },
 ) {
+  const baseLog = logger.child({ route: "messages:GET", conversationId: params?.conversationId });
   try {
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -134,7 +136,7 @@ export async function GET(
 
     const { conversationId } = params;
 
-    const log = logger.child({ conversationId });
+    const log = baseLog;
 
     // 1. Verify the user is part of this conversation
     const { data: conversation, error: convError } = await supabase
@@ -175,7 +177,7 @@ export async function GET(
     // 3. Return encrypted messages (frontend will decrypt them)
     return NextResponse.json(encryptedMessages || []);
   } catch (error) {
-    log.error({ err: error }, "Get messages API error");
+    baseLog.error({ err: error }, "Get messages API error");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

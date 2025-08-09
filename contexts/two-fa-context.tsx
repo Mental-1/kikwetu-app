@@ -6,8 +6,8 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 interface TwoFAContextType {
   qrCode: string | null;
   secret: string | null;
-  setQrCode: (qrCode: string | null) => void;
-  setSecret: (secret: string | null) => void;
+  setQrCode: React.Dispatch<React.SetStateAction<string | null>>;
+  setSecret: React.Dispatch<React.SetStateAction<string | null>>;
   clearTwoFAState: () => void;
 }
 
@@ -31,12 +31,18 @@ export function TwoFAProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [secret]);
 
+  useEffect(() => () => clearTwoFAState(), []);
+
+  const value = useMemo(
+    () => ({ qrCode, secret, setQrCode, setSecret, clearTwoFAState }),
+    [qrCode, secret]
+  );
+
   return (
-    <TwoFAContext.Provider value={{ qrCode, secret, setQrCode, setSecret, clearTwoFAState }}>
+    <TwoFAContext.Provider value={value}>
       {children}
     </TwoFAContext.Provider>
   );
-}
 
 export function useTwoFA() {
   const context = useContext(TwoFAContext);

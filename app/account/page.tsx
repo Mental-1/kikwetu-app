@@ -9,8 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from " @/components/ui/Input";
-import { cn } from " @/lib/utils";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -296,23 +296,28 @@ function AccountDetails() {
     }
     setVerificationCodeError(false);
     setTwoFASaving(true);
-    const { success, message } = await verify2FA(verificationCode);
-    setTwoFASaving(false);
-    if (success) {
-      setIs2FAEnabled(true);
-      setShow2FAModal(false);
-      setVerificationCode("");
-      clearTwoFAState();
-      toast({
-        title: "Success",
-        description: message,
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+    try {
+      const { success, message } = await verify2FA(verificationCode);
+      if (success) {
+        setIs2FAEnabled(true);
+        setShow2FAModal(false);
+        setVerificationCode("");
+        clearTwoFAState();
+        toast({
+          title: "Success",
+          description: message,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to verify 2FA.", variant: "destructive" });
+    } finally {
+      setTwoFASaving(false);
     }
   };
 
@@ -814,7 +819,7 @@ function AccountDetails() {
                   <Separator className="my-4" />
                   <div className="text-center text-sm text-muted-foreground break-all">
                     <p className="mb-2">Or copy this code into your authenticator app:</p>
-                    <div className="relative flex items-center justify-center max-w-full">
+                    <div className="relative flex items-center justify-center max-w-full group">
                       <div className={cn("overflow-x-auto whitespace-nowrap break-normal rounded-md bg-muted p-2 pr-8 font-mono text-xs sm:text-sm select-all",
                         !showSecret && "blur-sm group-hover:blur-none transition"
                       )}>
@@ -1050,6 +1055,7 @@ function AccountDetails() {
 )}
     </div>
   );
+}
 }
 
 /**

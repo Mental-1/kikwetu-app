@@ -36,7 +36,6 @@ export function EmailVerificationModal({
     });
 
     setIsSending(false);
-    setShowModal(false);
 
     if (error) {
       toast({
@@ -45,6 +44,7 @@ export function EmailVerificationModal({
         variant: "destructive",
       });
     } else {
+      setShowModal(false);
       toast({
         title: "Verification Link Sent",
         description: `A verification link has been sent to ${email}. Please check your inbox. If you don't see it, check your spam folder.`,
@@ -54,6 +54,7 @@ export function EmailVerificationModal({
 
   return (
     <Dialog open={showModal} onOpenChange={(open) => {
+      if (isSending) return;
       if (!open) {
         setEmail(userEmail); // Reset to original email on close
         setIsSending(false);
@@ -77,7 +78,7 @@ export function EmailVerificationModal({
           </div>
         </div>
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => setShowModal(false)}>
+          <Button variant="outline" onClick={() => setShowModal(false)} disabled={isSending}>
             Cancel
           </Button>
           <Button onClick={handleSendLink} disabled={isSending || !email || !/^\S+@\S+\.\S+$/.test(email)} className="mb-4">
@@ -187,6 +188,8 @@ export function PhoneVerificationModal({
                 type="tel"
                 value={phoneNumber}
                 onChange={handlePhoneNumberChange}
+                inputMode="tel"
+                pattern="^\\+?\\Ud*$"
                 placeholder="Enter your phone number"
               />
             </div>
@@ -199,13 +202,19 @@ export function PhoneVerificationModal({
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/[^\d]/g, ""))}
                 maxLength={6}
+                inputMode="numeric"
+                pattern="^\\d{6}$"
                 placeholder="Enter the 6-digit code"
               />
             </div>
           )}
         </div>
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => setShowModal(false)}>
+          <Button
+            variant="outline"
+            onClick={() => setShowModal(false)}
+            disabled={isSending || isVerifying}
+          >
             Cancel
           </Button>
           {step === 1 ? (

@@ -125,7 +125,7 @@ export default function MessagesPage() {
   const searchParams = useSearchParams();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isLongPressDetected, setIsLongPressDetected] = useState(false);
 
   // Web Worker instance
@@ -148,6 +148,25 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!selectedConversation || !decryptorWorker.current) return;
 
+    const worker = decryptorWorker.current;
+
+    const handleWorkerMessage = (event: MessageEvent) => {
+      const { messageId, decryptedContent } = event.data;
+      if (messageId) {
+        queryClient.setQueryData<Message[]>(
+          ["messages", selectedConversation.id],
+          (oldMessages) => {
+            const updatedMessages = (oldMessages || []).map((msg) =>
+              msg.id === messageId ? { ...msg, encrypted_content: decryptedContent } : msg
+            );
+            return updatedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          }
+        );
+      }
+    };
+
+    worker.addEventListener('message', handleWorkerMessage);
+
     const supabase = getSupabaseClient();
     const channel = supabase
       .channel(`chat-${selectedConversation.id}`)
@@ -160,19 +179,14 @@ export default function MessagesPage() {
           filter: `conversation_id=eq.${selectedConversation.id}`,
         },
         async (payload) => {
-          const newMessage = payload.new as Message;
-          // Decrypt the new message
-          const key = await MessageEncryption.importKey(selectedConversation.encryption_key);
-          const decryptedContent = await MessageEncryption.decrypt(newMessage.encrypted_content, newMessage.iv, key);
-
-          // Update the query cache with the new message
-          queryClient.setQueryData<Message[]>(
-            ["messages", selectedConversation.id],
-            (oldMessages) => {
-              const updatedMessages = [...(oldMessages || []), { ...newMessage, encrypted_content: decryptedContent }];
-              return updatedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-            }
-          );
+          const insertedMessage = payload.new as Message;
+          // Send the new message to the worker for decryption
+          worker.postMessage({
+            messageId: insertedMessage.id,
+            encryptedContent: insertedMessage.encrypted_content,
+            iv: insertedMessage.iv,
+            encryptionKey: selectedConversation.encryption_key,
+          });
         }
       )
       .subscribe();
@@ -180,6 +194,7 @@ export default function MessagesPage() {
     return () => {
       channel.unsubscribe();
       supabase.removeChannel(channel);
+      worker.removeEventListener('message', handleWorkerMessage);
     };
   }, [selectedConversation, decryptorWorker, queryClient]);
 
@@ -267,6 +282,10 @@ export default function MessagesPage() {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       setShowDeleteModal(false);
       setSelectedConversation(null);
+      if (conversationToDelete?.id) {
+        queryClient.removeQueries({ queryKey: ["messages", conversationToDelete.id] });
+      }
+      setConversationToDelete(null);
     },
     onError: (err: unknown) => {
       toast({ title: "Error", description: (err as Error).message, variant: "destructive" });
@@ -493,6 +512,12 @@ export default function MessagesPage() {
           </aside>
           <main className="w-2/3 flex flex-col">{renderChatView()}</main>
         </div>
+        <DeleteConversationModal
+          showModal={showDeleteModal}
+          setShowModal={setShowDeleteModal}
+          onDelete={handleDeleteConversation}
+          isDeleting={deleteConversationMutation.isPending}
+        />
       </div>
     );
   }

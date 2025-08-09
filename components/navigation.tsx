@@ -136,26 +136,7 @@ export default function Navigation() {
     },
   ];
 
-  const userRoutes = [
-    {
-      href: "/account",
-      label: "Account",
-      active: pathname === "/account",
-      icon: <User className="mr-2 h-4 w-4" />,
-    },
-    {
-      href: "/dashboard",
-      label: "Dashboard",
-      active: pathname === "/dashboard",
-      icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
-    },
-    {
-      href: "/post-ad",
-      label: "Post Ad",
-      active: pathname === "/post-ad",
-      icon: <Plus className="mr-2 h-4 w-4" />,
-    },
-  ];
+  
 
   const UserMenu = () => {
     if (!user) {
@@ -295,6 +276,7 @@ export default function Navigation() {
                   onClick={async () => {
                     try {
                       await signOut();
+                      setIsSheetOpen(false);
                     } catch (error) {
                       console.error("Sign out failed:", error);
                     }
@@ -306,7 +288,13 @@ export default function Navigation() {
               </div>
             ) : (
               <div className="mt-auto p-4">
-                <Button className="w-full" onClick={() => router.push("/auth")}>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    router.push("/auth");
+                    setIsSheetOpen(false);
+                  }}
+                >
                   Sign In
                 </Button>
               </div>

@@ -15,7 +15,7 @@ import {
   PostHogAuthWrapper,
 } from "@/components/posthog-provider";
 
-const lato = Lato({ subsets: ["latin"], weight: ["400", "700", "900"] });
+const lato = Lato({ subsets: ["latin"], weight: ["400", "700"] });
 
 export const metadata: Metadata = {
   title: "Ki-Kwetu Classifieds",

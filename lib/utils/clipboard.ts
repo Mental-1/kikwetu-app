@@ -1,4 +1,8 @@
 
+import pino from 'pino';
+
+const logger = pino({ name: 'clipboard' });
+
 export async function copyText(text: string): Promise<void> {
   try {
     if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
@@ -16,7 +20,7 @@ export async function copyText(text: string): Promise<void> {
       document.body.removeChild(ta);
     }
   } catch (error) {
-    console.error("Failed to copy text:", error);
+    logger.error({ err: error }, "Failed to copy text");
     throw new Error("Failed to copy text.");
   }
 }

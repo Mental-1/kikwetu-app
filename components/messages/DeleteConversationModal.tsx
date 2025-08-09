@@ -19,7 +19,7 @@ export function DeleteConversationModal({
 }: {
   showModal: boolean;
   setShowModal: (show: boolean) => void;
-  onDelete: () => void;
+  onDelete: () => Promise<void> | void;
   isDeleting: boolean;
 }) {
   return (
@@ -36,9 +36,9 @@ export function DeleteConversationModal({
         </DialogHeader>
         <div className="space-y-4 py-4 text-center">
           <Trash2 className="h-16 w-16 text-destructive mx-auto" />
-          <p className="text-muted-foreground">
+          <DialogDescription className="text-muted-foreground">
             Are you sure you want to delete this conversation? This action cannot be undone.
-          </p>
+          </DialogDescription>
         </div>
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => setShowModal(false)} disabled={isDeleting}>

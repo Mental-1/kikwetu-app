@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import Image from "next/image"; // Import Image component
 import { useTheme } from "next-themes"; // Import useTheme
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,9 @@ import {
   LayoutDashboard,
   Settings,
   Plus,
+  Home,
+  List,
+  Map as MapIcon,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -31,6 +35,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 
 const Logo = () => {
   const { theme } = useTheme();
@@ -72,6 +77,7 @@ export default function Navigation() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { user, profile, signOut } = useAuth();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const routes = [
     {
@@ -90,6 +96,49 @@ export default function Navigation() {
       active: pathname === "/map",
     },
   ];
+
+  const mobileRoutes = [
+    {
+      href: "/",
+      label: "Home",
+      active: pathname === "/",
+      icon: <Home className="mr-2 h-4 w-4" />,
+    },
+    {
+      href: "/listings",
+      label: "Listings",
+      active: pathname === "/listings",
+      icon: <List className="mr-2 h-4 w-4" />,
+    },
+    {
+      href: "/map",
+      label: "Map View",
+      active: pathname === "/map",
+      icon: <MapIcon className="mr-2 h-4 w-4" />,
+    },
+    ...(user ? [
+      {
+        href: "/account",
+        label: "Account",
+        active: pathname === "/account",
+        icon: <User className="mr-2 h-4 w-4" />,
+      },
+      {
+        href: "/dashboard",
+        label: "Dashboard",
+        active: pathname === "/dashboard",
+        icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
+      },
+      {
+        href: "/post-ad",
+        label: "Post Ad",
+        active: pathname === "/post-ad",
+        icon: <Plus className="mr-2 h-4 w-4" />,
+      },
+    ] : []),
+  ];
+
+  
 
   const UserMenu = () => {
     if (!user) {
@@ -192,73 +241,66 @@ export default function Navigation() {
       </div>
       <div className="flex md:hidden items-center gap-4">
         <ThemeToggle />
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Open navigation menu">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="z-[1002]">
+          <SheetContent side="left" className="z-[1002] flex flex-col">
             <div className="flex flex-col gap-6 py-4">
               <Link href="/" className="flex items-center space-x-2">
                 <Logo />
               </Link>
+              <Separator />
               <nav className="flex flex-col gap-4">
-                {routes.map((route) => (
+                {mobileRoutes.map((route) => (
                   <Link
                     key={route.href}
                     href={route.href}
+                    onClick={() => setIsSheetOpen(false)} // Close sheet on link click
                     className={cn(
-                      "text-sm font-medium transition-colors hover:text-primary",
+                      "text-sm font-medium transition-colors hover:text-primary flex items-center py-2",
                       route.active ? "text-primary" : "text-muted-foreground",
                     )}
                   >
+                    {route.icon}
                     {route.label}
                   </Link>
                 ))}
-                {user ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      className="justify-start"
-                      onClick={() => router.push("/account")}
-                    >
-                      Account
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="justify-start"
-                      onClick={() => router.push("/dashboard")}
-                    >
-                      Dashboard
-                    </Button>
-                    <Button
-                      className="mt-4"
-                      onClick={() => router.push("/post-ad")}
-                    >
-                      Post Ad
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="mt-2"
-                      onClick={async () => {
-                        try {
-                          await signOut();
-                        } catch (error) {
-                          console.error("Sign out failed:", error);
-                        }
-                      }}
-                    >
-                      Sign Out
-                    </Button>
-                  </>
-                ) : (
-                  <Button className="mt-4" onClick={() => router.push("/auth")}>
-                    Sign In
-                  </Button>
-                )}
               </nav>
             </div>
+            {user ? (
+              <div className="mt-auto flex flex-col gap-4 p-4">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      await signOut();
+                      setIsSheetOpen(false);
+                    } catch (error) {
+                      console.error("Sign out failed:", error);
+                    }
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-auto p-4">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    router.push("/auth");
+                    setIsSheetOpen(false);
+                  }}
+                >
+                  Sign In
+                </Button>
+              </div>
+            )}
           </SheetContent>
         </Sheet>
       </div>

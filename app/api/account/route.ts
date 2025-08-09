@@ -4,6 +4,8 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { z, ZodError } from "zod";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/utils/supabase/database.types";
+import { logger } from "@/lib/utils/logger";
+
 
 type Schema = Database["public"];
 
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest) {
     .single();
 
   if (error) {
-    console.error("Error fetching account data:", error);
+    logger.error({ error }, "Error fetching account data");
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -59,6 +61,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
   const userId = await getUserId(supabase);
+
+  // On success, log structured event with route context
+  const log = logger.child({ route: "account:POST", userId });
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -90,19 +95,20 @@ export async function POST(req: NextRequest) {
       .eq("id", userId);
 
     if (error) {
-      console.error("Error updating account:", error);
+      logger.error({ error }, "Error updating account");
       return NextResponse.json(
         { error: "Internal Server Error" },
         { status: 500 },
       );
     }
 
+    log.info({ updated: true }, "Account updated successfully");
     return NextResponse.json({ message: "Account updated successfully" });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    console.error("Error parsing request body:", error);
+    logger.error({ error }, "Error parsing request body");
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -121,7 +127,7 @@ export async function DELETE(req: NextRequest) {
   const { error } = await supabase.from("profiles").delete().eq("id", userId);
 
   if (error) {
-    console.error("Error deleting account:", error);
+    logger.error({ error }, "Error deleting account");
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

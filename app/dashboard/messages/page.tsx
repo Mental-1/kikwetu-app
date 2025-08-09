@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Trash2, MoreHorizontal } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MessageEncryption } from "@/lib/encryption";
 import { useAuth } from "@/contexts/auth-context";
@@ -15,6 +15,9 @@ import { ConversationListSkeleton } from "@/components/skeletons/conversations-s
 import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation"; // Import useSearchParams
+import { DeleteConversationModal } from "@/components/messages/DeleteConversationModal";
+import { getSupabaseClient } from "@/utils/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 interface User {
   id: string;
@@ -101,6 +104,17 @@ async function sendMessage(
   return response.json();
 }
 
+async function deleteConversation(conversationId: string) {
+  const response = await fetch(`/api/messages/conversations/${conversationId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete conversation");
+  }
+  // Some DELETE routes return 204/empty body
+  return; // 204-No Content expected
+}
+
 export default function MessagesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -109,6 +123,10 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const searchParams = useSearchParams();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isLongPressDetected, setIsLongPressDetected] = useState(false);
 
   // Web Worker instance
   const decryptorWorker = useRef<Worker | null>(null);
@@ -126,6 +144,58 @@ export default function MessagesPage() {
       decryptorWorker.current?.terminate();
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedConversation || !decryptorWorker.current) return;
+
+    const worker = decryptorWorker.current;
+
+    const handleWorkerMessage = (event: MessageEvent) => {
+      const { messageId, decryptedContent } = event.data;
+      if (messageId) {
+        queryClient.setQueryData<Message[]>(
+          ["messages", selectedConversation.id],
+          (oldMessages) => {
+            const updatedMessages = (oldMessages || []).map((msg) =>
+              msg.id === messageId ? { ...msg, encrypted_content: decryptedContent } : msg
+            );
+            return updatedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          }
+        );
+      }
+    };
+
+    worker.addEventListener('message', handleWorkerMessage);
+
+    const supabase = getSupabaseClient();
+    const channel = supabase
+      .channel(`chat-${selectedConversation.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'encrypted_messages',
+          filter: `conversation_id=eq.${selectedConversation.id}`,
+        },
+        async (payload) => {
+          const insertedMessage = payload.new as Message;
+          // Send the new message to the worker for decryption
+          worker.postMessage({
+            messageId: insertedMessage.id,
+            encryptedContent: insertedMessage.encrypted_content,
+            iv: insertedMessage.iv,
+            encryptionKey: selectedConversation.encryption_key,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+      worker.removeEventListener('message', handleWorkerMessage);
+    };
+  }, [selectedConversation, decryptorWorker, queryClient]);
 
   const {
     data: conversations = [],
@@ -205,6 +275,30 @@ export default function MessagesPage() {
     setNewMessage("");
   };
 
+  const deleteConversationMutation = useMutation({
+    mutationFn: deleteConversation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setShowDeleteModal(false);
+      setSelectedConversation(null);
+      if (conversationToDelete?.id) {
+        queryClient.removeQueries({ queryKey: ["messages", conversationToDelete.id] });
+      }
+      setConversationToDelete(null);
+      toast({ title: "Conversation deleted", variant: "success" });
+    },
+    onError: (err: unknown) => {
+      toast({ title: "Error", description: (err as Error).message, variant: "destructive" });
+      setShowDeleteModal(false);
+      setConversationToDelete(null);
+    },
+  });
+
+  const handleDeleteConversation = () => {
+    if (!conversationToDelete) return;
+    deleteConversationMutation.mutate(conversationToDelete.id);
+  };
+
   const renderConversationList = () => {
     if (isLoadingConversations) return <ConversationListSkeleton />;
     if (conversationsError) return <p className="text-red-500 p-4">{conversationsError.message}</p>;
@@ -224,10 +318,44 @@ export default function MessagesPage() {
           const otherUser =
             user?.id === convo.seller.id ? convo.buyer : convo.seller;
           return (
-            <li key={convo.id}>
+            <li
+              key={convo.id}
+              className="border rounded-lg mb-2"
+              onPointerDown={(e) => {
+                setIsLongPressDetected(false);
+                longPressTimer.current = setTimeout(() => {
+                  setIsLongPressDetected(true);
+                  setConversationToDelete(convo);
+                  setShowDeleteModal(true);
+                }, 500); // 500ms for long press
+              }}
+              onPointerUp={() => {
+                if (longPressTimer.current) {
+                  clearTimeout(longPressTimer.current);
+                  longPressTimer.current = null;
+                }
+              }}
+              onPointerCancel={() => {
+                if (longPressTimer.current) {
+                  clearTimeout(longPressTimer.current);
+                  longPressTimer.current = null;
+                }
+              }}
+            >
               <button
                 type="button"
-                onClick={() => setSelectedConversation(convo)}
+                onClick={(e) => {
+                  if (isLongPressDetected) {
+                    e.preventDefault(); // Prevent click if it was a long press
+                  } else {
+                    setSelectedConversation(convo);
+                  }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setConversationToDelete(convo);
+                  setShowDeleteModal(true);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
@@ -250,6 +378,18 @@ export default function MessagesPage() {
                       {convo.listing.title}
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    aria-label="Conversation options"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent selecting conversation
+                      setConversationToDelete(convo);
+                      setShowDeleteModal(true);
+                    }}
+                    className="ml-auto p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <MoreHorizontal className="h-5 w-5" />
+                  </button>
                 </div>
               </button>
             </li>
@@ -277,7 +417,7 @@ export default function MessagesPage() {
         ? selectedConversation.buyer
         : selectedConversation.seller;
     return (
-      <>
+      <div className="flex flex-col h-full">
         <div className="p-4 border-b flex items-center">
           {!isDesktop && (
             <button
@@ -296,6 +436,21 @@ export default function MessagesPage() {
             className="w-10 h-10 rounded-full mr-4"
           />
           <h2 className="text-xl font-bold">{otherUser.username}</h2>
+          {isDesktop && (
+            <button
+              type="button"
+              aria-label="Delete conversation"
+              onClick={() => {
+                if (selectedConversation) {
+                  setConversationToDelete(selectedConversation);
+                  setShowDeleteModal(true);
+                }
+              }}
+              className="ml-auto p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              <Trash2 className="h-5 w-5 text-destructive" />
+            </button>
+          )}
         </div>
         <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900">
           {messages.map((msg) => {
@@ -319,7 +474,7 @@ export default function MessagesPage() {
             );
           })}
         </div>
-        <div className="p-4 border-t bg-white dark:bg-black">
+        <div className="p-4 border-t bg-white dark:bg-black sticky bottom-0">
           <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
             <input
               type="text"
@@ -334,7 +489,7 @@ export default function MessagesPage() {
             </button>
           </form>
         </div>
-      </>
+      </div>
     );
   };
 
@@ -359,6 +514,12 @@ export default function MessagesPage() {
           </aside>
           <main className="w-2/3 flex flex-col">{renderChatView()}</main>
         </div>
+        <DeleteConversationModal
+          showModal={showDeleteModal}
+          setShowModal={setShowDeleteModal}
+          onDelete={handleDeleteConversation}
+          isDeleting={deleteConversationMutation.isPending}
+        />
       </div>
     );
   }
@@ -382,6 +543,12 @@ export default function MessagesPage() {
           {renderConversationList()}
         </div>
       )}
+      <DeleteConversationModal
+        showModal={showDeleteModal}
+        setShowModal={setShowDeleteModal}
+        onDelete={handleDeleteConversation}
+        isDeleting={deleteConversationMutation.isPending}
+      />
     </div>
   );
 }

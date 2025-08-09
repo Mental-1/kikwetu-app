@@ -3,6 +3,8 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { MessageEncryption } from "@/lib/encryption";
 import { z } from "zod";
 import { cookies } from "next/headers";
+import { logger } from "@/lib/utils/logger";
+
 
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
@@ -15,6 +17,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { conversationId: string } },
 ) {
+  const reqId = request.headers.get("x-request-id") ?? undefined;
+  const baseLog = logger.child({ route: "messages:POST", conversationId: params?.conversationId, reqId });
   try {
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -28,6 +32,8 @@ export async function POST(
     const { conversationId } = params;
     const body = await request.json();
     const { content } = sendMessageSchema.parse(body);
+
+    const log = baseLog.child({ senderId: user.id });
 
     // 1. Fetch the conversation and verify the user is part of it
     const { data: conversation, error: convError } = await supabase
@@ -67,7 +73,7 @@ export async function POST(
       .single();
 
     if (messageError) {
-      console.error("Error saving message:", messageError);
+      log.error({ error: messageError }, "Error saving message");
       return NextResponse.json(
         { error: "Failed to send message" },
         { status: 500 },
@@ -85,7 +91,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Message API error:", error);
+    baseLog.error({ error: error }, "Message API error");
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
     }
@@ -103,6 +109,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { conversationId: string } },
 ) {
+  const reqId = request.headers.get("x-request-id") ?? undefined;
+  const baseLog = logger.child({ route: "messages:GET", conversationId: params?.conversationId, reqId });
   try {
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -114,6 +122,8 @@ export async function GET(
     }
 
     const { conversationId } = params;
+
+    const log = baseLog.child({ userId: user.id });
 
     // 1. Verify the user is part of this conversation
     const { data: conversation, error: convError } = await supabase
@@ -144,7 +154,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (messagesError) {
-      console.error("Error fetching messages:", messagesError);
+      log.error({ error: messagesError }, "Error fetching messages");
       return NextResponse.json(
         { error: "Failed to fetch messages" },
         { status: 500 },
@@ -154,7 +164,7 @@ export async function GET(
     // 3. Return encrypted messages (frontend will decrypt them)
     return NextResponse.json(encryptedMessages || []);
   } catch (error) {
-    console.error("Get messages API error:", error);
+    baseLog.error({ error: error }, "Get messages API error");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

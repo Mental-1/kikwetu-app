@@ -3,23 +3,8 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { MessageEncryption } from "@/lib/encryption";
 import { z } from "zod";
 import { cookies } from "next/headers";
-import pino from "pino";
+import { logger } from "@/lib/utils/logger";
 
-const logger = pino({
-  level: process.env.LOG_LEVEL ?? "info",
-  base: undefined,
-  redact: {
-    paths: [
-      "req.headers.authorization",
-      "request.headers.authorization",
-      "headers.authorization",
-      "headers.cookie",
-      "cookie",
-      "authorization",
-    ],
-    remove: true,
-  },
-});
 
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
@@ -87,7 +72,7 @@ export async function POST(
       .single();
 
     if (messageError) {
-      log.error({ err: messageError }, "Error saving message");
+      log.error({ error: messageError }, "Error saving message");
       return NextResponse.json(
         { error: "Failed to send message" },
         { status: 500 },
@@ -105,7 +90,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    baseLog.error({ err: error }, "Message API error");
+    baseLog.error({ error: error }, "Message API error");
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
     }
@@ -167,7 +152,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (messagesError) {
-      log.error({ err: messagesError }, "Error fetching messages");
+      log.error({ error: messagesError }, "Error fetching messages");
       return NextResponse.json(
         { error: "Failed to fetch messages" },
         { status: 500 },
@@ -177,7 +162,7 @@ export async function GET(
     // 3. Return encrypted messages (frontend will decrypt them)
     return NextResponse.json(encryptedMessages || []);
   } catch (error) {
-    baseLog.error({ err: error }, "Get messages API error");
+    baseLog.error({ error: error }, "Get messages API error");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

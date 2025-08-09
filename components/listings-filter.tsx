@@ -88,17 +88,19 @@ export const ListingsFilter = memo(
     // Memoized condition options to prevent unnecessary re-renders
     const conditionOptions = useMemo(() => ["new", "used", "refurbished"], []);
 
-    const debouncedSearchUpdate = useRef(
-      debounce((query: string) => {
+    const debouncedSearchUpdate = useMemo(
+      () => debounce((query: string) => {
         updateFilters({ searchQuery: query.trim() });
-      }, DEBOUNCE_DELAY)
-    ).current;
+      }, DEBOUNCE_DELAY),
+      [updateFilters]
+    );
 
-    const debouncedPriceUpdate = useRef(
-      debounce((priceRange: PriceRange) => {
+    const debouncedPriceUpdate = useMemo(
+      () => debounce((priceRange: PriceRange) => {
         updateFilters({ priceRange });
-      }, DEBOUNCE_DELAY)
-    ).current;
+      }, DEBOUNCE_DELAY),
+      [updateFilters]
+    );
 
     // Cleanup debounced functions on unmount
     useEffect(() => {

@@ -112,7 +112,7 @@ async function deleteConversation(conversationId: string) {
     throw new Error("Failed to delete conversation");
   }
   // Some DELETE routes return 204/empty body
-  return response.status === 204 ? null : response.json().catch(() => null);
+  return; // 204-No Content expected
 }
 
 export default function MessagesPage() {
@@ -193,7 +193,6 @@ export default function MessagesPage() {
 
     return () => {
       channel.unsubscribe();
-      supabase.removeChannel(channel);
       worker.removeEventListener('message', handleWorkerMessage);
     };
   }, [selectedConversation, decryptorWorker, queryClient]);
@@ -286,6 +285,7 @@ export default function MessagesPage() {
         queryClient.removeQueries({ queryKey: ["messages", conversationToDelete.id] });
       }
       setConversationToDelete(null);
+      toast({ title: "Success", description: "Conversation deleted successfully.", variant: "success" });
     },
     onError: (err: unknown) => {
       toast({ title: "Error", description: (err as Error).message, variant: "destructive" });
@@ -321,7 +321,7 @@ export default function MessagesPage() {
             <li
               key={convo.id}
               className="border rounded-lg mb-2"
-              onTouchStart={(e) => {
+              onPointerDown={(e) => {
                 setIsLongPressDetected(false);
                 longPressTimer.current = setTimeout(() => {
                   setIsLongPressDetected(true);
@@ -329,13 +329,13 @@ export default function MessagesPage() {
                   setShowDeleteModal(true);
                 }, 500); // 500ms for long press
               }}
-              onTouchEnd={() => {
+              onPointerUp={() => {
                 if (longPressTimer.current) {
                   clearTimeout(longPressTimer.current);
                   longPressTimer.current = null;
                 }
               }}
-              onTouchCancel={() => {
+              onPointerCancel={() => {
                 if (longPressTimer.current) {
                   clearTimeout(longPressTimer.current);
                   longPressTimer.current = null;
@@ -380,6 +380,7 @@ export default function MessagesPage() {
                   </div>
                   <button
                     type="button"
+                    aria-label="Conversation options"
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent selecting conversation
                       setConversationToDelete(convo);
@@ -438,6 +439,7 @@ export default function MessagesPage() {
           {isDesktop && (
             <button
               type="button"
+              aria-label="Delete conversation"
               onClick={() => {
                 if (selectedConversation) {
                   setConversationToDelete(selectedConversation);

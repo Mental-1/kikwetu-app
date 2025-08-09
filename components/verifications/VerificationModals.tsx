@@ -189,7 +189,7 @@ export function PhoneVerificationModal({
                 value={phoneNumber}
                 onChange={handlePhoneNumberChange}
                 inputMode="tel"
-                pattern="^\\+?\\Ud*$"
+                pattern="^\\+?\\d*$"
                 placeholder="Enter your phone number"
               />
             </div>
@@ -218,7 +218,7 @@ export function PhoneVerificationModal({
             Cancel
           </Button>
           {step === 1 ? (
-            <Button onClick={handleSendCode} disabled={isSending || phoneNumber.length < 10} className="mb-4">
+            <Button onClick={handleSendCode} disabled={isSending || phoneNumber.replace(/^\+/, "").length < 10} className="mb-4">
               {isSending ? "Sending..." : "Send Code"}
             </Button>
           ) : (

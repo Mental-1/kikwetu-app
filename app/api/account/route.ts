@@ -4,9 +4,8 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { z, ZodError } from "zod";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/utils/supabase/database.types";
-import pino from 'pino';
+import { logger } from "@/lib/utils/logger";
 
-const logger = pino();
 
 type Schema = Database["public"];
 

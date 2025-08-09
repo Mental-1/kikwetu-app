@@ -116,24 +116,26 @@ export default function Navigation() {
       active: pathname === "/map",
       icon: <MapIcon className="mr-2 h-4 w-4" />,
     },
-    {
-      href: "/account",
-      label: "Account",
-      active: pathname === "/account",
-      icon: <User className="mr-2 h-4 w-4" />,
-    },
-    {
-      href: "/dashboard",
-      label: "Dashboard",
-      active: pathname === "/dashboard",
-      icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
-    },
-    {
-      href: "/post-ad",
-      label: "Post Ad",
-      active: pathname === "/post-ad",
-      icon: <Plus className="mr-2 h-4 w-4" />,
-    },
+    ...(user ? [
+      {
+        href: "/account",
+        label: "Account",
+        active: pathname === "/account",
+        icon: <User className="mr-2 h-4 w-4" />,
+      },
+      {
+        href: "/dashboard",
+        label: "Dashboard",
+        active: pathname === "/dashboard",
+        icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
+      },
+      {
+        href: "/post-ad",
+        label: "Post Ad",
+        active: pathname === "/post-ad",
+        icon: <Plus className="mr-2 h-4 w-4" />,
+      },
+    ] : []),
   ];
 
   

@@ -103,7 +103,7 @@ function AccountDetails() {
   const { user, profile, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { qrCode, secret, setQrCode, setSecret, clearTwoFAState } = useTwoFA();
+  const { qrCode, setQrCode, clearTwoFAState } = useTwoFA();
 
   const { data: accountData } = useSuspenseQuery({
     queryKey: ["accountData", user?.id],
@@ -150,6 +150,18 @@ function AccountDetails() {
   const [showIdentityVerificationModal, setShowIdentityVerificationModal] =
     useState(false);
   const [showSecret, setShowSecret] = useState(false);
+
+  const getSecretFromQrCode = (qrCode: string | null): string | null => {
+    if (!qrCode) return null;
+    try {
+      const url = new URL(qrCode);
+      const secret = url.searchParams.get('secret');
+      return secret;
+    } catch (error) {
+      console.error("Error parsing QR code URI:", error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (accountData?.formData) {
@@ -295,8 +307,6 @@ function AccountDetails() {
       const { success, message, qrCode, secret } = await enable2FA();
       if (success && qrCode && secret) {
         setQrCode(qrCode);
-        // Consider not persisting `secret` in context; if kept, auto-clear via TTL (see snippet below).
-        setSecret(secret);
         toast({ title: "Success", description: message });
       } else {
         toast({ title: "Error", description: message, variant: "destructive" });
@@ -883,7 +893,7 @@ function AccountDetails() {
                           "blur-sm group-hover:blur-none transition",
                       )}
                     >
-                      {secret}
+                      {getSecretFromQrCode(qrCode)}
                     </div>
                     <Button
                       variant="ghost"
@@ -892,9 +902,10 @@ function AccountDetails() {
                       title="Copy 2FA secret"
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-full"
                       onClick={async () => {
-                        if (!secret) return;
+                        const secretToCopy = getSecretFromQrCode(qrCode);
+                        if (!secretToCopy) return;
                         try {
-                          await copyText(secret);
+                          await copyText(secretToCopy);
                           toast({ title: "Copied to clipboard" });
                         } catch {
                           toast({
@@ -928,6 +939,7 @@ function AccountDetails() {
                       setVerificationCodeError(false);
                     }}
                     placeholder="Enter code from app"
+                    className={cn("w-full", { "border-destructive": verificationCodeError })}
                   />
                   {verificationCodeError && (
                     <p className="text-sm text-destructive mt-1">

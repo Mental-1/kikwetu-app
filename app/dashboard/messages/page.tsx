@@ -285,7 +285,7 @@ export default function MessagesPage() {
         queryClient.removeQueries({ queryKey: ["messages", conversationToDelete.id] });
       }
       setConversationToDelete(null);
-      toast({ title: "Success", description: "Conversation deleted successfully.", variant: "success" });
+      toast({ title: "Conversation deleted", variant: "success" });
     },
     onError: (err: unknown) => {
       toast({ title: "Error", description: (err as Error).message, variant: "destructive" });

@@ -49,7 +49,7 @@ interface ListingsFilterProps {
 }
 
 const NO_MAX_PRICE = 1000000;
-const DEBOUNCE_DELAY = 300; // 300ms debounce for optimal UX
+const DEBOUNCE_DELAY = 700; // 700ms debounce for optimal UX
 
 export const ListingsFilter = memo(
   ({ filters, updateFilters, clearFilters }: ListingsFilterProps) => {
@@ -108,7 +108,7 @@ export const ListingsFilter = memo(
         debouncedSearchUpdate?.cancel();
         debouncedPriceUpdate?.cancel();
       };
-    }, []);
+    }, [debouncedSearchUpdate, debouncedPriceUpdate]);
 
     // Initialize search input with current search query
     useEffect(() => {
@@ -194,12 +194,18 @@ export const ListingsFilter = memo(
 
           // Convert to numbers for the filter update
           const minValue = Number(newInputs.min) || 0;
-          const maxValue =
-            newInputs.max === "" ? NO_MAX_PRICE : Number(newInputs.max) || 0;
+          let maxValue = newInputs.max === "" ? NO_MAX_PRICE : Number(newInputs.max) || 0;
+
+          const min = Math.max(0, minValue);
+          let max = Math.max(0, maxValue);
+
+          if (max !== NO_MAX_PRICE && min > max) {
+            [max] = [min]; // keep them equal instead of inverted
+          }
 
           const newPriceRange = {
-            min: minValue,
-            max: field === "max" && maxValue === 0 ? NO_MAX_PRICE : maxValue,
+            min,
+            max: field === "max" && max === 0 ? NO_MAX_PRICE : max,
           };
 
           debouncedPriceUpdate?.(newPriceRange);

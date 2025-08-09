@@ -17,7 +17,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { conversationId: string } },
 ) {
-  const baseLog = logger.child({ route: "messages:POST", conversationId: params?.conversationId });
+  const reqId = request.headers.get("x-request-id") ?? undefined;
+  const baseLog = logger.child({ route: "messages:POST", conversationId: params?.conversationId, reqId });
   try {
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -108,7 +109,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { conversationId: string } },
 ) {
-  const baseLog = logger.child({ route: "messages:GET", conversationId: params?.conversationId });
+  const reqId = request.headers.get("x-request-id") ?? undefined;
+  const baseLog = logger.child({ route: "messages:GET", conversationId: params?.conversationId, reqId });
   try {
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -121,7 +123,7 @@ export async function GET(
 
     const { conversationId } = params;
 
-    const log = baseLog;
+    const log = baseLog.child({ userId: user.id });
 
     // 1. Verify the user is part of this conversation
     const { data: conversation, error: convError } = await supabase

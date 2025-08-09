@@ -62,6 +62,9 @@ export async function POST(req: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
   const userId = await getUserId(supabase);
 
+  // On success, log structured event with route context
+  const log = logger.child({ route: "account:POST", userId });
+
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -91,14 +94,6 @@ export async function POST(req: NextRequest) {
       .update(validatedData)
       .eq("id", userId);
 
-    logger.info(
-      {
-        userId,
-        hadError: Boolean(error),
-      },
-      "Account update result"
-    );
-
     if (error) {
       logger.error({ error }, "Error updating account");
       return NextResponse.json(
@@ -107,6 +102,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    log.info({ updated: true }, "Account updated successfully");
     return NextResponse.json({ message: "Account updated successfully" });
   } catch (error) {
     if (error instanceof z.ZodError) {

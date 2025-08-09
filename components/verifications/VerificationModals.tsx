@@ -189,7 +189,7 @@ export function PhoneVerificationModal({
                 value={phoneNumber}
                 onChange={handlePhoneNumberChange}
                 inputMode="tel"
-                pattern="^\\+?\\d*$"
+                pattern="^\+?\d*$"
                 placeholder="Enter your phone number"
               />
             </div>

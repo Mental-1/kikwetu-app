@@ -30,7 +30,7 @@ export async function copyText(text: string): Promise<void> {
       }
     }
   } catch (error) {
-    logger.error({ err: error }, "Failed to copy text");
+    logger.error({ error: error }, "Failed to copy text");
     throw new Error("Failed to copy text.", { cause: error as unknown });
   }
 }

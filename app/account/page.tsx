@@ -103,7 +103,7 @@ function AccountDetails() {
   const { user, profile, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { qrCode, setQrCode, clearTwoFAState } = useTwoFA();
+  const { qrCode, secret, setQrCode, setSecret, clearTwoFAState } = useTwoFA();
 
   const { data: accountData } = useSuspenseQuery({
     queryKey: ["accountData", user?.id],
@@ -150,18 +150,7 @@ function AccountDetails() {
   const [showIdentityVerificationModal, setShowIdentityVerificationModal] =
     useState(false);
   const [showSecret, setShowSecret] = useState(false);
-
-  const getSecretFromQrCode = (qrCode: string | null): string | null => {
-    if (!qrCode) return null;
-    try {
-      const url = new URL(qrCode);
-      const secret = url.searchParams.get('secret');
-      return secret;
-    } catch (error) {
-      console.error("Error parsing QR code URI:", error);
-      return null;
-    }
-  };
+  const secretRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (accountData?.formData) {
@@ -307,6 +296,7 @@ function AccountDetails() {
       const { success, message, qrCode, secret } = await enable2FA();
       if (success && qrCode && secret) {
         setQrCode(qrCode);
+        secretRef.current = secret; // Store in ref
         toast({ title: "Success", description: message });
       } else {
         toast({ title: "Error", description: message, variant: "destructive" });
@@ -893,7 +883,7 @@ function AccountDetails() {
                           "blur-sm group-hover:blur-none transition",
                       )}
                     >
-                      {getSecretFromQrCode(qrCode)}
+                      {secretRef.current}
                     </div>
                     <Button
                       variant="ghost"
@@ -902,10 +892,9 @@ function AccountDetails() {
                       title="Copy 2FA secret"
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-full"
                       onClick={async () => {
-                        const secretToCopy = getSecretFromQrCode(qrCode);
-                        if (!secretToCopy) return;
+                        if (!secretRef.current) return;
                         try {
-                          await copyText(secretToCopy);
+                          await copyText(secretRef.current);
                           toast({ title: "Copied to clipboard" });
                         } catch {
                           toast({

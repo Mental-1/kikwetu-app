@@ -52,6 +52,8 @@ import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { EmailVerificationModal, PhoneVerificationModal, IdentityVerificationModal } from '@/components/verifications/VerificationModals';
+import { TwoFAProvider, useTwoFA } from '@/contexts/two-fa-context';
+import { copyText } from '@/lib/utils/clipboard';
 
 // Type definitions
 interface FormData {
@@ -67,6 +69,7 @@ function AccountDetails() {
   const { user, profile, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { qrCode, secret, setQrCode, setSecret, clearTwoFAState } = useTwoFA();
 
   const { data: accountData } = useSuspenseQuery({
     queryKey: ["accountData", user?.id],
@@ -90,8 +93,6 @@ function AccountDetails() {
 
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [is2FAEnabled, setIs2FAEnabled] = useState(profile?.mfa_enabled ?? false);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [secret, setSecret] = useState<string | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
   const [twoFASaving, setTwoFASaving] = useState(false);
   const [verificationCodeError, setVerificationCodeError] = useState(false);
@@ -114,20 +115,6 @@ function AccountDetails() {
       setFormData(accountData.formData);
     }
   }, [accountData]);
-
-  useEffect(() => {
-    if (show2FAModal) {
-      const storedQrCode = sessionStorage.getItem("qrCode");
-      const storedSecret = sessionStorage.getItem("secret");
-      if (storedQrCode && storedSecret) {
-        setQrCode(storedQrCode);
-        setSecret(storedSecret);
-      }
-    } else {
-      sessionStorage.removeItem("qrCode");
-      sessionStorage.removeItem("secret");
-    }
-  }, [show2FAModal]);
 
   const handleSave = async () => {
     if (!user || !formData) return;
@@ -268,8 +255,6 @@ function AccountDetails() {
     if (success && qrCode && secret) {
       setQrCode(qrCode);
       setSecret(secret);
-      sessionStorage.setItem("qrCode", qrCode);
-      sessionStorage.setItem("secret", secret);
       toast({
         title: "Success",
         description: message,
@@ -300,11 +285,8 @@ function AccountDetails() {
     if (success) {
       setIs2FAEnabled(true);
       setShow2FAModal(false);
-      setQrCode(null);
-      setSecret(null);
       setVerificationCode("");
-      sessionStorage.removeItem("qrCode");
-      sessionStorage.removeItem("secret");
+      clearTwoFAState();
       toast({
         title: "Success",
         description: message,
@@ -336,8 +318,7 @@ function AccountDetails() {
       setIs2FAEnabled(false);
       setShow2FAModal(false);
       setVerificationCode("");
-      sessionStorage.removeItem("qrCode");
-      sessionStorage.removeItem("secret");
+      clearTwoFAState();
       toast({
         title: "Success",
         description: message,
@@ -674,7 +655,7 @@ function AccountDetails() {
                     </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setShowEmailVerificationModal(true)}>
-                    Verify
+                    {profile?.email_verified ? "Resend verification" : "Verify"}
                   </Button>
                 </div>
 
@@ -828,20 +809,7 @@ function AccountDetails() {
                         onClick={async () => {
                           if (!secret) return;
                           try {
-                            if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
-                              await navigator.clipboard.writeText(secret);
-                            } else {
-                              // Fallback for non-secure contexts / older browsers
-                              const ta = document.createElement("textarea");
-                              ta.value = secret;
-                              ta.style.position = "fixed";
-                              ta.style.opacity = "0";
-                              document.body.appendChild(ta);
-                              ta.focus();
-                              ta.select();
-                              document.execCommand("copy");
-                              document.body.removeChild(ta);
-                            }
+                            await copyText(secret);
                             toast({ title: "Copied to clipboard" });
                           } catch {
                             toast({ title: "Copy failed", description: "Please copy the code manually.", variant: "destructive" });
@@ -928,6 +896,7 @@ function AccountDetails() {
               variant="outline"
               onClick={() => {
                 setShow2FAModal(false);
+                clearTwoFAState();
               }}
             >
               Close
@@ -1041,7 +1010,7 @@ function AccountDetails() {
         </DialogContent>
       </Dialog>
 
-      <EmailVerificationModal showModal={showEmailVerificationModal} setShowModal={setShowEmailVerificationModal} />
+      <EmailVerificationModal showModal={showEmailVerificationModal} setShowModal={setShowEmailVerificationModal} userEmail={user?.email || ""} />
       <PhoneVerificationModal showModal={showPhoneVerificationModal} setShowModal={setShowPhoneVerificationModal} />
       <IdentityVerificationModal showModal={showIdentityVerificationModal} setShowModal={setShowIdentityVerificationModal} />
     </div>
@@ -1091,7 +1060,9 @@ export default function AccountPage() {
         </div>
       }
     >
-      <AccountDetails />
+      <TwoFAProvider>
+        <AccountDetails />
+      </TwoFAProvider>
     </Suspense>
   );
 }

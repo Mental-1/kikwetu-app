@@ -23,7 +23,13 @@ export function DeleteConversationModal({
   isDeleting: boolean;
 }) {
   return (
-    <Dialog open={showModal} onOpenChange={setShowModal}>
+    <Dialog
+      open={showModal}
+      onOpenChange={(open) => {
+        if (isDeleting) return;
+        setShowModal(open);
+      }}
+    >
       <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-center">Delete Conversation</DialogTitle>
@@ -35,7 +41,7 @@ export function DeleteConversationModal({
           </p>
         </div>
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => setShowModal(false)}>
+          <Button variant="outline" onClick={() => setShowModal(false)} disabled={isDeleting}>
             Cancel
           </Button>
           <Button variant="destructive" onClick={onDelete} disabled={isDeleting}>

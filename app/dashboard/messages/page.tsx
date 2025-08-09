@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ChevronLeft, Trash2 } from "lucide-react";
+import { ChevronLeft, Trash2, MoreHorizontal } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MessageEncryption } from "@/lib/encryption";
 import { useAuth } from "@/contexts/auth-context";
@@ -16,6 +16,7 @@ import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation"; // Import useSearchParams
 import { DeleteConversationModal } from "@/components/messages/DeleteConversationModal";
+import { getSupabaseClient } from "@/utils/supabase/client";
 
 interface User {
   id: string;
@@ -109,7 +110,8 @@ async function deleteConversation(conversationId: string) {
   if (!response.ok) {
     throw new Error("Failed to delete conversation");
   }
-  return response.json();
+  // Some DELETE routes return 204/empty body
+  return response.status === 204 ? null : response.json().catch(() => null);
 }
 
 export default function MessagesPage() {
@@ -122,6 +124,8 @@ export default function MessagesPage() {
   const searchParams = useSearchParams();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const [isLongPressDetected, setIsLongPressDetected] = useState(false);
 
   // Web Worker instance
   const decryptorWorker = useRef<Worker | null>(null);
@@ -139,6 +143,44 @@ export default function MessagesPage() {
       decryptorWorker.current?.terminate();
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedConversation || !decryptorWorker.current) return;
+
+    const supabase = getSupabaseClient();
+    const channel = supabase
+      .channel(`chat-${selectedConversation.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'encrypted_messages',
+          filter: `conversation_id=eq.${selectedConversation.id}`,
+        },
+        async (payload) => {
+          const newMessage = payload.new as Message;
+          // Decrypt the new message
+          const key = await MessageEncryption.importKey(selectedConversation.encryption_key);
+          const decryptedContent = await MessageEncryption.decrypt(newMessage.encrypted_content, newMessage.iv, key);
+
+          // Update the query cache with the new message
+          queryClient.setQueryData<Message[]>(
+            ["messages", selectedConversation.id],
+            (oldMessages) => {
+              const updatedMessages = [...(oldMessages || []), { ...newMessage, encrypted_content: decryptedContent }];
+              return updatedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            }
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversation, decryptorWorker, queryClient]);
 
   const {
     data: conversations = [],
@@ -225,6 +267,11 @@ export default function MessagesPage() {
       setShowDeleteModal(false);
       setSelectedConversation(null);
     },
+    onError: (err: unknown) => {
+      toast({ title: "Error", description: (err as Error).message, variant: "destructive" });
+      setShowDeleteModal(false);
+      setConversationToDelete(null);
+    },
   });
 
   const handleDeleteConversation = () => {
@@ -251,10 +298,39 @@ export default function MessagesPage() {
           const otherUser =
             user?.id === convo.seller.id ? convo.buyer : convo.seller;
           return (
-            <li key={convo.id} className="border rounded-lg mb-2">
+            <li
+              key={convo.id}
+              className="border rounded-lg mb-2"
+              onTouchStart={(e) => {
+                setIsLongPressDetected(false);
+                longPressTimer.current = setTimeout(() => {
+                  setIsLongPressDetected(true);
+                  setConversationToDelete(convo);
+                  setShowDeleteModal(true);
+                }, 500); // 500ms for long press
+              }}
+              onTouchEnd={() => {
+                if (longPressTimer.current) {
+                  clearTimeout(longPressTimer.current);
+                  longPressTimer.current = null;
+                }
+              }}
+              onTouchCancel={() => {
+                if (longPressTimer.current) {
+                  clearTimeout(longPressTimer.current);
+                  longPressTimer.current = null;
+                }
+              }}
+            >
               <button
                 type="button"
-                onClick={() => setSelectedConversation(convo)}
+                onClick={(e) => {
+                  if (isLongPressDetected) {
+                    e.preventDefault(); // Prevent click if it was a long press
+                  } else {
+                    setSelectedConversation(convo);
+                  }
+                }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setConversationToDelete(convo);
@@ -282,6 +358,17 @@ export default function MessagesPage() {
                       {convo.listing.title}
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent selecting conversation
+                      setConversationToDelete(convo);
+                      setShowDeleteModal(true);
+                    }}
+                    className="ml-auto p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <MoreHorizontal className="h-5 w-5" />
+                  </button>
                 </div>
               </button>
             </li>
@@ -332,8 +419,10 @@ export default function MessagesPage() {
             <button
               type="button"
               onClick={() => {
-                setConversationToDelete(selectedConversation);
-                setShowDeleteModal(true);
+                if (selectedConversation) {
+                  setConversationToDelete(selectedConversation);
+                  setShowDeleteModal(true);
+                }
               }}
               className="ml-auto p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
             >

@@ -3,6 +3,9 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { MessageEncryption } from "@/lib/encryption";
 import { z } from "zod";
 import { cookies } from "next/headers";
+import pino from 'pino';
+
+const logger = pino();
 
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
@@ -67,7 +70,7 @@ export async function POST(
       .single();
 
     if (messageError) {
-      console.error("Error saving message:", messageError);
+      logger.error({ err: messageError, conversationId, senderId: user.id }, "Error saving message");
       return NextResponse.json(
         { error: "Failed to send message" },
         { status: 500 },
@@ -85,7 +88,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Message API error:", error);
+    logger.error({ err: error }, "Message API error");
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
     }
@@ -144,7 +147,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (messagesError) {
-      console.error("Error fetching messages:", messagesError);
+      logger.error({ err: messagesError, conversationId }, "Error fetching messages");
       return NextResponse.json(
         { error: "Failed to fetch messages" },
         { status: 500 },
@@ -154,7 +157,7 @@ export async function GET(
     // 3. Return encrypted messages (frontend will decrypt them)
     return NextResponse.json(encryptedMessages || []);
   } catch (error) {
-    console.error("Get messages API error:", error);
+    logger.error({ err: error }, "Get messages API error");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

@@ -19,7 +19,7 @@ import {
   Plus,
   Home,
   List,
-  Map,
+  Map as MapIcon,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -76,6 +76,7 @@ export default function Navigation() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { user, profile, signOut } = useAuth();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const routes = [
     {
@@ -112,7 +113,7 @@ export default function Navigation() {
       href: "/map",
       label: "Map View",
       active: pathname === "/map",
-      icon: <Map className="mr-2 h-4 w-4" />,
+      icon: <MapIcon className="mr-2 h-4 w-4" />,
     },
     {
       href: "/account",
@@ -256,7 +257,7 @@ export default function Navigation() {
       </div>
       <div className="flex md:hidden items-center gap-4">
         <ThemeToggle />
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
               <Menu className="h-5 w-5" />
@@ -273,6 +274,7 @@ export default function Navigation() {
                   <Link
                     key={route.href}
                     href={route.href}
+                    onClick={() => setIsSheetOpen(false)} // Close sheet on link click
                     className={cn(
                       "text-sm font-medium transition-colors hover:text-primary flex items-center py-2",
                       route.active ? "text-primary" : "text-muted-foreground",

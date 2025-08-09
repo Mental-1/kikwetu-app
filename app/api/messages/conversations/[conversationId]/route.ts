@@ -2,6 +2,9 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseRouteHandler } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
+import pino from 'pino';
+
+const logger = pino();
 
 export async function DELETE(
   request: Request,
@@ -13,7 +16,7 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -22,14 +25,18 @@ export async function DELETE(
       .from('conversations')
       .select('id, buyer_id, seller_id')
       .eq('id', conversationId)
-      .single();
+      .maybeSingle();
 
-    if (conversationError || !conversation) {
-      return new NextResponse(JSON.stringify({ error: 'Conversation not found' }), { status: 404 });
+    if (conversationError) {
+      logger.error({ err: conversationError, conversationId }, 'Error fetching conversation');
+      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
     if (conversation.buyer_id !== user.id && conversation.seller_id !== user.id) {
-      return new NextResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // If the user is a participant, delete the conversation
@@ -42,11 +49,10 @@ export async function DELETE(
       throw deleteError;
     }
 
-    console.log(`Conversation ${conversationId} deleted successfully`);
-
-    return new NextResponse(JSON.stringify({ message: 'Conversation deleted successfully' }), { status: 200 });
+    logger.info({ conversationId }, 'Conversation deleted successfully');
+    return NextResponse.json({ message: 'Conversation deleted successfully' }, { status: 200 });
   } catch (error: any) {
-    console.error('Error deleting conversation:', error);
-    return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
+    logger.error({ err: error, conversationId }, 'Error deleting conversation');
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

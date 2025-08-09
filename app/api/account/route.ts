@@ -92,7 +92,13 @@ export async function POST(req: NextRequest) {
       .update(validatedData)
       .eq("id", userId);
 
-    logger.info({ data, error }, "Account update result");
+    logger.info(
+      {
+        userId,
+        hadError: Boolean(error),
+      },
+      "Account update result"
+    );
 
     if (error) {
       logger.error({ error }, "Error updating account");

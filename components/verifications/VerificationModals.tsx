@@ -13,33 +13,49 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { Clock } from 'lucide-react';
+import { getSupabaseClient } from '@/utils/supabase/client';
 
 export function EmailVerificationModal({
   showModal,
   setShowModal,
+  userEmail,
 }: {
   showModal: boolean;
   setShowModal: (show: boolean) => void;
+  userEmail: string;
 }) {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(userEmail);
   const [isSending, setIsSending] = useState(false);
 
   const handleSendLink = async () => {
     setIsSending(true);
-    // Simulate sending a verification link
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+    });
+
     setIsSending(false);
     setShowModal(false);
-    toast({
-      title: "Verification Link Sent",
-      description: `A verification link has been sent to ${email}.`,
-    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Verification Link Sent",
+        description: `A verification link has been sent to ${email}. Please check your inbox. If you don't see it, check your spam folder.`,
+      });
+    }
   };
 
   return (
     <Dialog open={showModal} onOpenChange={(open) => {
       if (!open) {
-        setEmail("");
+        setEmail(userEmail); // Reset to original email on close
         setIsSending(false);
       }
       setShowModal(open);
@@ -64,7 +80,7 @@ export function EmailVerificationModal({
           <Button variant="outline" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSendLink} disabled={isSending} className="mb-4">
+          <Button onClick={handleSendLink} disabled={isSending || !email} className="mb-4">
             {isSending ? "Sending..." : "Send Verification Link"}
           </Button>
         </DialogFooter>

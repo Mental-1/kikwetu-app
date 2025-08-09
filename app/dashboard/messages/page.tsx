@@ -17,6 +17,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation"; // Import useSearchParams
 import { DeleteConversationModal } from "@/components/messages/DeleteConversationModal";
 import { getSupabaseClient } from "@/utils/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 interface User {
   id: string;

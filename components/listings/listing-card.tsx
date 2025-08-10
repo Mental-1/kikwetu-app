@@ -30,7 +30,7 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
   if (layout === "list") {
     return (
       <Link href={`/listings/${listing.id}`}>
-        <Card className="overflow-hidden border hover:shadow-md transition-shadow h-[120px] sm:h-[160px]">
+        <Card className="overflow-hidden border hover:shadow-md transition-shadow h-[160px] sm:h-[160px]">
           <CardContent className="p-0 h-full">
             <div className="flex flex-row h-full">
               <div className="w-40 h-full bg-muted flex-shrink-0">
@@ -43,14 +43,12 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
                 />
               </div>
               <div className="p-2 sm:p-4 flex-1 relative">
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-medium text-sm sm:text-lg truncate">
-                    {listing.title}
-                  </h3>
-                  <p className="text-sm sm:text-xl font-bold text-green-600">
-                    Ksh {formatPrice(listing.price)}
-                  </p>
-                </div>
+                <h3 className="font-medium text-sm sm:text-lg truncate mb-1">
+                  {listing.title}
+                </h3>
+                <p className="text-sm sm:text-xl font-bold text-green-600 mb-1">
+                  Ksh {formatPrice(listing.price)}
+                </p>
                 <p className="text-xs sm:text-sm text-muted-foreground mb-1 line-clamp-2">
                   {listing.description}
                 </p>

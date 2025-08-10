@@ -73,7 +73,6 @@ async function processMpesaCallback(parsedBody: any) {
     logger.error(
       {
         CheckoutRequestID,
-        transactionToken,
         orphanStored: !orphanError,
       },
       "CRITICAL: All matching methods failed",

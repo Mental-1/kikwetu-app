@@ -10,7 +10,7 @@ const logger = pino({
 });
 
 async function processMpesaCallback(parsedBody: any) {
-  const supabase = getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler(cookies);
   const { Body } = parsedBody;
 
   if (!Body?.stkCallback) {

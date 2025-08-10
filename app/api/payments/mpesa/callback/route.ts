@@ -69,69 +69,65 @@ export async function POST(request: NextRequest) {
     }
 
     let existingTransaction = null;
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY_MS = 500; // 0.5 seconds
 
-    // PRIMARY: Match by CheckoutRequestID (fastest)
-    const { data: primaryResult, error: primaryError } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("checkout_request_id", CheckoutRequestID)
-      .single();
-
-    if (!primaryError && primaryResult) {
-      existingTransaction = primaryResult;
-      logger.info(
-        { transactionId: primaryResult.id },
-        "Found transaction by CheckoutRequestID",
-      );
-    }
-
-    // BULLETPROOF FALLBACK: Match by transaction token
-    if (!existingTransaction && transactionToken) {
-      logger.info(
-        { transactionToken },
-        "Primary lookup failed, using transaction token...",
-      );
-
-      const { data: tokenResult, error: tokenError } = await supabase
+    for (let i = 0; i < MAX_RETRIES; i++) {
+      // PRIMARY: Match by CheckoutRequestID (fastest)
+      const { data: primaryResult, error: primaryError } = await supabase
         .from("transactions")
         .select("*")
-        .eq("transaction_token", transactionToken)
-        .eq("status", "pending")
+        .eq("checkout_request_id", CheckoutRequestID)
         .single();
 
-      if (!tokenError && tokenResult) {
-        existingTransaction = tokenResult;
+      if (!primaryError && primaryResult) {
+        existingTransaction = primaryResult;
+        logger.info({ transactionId: primaryResult.id, retryAttempt: i }, "Found transaction by CheckoutRequestID after retry");
+        break; // Found, exit loop
+      }
 
-        logger.info(
-          {
-            transactionId: tokenResult.id,
-            matchMethod: "transaction_token",
-          },
-          "Found transaction by token - BULLETPROOF match",
-        );
+      // BULLETPROOF FALLBACK: Match by transaction token
+      if (!existingTransaction && transactionToken) {
+        const { data: tokenResult, error: tokenError } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("transaction_token", transactionToken)
+          .eq("status", "pending")
+          .single();
 
-        // Update with the CheckoutRequestID that was missing
-        if (!tokenResult.checkout_request_id) {
-          const { error: updateIdError } = await supabase
-            .from("transactions")
-            .update({ checkout_request_id: CheckoutRequestID })
-            .eq("id", tokenResult.id);
+        if (!tokenError && tokenResult) {
+          existingTransaction = tokenResult;
 
-          if (updateIdError) {
-            logger.error(
-              { updateIdError },
-              "Failed to update with CheckoutRequestID",
-            );
+          logger.info(
+            {
+              transactionId: tokenResult.id,
+              matchMethod: "transaction_token",
+              retryAttempt: i,
+            },
+            "Found transaction by token - BULLETPROOF match after retry",
+          );
+
+          // Update with the CheckoutRequestID that was missing
+          if (!tokenResult.checkout_request_id) {
+            const { error: updateIdError } = await supabase
+              .from("transactions")
+              .update({ checkout_request_id: CheckoutRequestID })
+              .eq("id", tokenResult.id);
+
+            if (updateIdError) {
+              logger.error(
+                { updateIdError },
+                "Failed to update with CheckoutRequestID",
+              );
+            }
           }
+          break; // Found, exit loop
         }
-      } else {
-        logger.error(
-          {
-            tokenError,
-            transactionToken,
-          },
-          "Token-based lookup also failed",
-        );
+      }
+
+      if (!existingTransaction && i < MAX_RETRIES - 1) {
+        logger.warn({ CheckoutRequestID, transactionToken, retryAttempt: i }, `Transaction not found, retrying in ${RETRY_DELAY_MS}ms...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
       }
     }
 

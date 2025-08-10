@@ -25,11 +25,8 @@ export default async function HomePage() {
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl font-bold mb-4">
-              Find Everything You Need
+              Stop the scroll. Find what you need, from people you can trust.
             </h1>
-            <p className="text-lg md:text-xl mb-6 text-blue-100">
-              Want it. Find it. Get it.
-            </p>
 
             {/* Search Bar */}
             <SearchBar />

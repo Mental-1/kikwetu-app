@@ -277,20 +277,28 @@ export default function MessagesPage() {
 
   const deleteConversationMutation = useMutation({
     mutationFn: deleteConversation,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    onMutate: async (deletedConversationId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['conversations'] });
+      const previousConversations = queryClient.getQueryData<Conversation[]>(['conversations']);
+      queryClient.setQueryData<Conversation[]>(['conversations'], (old) =>
+        old ? old.filter((c) => c.id !== deletedConversationId) : []
+      );
       setShowDeleteModal(false);
       setSelectedConversation(null);
-      if (conversationToDelete?.id) {
-        queryClient.removeQueries({ queryKey: ["messages", conversationToDelete.id] });
-      }
       setConversationToDelete(null);
+      return { previousConversations };
+    },
+    onSuccess: () => {
       toast({ title: "Conversation deleted", variant: "success" });
     },
-    onError: (err: unknown) => {
+    onError: (err: unknown, deletedConversationId, context) => {
+      if (context?.previousConversations) {
+        queryClient.setQueryData(['conversations'], context.previousConversations);
+      }
       toast({ title: "Error", description: (err as Error).message, variant: "destructive" });
-      setShowDeleteModal(false);
-      setConversationToDelete(null);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
   });
 

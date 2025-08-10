@@ -99,6 +99,7 @@
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "latest",
     "react-leaflet": "latest",
+    "react-paystack": "^6.0.0",
     "react-resizable-panels": "^2.1.9",
     "recharts": "2.15.0",
     "sharp": "^0.34.2",

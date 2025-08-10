@@ -66,7 +66,6 @@ async function processMpesaCallback(parsedBody: any) {
         result_description: ResultDesc,
         callback_metadata: CallbackMetadata,
         raw_callback: parsedBody,
-        transaction_token: transactionToken,
         created_at: new Date().toISOString(),
       });
 

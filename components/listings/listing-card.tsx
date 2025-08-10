@@ -3,7 +3,6 @@ import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin } from "lucide-react";
-import { useState, useEffect } from 'react';
 import { formatPrice } from "@/lib/utils";
 import { ListingsItem } from "@/lib/types/listing";
 
@@ -13,24 +12,11 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
-  const [formattedPrice, setFormattedPrice] = useState<string | null>(null);
-
-  useEffect(() => {
-    const getFormattedPrice = () => {
-      if (listing.price !== undefined && listing.price !== null) {
-        const price = formatPrice(listing.price);
-        setFormattedPrice(price);
-      } else {
-        setFormattedPrice("N/A");
-      }
-    };
-    getFormattedPrice();
-  }, [listing.price]);
 
   if (layout === "list") {
     return (
       <Link href={`/listings/${listing.id}`}>
-        <Card className="overflow-hidden border hover:shadow-md transition-shadow h-[160px] sm:h-[160px]">
+        <Card className="overflow-hidden border hover:shadow-md transition-shadow h-[140px] sm:h-[160px]">
           <CardContent className="p-0 h-full">
             <div className="flex flex-row h-full">
               <div className="w-40 h-full bg-muted flex-shrink-0">
@@ -47,7 +33,9 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
                   {listing.title}
                 </h3>
                 <p className="text-sm sm:text-xl font-bold text-green-600 mb-1">
-                  Ksh {formatPrice(listing.price)}
+                  {listing.price != null 
+                    ? <>Ksh {formatPrice(listing.price)}</> 
+                    : "N/A"}
                 </p>
                 <p className="text-xs sm:text-sm text-muted-foreground mb-1 line-clamp-2">
                   {listing.description}
@@ -89,7 +77,9 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
               {listing.title}
             </h3>
             <p className="text-lg sm:text-xl font-bold text-green-600 mb-1">
-              Ksh {formatPrice(listing.price)}
+              {listing.price != null 
+                ? <>Ksh {formatPrice(listing.price)}</> 
+                : "N/A"}
             </p>
             <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-2">
               {listing.description}

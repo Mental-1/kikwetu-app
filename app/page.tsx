@@ -27,9 +27,6 @@ export default async function HomePage() {
             <h1 className="text-3xl md:text-5xl font-bold mb-4">
               Stop the scroll. Find what you need, from people you can trust.
             </h1>
-            <p className="text-lg md:text-xl mb-6 text-blue-100">
-              Kikwetu verifies every listing, so you can browse with confidence and connect with real people, not scams.
-            </p>
 
             {/* Search Bar */}
             <SearchBar />

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       Body.stkCallback;
 
     logger.info(
-      { CheckoutRequestID, ResultCode, ResultDesc },
+      { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata },
       "M-Pesa Callback Details:",
     );
 

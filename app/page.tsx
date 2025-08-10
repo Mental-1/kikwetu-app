@@ -25,10 +25,10 @@ export default async function HomePage() {
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl font-bold mb-4 sm:leading-tight">
-              Stop the scroll. Find what you need, from people you can trust.
+              Find what you need, from people you can trust.
             </h1>
             <p className="text-lg md:text-xl mb-6 text-blue-100">
-              Kikwetu verifies every listing, so you can browse with confidence and connect with real people, not scams.
+              Purchase without anxiety and stress free.
             </p>
 
             {/* Search Bar */}

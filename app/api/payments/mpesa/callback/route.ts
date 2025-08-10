@@ -26,85 +26,30 @@ async function processMpesaCallback(parsedBody: any) {
     "M-Pesa Callback Details:",
   );
 
-  // Extract AccountReference (our transaction token) from callback
-  let transactionToken = null;
-  if (CallbackMetadata?.Item) {
-    const accountRefItem = CallbackMetadata.Item.find(
-      (item: any) => item.Name === "AccountReference",
-    );
-    if (accountRefItem) {
-      transactionToken = accountRefItem.Value;
-    }
-  }
-
   let existingTransaction = null;
   const MAX_RETRIES = 5;
   const RETRY_DELAY_MS = 500; // 0.5 seconds
 
   for (let i = 0; i < MAX_RETRIES; i++) {
-    // PRIMARY: Match by CheckoutRequestID (fastest)
-    const { data: primaryResult, error: primaryError } = await supabase
+    const { data, error } = await supabase
       .from("transactions")
       .select("*")
       .eq("checkout_request_id", CheckoutRequestID)
       .single();
 
-    if (!primaryError && primaryResult) {
-      existingTransaction = primaryResult;
-      logger.info({ transactionId: primaryResult.id, retryAttempt: i }, "Found transaction by CheckoutRequestID after retry");
+    if (!error && data) {
+      existingTransaction = data;
+      logger.info({ transactionId: data.id, retryAttempt: i }, "Found transaction by CheckoutRequestID");
       break; // Found, exit loop
     }
 
-    // BULLETPROOF FALLBACK: Match by transaction token
-    if (!existingTransaction && transactionToken) {
-      const { data: tokenResult, error: tokenError } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("transaction_token", transactionToken)
-        .eq("status", "pending")
-        .maybeSingle();
-
-      if (tokenError) {
-        logger.error({ tokenError, transactionToken }, "Error querying by transaction_token");
-      }
-      if (tokenResult) {
-        existingTransaction = tokenResult;
-
-        logger.info(
-          {
-            transactionId: tokenResult.id,
-            matchMethod: "transaction_token",
-            retryAttempt: i,
-          },
-          "Found transaction by token - BULLETPROOF match after retry",
-        );
-
-        // Update with the CheckoutRequestID that was missing
-        if (!tokenResult.checkout_request_id) {
-          const { error: updateIdError } = await supabase
-            .from("transactions")
-            .update({ checkout_request_id: CheckoutRequestID })
-            .eq("id", tokenResult.id)
-            .is("checkout_request_id", null); // avoid overwriting if set concurrently
-
-          if (updateIdError) {
-            logger.error(
-              { updateIdError },
-              "Failed to update with CheckoutRequestID",
-            );
-          }
-        }
-        break; // Found, exit loop
-      }
-    }
-
-    if (!existingTransaction && i < MAX_RETRIES - 1) {
+    if (i < MAX_RETRIES - 1) {
       const withJitter = (base: number) => base + Math.floor(Math.random() * base * 0.5);
       const delay = withJitter(RETRY_DELAY_MS);
       if (i === 0 || i === MAX_RETRIES - 2) {
-        logger.warn({ CheckoutRequestID, transactionToken, retryAttempt: i, delay }, "Transaction not found, retrying...");
+        logger.warn({ CheckoutRequestID, retryAttempt: i, delay }, "Transaction not found, retrying...");
       } else {
-        logger.debug({ CheckoutRequestID, transactionToken, retryAttempt: i, delay }, "Transaction not found, retrying...");
+        logger.debug({ CheckoutRequestID, retryAttempt: i, delay }, "Transaction not found, retrying...");
       }
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -121,14 +66,12 @@ async function processMpesaCallback(parsedBody: any) {
         result_description: ResultDesc,
         callback_metadata: CallbackMetadata,
         raw_callback: parsedBody,
-        transaction_token: transactionToken,
         created_at: new Date().toISOString(),
       });
 
     logger.error(
       {
         CheckoutRequestID,
-        transactionToken,
         orphanStored: !orphanError,
       },
       "CRITICAL: All matching methods failed",
@@ -197,6 +140,7 @@ async function processMpesaCallback(parsedBody: any) {
     "Transaction updated successfully.",
   );
 
+  logger.info({ existingTransaction, status }, "Checking if listing should be activated");
   // If payment successful, activate the listing
   if (status === "completed" && existingTransaction.listing_id) {
     logger.info(

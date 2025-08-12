@@ -178,7 +178,19 @@ const DiscoverFeed = () => {
                     }
                 }}
               >
-                <DiscoverItem listing={listing} />
+                <FeedItem item={{
+                  id: listing.id,
+                  type: "image", // Assuming image for now
+                  src: listing.images?.[0] || "/placeholder.svg",
+                  avatar: listing.seller_avatar || "/placeholder-user.jpg",
+                  username: listing.seller_username || "Unknown User",
+                  tags: [], // Placeholder for now
+                  gallery: listing.images || undefined,
+                  title: listing.title,
+                  description: listing.description,
+                  price: listing.price,
+                  location: listing.location,
+                }} />
               </motion.div>
             ) : null
           ))}

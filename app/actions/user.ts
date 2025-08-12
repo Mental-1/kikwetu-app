@@ -3,7 +3,7 @@
 import { getSupabaseServer } from "@/utils/supabase/server";
 
 export async function followUser(userIdToFollow: string) {
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -24,7 +24,7 @@ export async function followUser(userIdToFollow: string) {
 }
 
 export async function unfollowUser(userIdToUnfollow: string) {
-    const supabase = getSupabaseServer();
+    const supabase = await getSupabaseServer();
     const { data: { user } = {} } = await supabase.auth.getUser();
 
     if (!user) {
@@ -44,7 +44,7 @@ export async function unfollowUser(userIdToUnfollow: string) {
 }
 
 export async function getSellerProfileData(sellerId: string) {
-    const supabase = getSupabaseServer();
+    const supabase = await getSupabaseServer();
 
     const { data: profileData, error: profileError } = await supabase
         .from("profiles")

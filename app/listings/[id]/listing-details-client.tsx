@@ -442,7 +442,7 @@ export function ListingDetailsClient({ listing }: { listing: Listing }) {
                   </div>
   
                   <Button variant="ghost" className="w-full" asChild>
-                    <Link href={`/sellers/${listing.profiles.id}`}>
+                    <Link href={`/seller/${listing.profiles.id}`}>
                       View Seller Profile
                     </Link>
                   </Button>

@@ -14,6 +14,7 @@ import {
   PostHogPageview,
   PostHogAuthWrapper,
 } from "@/components/posthog-provider";
+import BottomNavBar from "@/components/bottom-nav";
 
 const lato = Lato({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -70,6 +71,7 @@ export default function RootLayout({
                     <Footer />
                   </div>
                   <Toaster />
+                  <BottomNavBar />
                 </PostHogAuthWrapper>
               </AuthProvider>
             </ThemeProvider>

@@ -9,12 +9,16 @@ import { getSellerProfileData } from "@/app/actions/user";
 import { useAuth } from "@/contexts/auth-context";
 import { followUser, unfollowUser } from "@/app/actions/user";
 import { useToast } from "@/components/ui/use-toast";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation"; // Added
+
+const LazyMessageAction = React.lazy(() => import('@/components/common/LazyMessageAction'));
 
 const SellerProfile = ({ seller }: { seller: { id: string } }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter(); // Initialize useRouter
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["sellerProfile", seller.id],
@@ -76,6 +80,8 @@ const SellerProfile = ({ seller }: { seller: { id: string } }) => {
     }
   };
 
+  
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
@@ -129,7 +135,14 @@ const SellerProfile = ({ seller }: { seller: { id: string } }) => {
                     {isFollowing ? "Unfollow" : "Follow"}
                 </Button>
             )}
-            <Button className="rounded-full px-6 w-full sm:w-auto">Message</Button>
+            <Suspense fallback={null}>
+              <LazyMessageAction
+                sellerId={seller.id}
+                renderButton={(onClick) => (
+                  <Button className="rounded-full px-6 w-full sm:w-auto" onClick={onClick}>Message</Button>
+                )}
+              />
+            </Suspense>
           </div>
         </div>
       </div>

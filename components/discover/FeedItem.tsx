@@ -1,4 +1,6 @@
-import React from "react";
+import React, { Suspense } from "react";
+
+const LazyMessageAction = React.lazy(() => import('@/components/common/LazyMessageAction'));
 import {
   Search,
   Plus,
@@ -127,10 +129,6 @@ const SearchOverlay: React.FC<{
   );
 };
 
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/contexts/auth-context";
-
 const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const isMobile = useIsMobile();
   const [liked, setLiked] = React.useState(false);
@@ -140,10 +138,6 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const [following, setFollowing] = React.useState(false);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
   const touchStartXRef = React.useRef<number | null>(null);
-
-  const router = useRouter();
-  const { toast } = useToast();
-  const { user } = useAuth();
 
   // Gallery navigation handlers
   const nextImage = React.useCallback(() => {
@@ -211,52 +205,6 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
     }
 
     touchStartXRef.current = null;
-  };
-
-  const handleSendMessage = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!user) {
-      toast({
-        title: "Please sign in",
-        description: "You need to be signed in to send messages.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/conversations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          listingId: item.id,
-          sellerId: item.seller_id,
-        }),
-      });
-
-      if (response.ok) {
-        const { conversationId } = await response.json();
-        router.push(`/dashboard/messages?conversationId=${conversationId}`);
-      } else {
-        const errorData = await response.json();
-        toast({
-          title: "Error",
-          description: errorData.error || "Failed to start conversation.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to start conversation.",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -441,9 +389,17 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
           <ActionButton label="Review">
             <Star className="h-5 w-5" />
           </ActionButton>
-          <ActionButton label="Message" onClick={handleSendMessage}>
-            <MessageCircle className="h-5 w-5" />
-          </ActionButton>
+          <Suspense fallback={null}>
+            <LazyMessageAction
+              sellerId={item.seller_id}
+              listingId={item.id}
+              renderButton={(onClick) => (
+                <ActionButton label="Message" onClick={onClick}>
+                  <MessageCircle className="h-5 w-5" />
+                </ActionButton>
+              )}
+            />
+          </Suspense>
           <ActionButton label="Share" onClick={handleShare}>
             <Share2 className="h-5 w-5" />
           </ActionButton>
@@ -475,7 +431,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
             </h3>
             {item.price && (
               <p className="text-lg font-bold flex-shrink-0">
-                ${item.price.toLocaleString()}
+                Ksh {item.price.toLocaleString()}
               </p>
             )}
           </div>

@@ -2,15 +2,16 @@
 
 import { reportUser, toggleSaveListing, isListingSaved } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+
+const LazyMessageAction = React.lazy(() => import('@/components/common/LazyMessageAction'));
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+
 import {
   ArrowLeft,
   Heart,
@@ -247,39 +248,7 @@ export function ListingDetailsClient({ listing }: { listing: Listing }) {
       }
     };
   
-    const handleSendMessage = async () => {
-      try {
-        const response = await fetch("/api/conversations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            listingId: listing.id,
-            sellerId: listing.profiles.id,
-          }),
-        });
-  
-        if (response.ok) {
-          const { conversationId } = await response.json();
-          router.push(`/dashboard/messages?conversationId=${conversationId}`);
-        } else {
-          const errorData = await response.json();
-          toast({
-            title: "Error",
-            description: errorData.error || "Failed to start conversation.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error sending message:", error);
-        toast({
-          title: "Error",
-          description: "Failed to start conversation.",
-          variant: "destructive",
-        });
-      }
-    };
+    
   
     return (
       <div className="min-h-screen bg-background">
@@ -413,10 +382,18 @@ export function ListingDetailsClient({ listing }: { listing: Listing }) {
                   </div>
   
                   <div className="space-y-2">
-                    <Button className="w-full" onClick={handleSendMessage}>
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Send Message
-                    </Button>
+                    <Suspense fallback={null}>
+                    <LazyMessageAction
+                      sellerId={listing.profiles.id}
+                      listingId={listing.id}
+                      renderButton={(onClick) => (
+                        <Button className="w-full" onClick={onClick}>
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Send Message
+                        </Button>
+                      )}
+                    />
+                  </Suspense>
                     <div className="grid grid-cols-2 gap-2">
                       <a
                         href={`tel:${listing.profiles.phone_number}`}

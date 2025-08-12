@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -138,6 +139,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const [following, setFollowing] = React.useState(false);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
   const touchStartXRef = React.useRef<number | null>(null);
+  const { toast } = useToast();
 
   // Gallery navigation handlers
   const nextImage = React.useCallback(() => {

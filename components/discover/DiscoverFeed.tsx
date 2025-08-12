@@ -41,6 +41,7 @@ const DiscoverFeed = () => {
   const {
     data,
     error,
+    isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -129,7 +130,7 @@ const DiscoverFeed = () => {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <Suspense fallback={null}>
         <ErrorModal onRetry={() => window.location.reload()} />

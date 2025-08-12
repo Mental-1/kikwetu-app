@@ -26,6 +26,8 @@ export const useSearch = ({
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    error,
+    isError,
   } = useInfiniteQuery({
     queryKey: createListingsQueryKey(filters, sortBy, userLocation),
     queryFn: async ({ pageParam = 1 }) => {
@@ -57,6 +59,8 @@ export const useSearch = ({
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    error,
+    isError,
   };
 };
 

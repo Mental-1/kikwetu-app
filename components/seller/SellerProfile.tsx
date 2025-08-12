@@ -9,7 +9,7 @@ import { getSellerProfileData } from "@/app/actions/user";
 import { useAuth } from "@/contexts/auth-context";
 import { followUser, unfollowUser } from "@/app/actions/user";
 import { useToast } from "@/components/ui/use-toast";
-import { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation"; // Added
 

@@ -61,6 +61,7 @@ export const useSearch = ({
     isLoading,
     error,
     isError,
+    refetch,
   };
 };
 

@@ -9,12 +9,16 @@ export async function followUser(userIdToFollow: string) {
   if (!user) {
     throw new Error("You must be logged in to follow a user.");
   }
+  if (user.id === userIdToFollow) {
+    throw new Error("You cannot follow yourself.");
+  }
 
   const { data, error } = await supabase
     .from("followers")
-    .insert([
-      { follower_id: user.id, following_id: userIdToFollow },
-    ]);
+    .upsert(
+      [{ follower_id: user.id, following_id: userIdToFollow }],
+      { onConflict: "follower_id,following_id" }
+    );
 
   if (error) {
     throw new Error(error.message);
@@ -50,6 +54,8 @@ export async function getSellerProfileData(sellerId: string) {
         .from("profiles")
         .select("*, listings(*)")
         .eq("id", sellerId)
+        .limit(20, { foreignTable: "listings" })
+        .order("created_at", { foreignTable: "listings", ascending: false })
         .single();
 
     if (profileError) {
@@ -59,7 +65,7 @@ export async function getSellerProfileData(sellerId: string) {
 
     const { count: followersCount, error: followersError } = await supabase
         .from("followers")
-        .select("*", { count: "exact" })
+        .select("*", { count: "exact", head: true })
         .eq("following_id", sellerId);
 
     if (followersError) {

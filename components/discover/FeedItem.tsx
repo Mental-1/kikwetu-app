@@ -45,6 +45,7 @@ const ActionButton: React.FC<{
   children: React.ReactNode;
 }> = ({ label, active, onClick, children }) => (
   <button
+    type="button"
     aria-label={label}
     onClick={onClick}
     className={`flex flex-col items-center gap-1 hover:scale-110 transition-transform focus:outline-none`}
@@ -65,16 +66,18 @@ const Hashtags: React.FC<{ tags: string[] }> = ({ tags }) => {
   return (
     <div className="flex flex-wrap items-center gap-2 max-w-[80vw] md:max-w-[60vw]">
       {visible.map((tag) => (
-        <button
+        <Link
           key={tag}
+          href={`/discover?search=${encodeURIComponent(tag)}`}
           className="text-sm text-primary story-link"
           aria-label={`View tag ${tag}`}
         >
           {tag}
-        </button>
+        </Link>
       ))}
       {tags.length > 3 && (
         <button
+          type="button"
           onClick={() => setExpanded((v) => !v)}
           className="text-sm text-foreground/80 underline hover:text-foreground"
           aria-label={expanded ? "Show less" : "Show more tags"}
@@ -95,9 +98,9 @@ const GalleryIndicators: React.FC<{ count: number; current: number }> = ({
     <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-center gap-2">
       {Array.from({ length: count }).map((_, i) => (
         <span
+          aria-hidden="true"
           key={i}
           className={`h-2 w-2 rounded-full transition ${i === current ? "bg-primary" : "bg-background/60 border border-border"}`}
-          aria-label={`Go to image ${i + 1}`}
         />
       ))}
     </div>
@@ -141,7 +144,6 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const touchStartXRef = React.useRef<number | null>(null);
   const { toast } = useToast();
 
-  // Gallery navigation handlers
   const nextImage = React.useCallback(() => {
     if (!item.gallery || item.gallery.length <= 1) return;
     setGalleryIndex((prev) => (prev + 1) % item.gallery!.length);
@@ -292,6 +294,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
           {!isMobile && item.gallery.length > 1 && (
             <>
               <button
+                type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -303,6 +306,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
                 <ChevronLeft className="h-6 w-6" />
               </button>
               <button
+                type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -337,6 +341,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
 
       {/* Search trigger top-left */}
       <button
+        type="button"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -362,6 +367,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
             </Avatar>
           </Link>
           <button
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -431,7 +437,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
             <h3 className="text-lg font-semibold line-clamp-1">
               {item.title}
             </h3>
-            {item.price && (
+            {item.price !== null && item.price !== undefined && (
               <p className="text-lg font-bold flex-shrink-0">
                 Ksh {item.price.toLocaleString()}
               </p>

@@ -6,6 +6,7 @@ import FeedItem, { FeedMedia } from "./FeedItem";
 import { useSearchParams } from "next/navigation";
 import { ArrowDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { debounce } from "@/utils/debounce";
 import React, { Suspense } from "react";
 
 const ErrorModal = React.lazy(() => import("./ErrorModal"));
@@ -21,8 +22,6 @@ const DiscoverFeed = () => {
   } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
-
-  // Pull to refresh states
   const [startY, setStartY] = useState(0);
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -31,16 +30,23 @@ const DiscoverFeed = () => {
   // Active item tracking
   const [activeIndex, setActiveIndex] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-        });
-      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+        },
+        (err) => {
+          console.warn("Geolocation unavailable:", err);
+          setUserLocation(null);
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
     }
   }, []);
 
@@ -71,11 +77,11 @@ const DiscoverFeed = () => {
 
   // Scroll handler to detect which item is in view
   const handleScroll = useCallback(() => {
-    if (!scrollContainerRef.current || isScrolling) return;
+    if (!scrollContainerRef.current) return;
 
     const container = scrollContainerRef.current;
     const containerRect = container.getBoundingClientRect();
-    const containerCenter = containerRect.height / 2;
+    const containerCenter = containerRect.top + containerRect.height / 2;
 
     let newActiveIndex = 0;
     let minDistance = Infinity;
@@ -120,8 +126,14 @@ const DiscoverFeed = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-    isScrolling,
-  ]);
+  ]); // Removed isScrolling from dependencies
+
+  const debouncedHandleScroll = useCallback(
+    debounce(() => {
+      handleScroll();
+    }, 50),
+    [handleScroll],
+  );
 
   // Snap to nearest item when scrolling stops
   const snapToNearestItem = useCallback(() => {
@@ -146,11 +158,11 @@ const DiscoverFeed = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    let scrollEndTimer: NodeJS.Timeout;
+    let scrollEndTimer: ReturnType<typeof setTimeout>;
 
     const onScroll = () => {
       setIsScrolling(true);
-      handleScroll();
+      debouncedHandleScroll(); // Use the debounced version
 
       // Snap to nearest item when scrolling stops
       clearTimeout(scrollEndTimer);
@@ -168,7 +180,7 @@ const DiscoverFeed = () => {
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [handleScroll, snapToNearestItem]);
+  }, [debouncedHandleScroll, snapToNearestItem]); // Updated dependencies
 
   // Pull to refresh handlers
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {

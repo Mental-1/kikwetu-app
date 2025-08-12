@@ -1,6 +1,6 @@
 import DiscoverFeed from "@/components/discover/DiscoverFeed";
 
-const DiscoverPage = () => {
+const DiscoverPage = (): JSX.Element => {
   return (
     <DiscoverFeed />
   );

@@ -33,7 +33,7 @@ const LazyMessageAction: React.FC<LazyMessageActionProps> = ({ sellerId, listing
       return;
     }
 
-    sendMessage();
+    sendMessage("Hello! I'm interested in your profile.");
   };
 
   return (

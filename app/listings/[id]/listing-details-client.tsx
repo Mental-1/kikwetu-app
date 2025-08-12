@@ -3,6 +3,8 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { reportUser, toggleSaveListing, isListingSaved } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
 
 
 const LazyMessageAction = React.lazy(() => import('@/components/common/LazyMessageAction'));

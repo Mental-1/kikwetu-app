@@ -8,12 +8,12 @@ import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import throttle from "lodash.throttle";
+import { throttle } from "lodash";
 import React, { Suspense } from "react";
 
 const ErrorModal = React.lazy(() => import("./ErrorModal"));
 
-const PULL_THRESHOLD = 100; // Pixels to pull to trigger refresh
+const PULL_THRESHOLD = 100;
 
 const DiscoverFeed = () => {
   const searchParams = useSearchParams();
@@ -33,8 +33,8 @@ const DiscoverFeed = () => {
         setUserLocation({
           lat: position.coords.latitude,
           lon: position.coords.longitude,
-        });
-      });
+        }
+      );
     }
   }, []);
 
@@ -78,7 +78,7 @@ const DiscoverFeed = () => {
     const distance = currentY - startY;
 
     if (distance > 0) {
-      e.preventDefault(); // Prevent native scroll
+      e.preventDefault();
       setPullDistance(distance);
     } else {
       setIsPulling(false);
@@ -107,7 +107,7 @@ const DiscoverFeed = () => {
 
   useEffect(() => {
     if (!isRefreshing) {
-      setPullDistance(0); // Reset pull distance after refresh completes
+      setPullDistance(0);
     }
   }, [isRefreshing]);
 

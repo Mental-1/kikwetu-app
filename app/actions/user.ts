@@ -1,7 +1,7 @@
 import { getSupabaseServer } from "@/utils/supabase/server";
 
 export async function followUser(userIdToFollow: string) {
-  const supabase = await getSupabaseServer();
+  const supabase = getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -22,7 +22,7 @@ export async function followUser(userIdToFollow: string) {
 }
 
 export async function unfollowUser(userIdToUnfollow: string) {
-    const supabase = await getSupabaseServer();
+    const supabase = getSupabaseServer();
     const { data: { user } = {} } = await supabase.auth.getUser();
 
     if (!user) {
@@ -42,7 +42,7 @@ export async function unfollowUser(userIdToUnfollow: string) {
 }
 
 export async function getSellerProfileData(sellerId: string) {
-    const supabase = await getSupabaseServer();
+    const supabase = getSupabaseServer();
 
     const { data: profileData, error: profileError } = await supabase
         .from("profiles")
@@ -91,7 +91,7 @@ export async function getSellerProfileData(sellerId: string) {
 }
 
 export async function toggleLikeListing(listingId: string) {
-  const supabase = await getSupabaseServer();
+  const supabase = getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

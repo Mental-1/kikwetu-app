@@ -33,8 +33,8 @@ const DiscoverFeed = () => {
         setUserLocation({
           lat: position.coords.latitude,
           lon: position.coords.longitude,
-        }
-      );
+        });
+      });
     }
   }, []);
 

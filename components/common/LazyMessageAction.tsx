@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 interface LazyMessageActionProps {
   sellerId: string;
   listingId?: string;
-  renderButton: (onClick: () => void) => React.ReactNode;
+  renderButton: (onClick: (e: React.MouseEvent) => void) => React.ReactNode;
 }
 
 const LazyMessageAction: React.FC<LazyMessageActionProps> = ({ sellerId, listingId, renderButton }) => {

@@ -92,9 +92,9 @@ const SellerProfile = ({ seller }: { seller: { id: string } }) => {
   }
 
   const sellerProfile = data?.profile;
-  const followersCount = data?.followersCount;
-  const averageRating = data?.averageRating;
-  const ratingCount = data?.ratingCount;
+  const followersCount = data?.followersCount ?? 0;
+  const averageRating = data?.averageRating ?? 0;
+  const ratingCount = data?.ratingCount ?? 0;
 
   if (!sellerProfile) {
     return (

@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect, Suspense } from "react";
 import { reportUser, toggleSaveListing, isListingSaved } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
 import { useState, useEffect, Suspense } from "react";

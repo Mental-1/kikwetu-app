@@ -13,7 +13,7 @@ interface RecentListingsProps {
   initialListings: DisplayListingItem[];
 }
 
-export function RecentListings({ initialListings }: RecentListingsProps) {
+export default function RecentListings({ initialListings }: RecentListingsProps) {
   if (!initialListings || initialListings.length === 0) {
     return (
       <div className="col-span-full text-center py-8 text-muted-foreground">

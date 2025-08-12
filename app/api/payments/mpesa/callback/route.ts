@@ -31,13 +31,18 @@ async function processMpesaCallback(parsedBody: any) {
   const RETRY_DELAY_MS = 500; // 0.5 seconds
 
   for (let i = 0; i < MAX_RETRIES; i++) {
+    logger.info({ retryAttempt: i }, "Attempting to find transaction");
     const { data, error } = await supabase
       .from("transactions")
       .select("*")
       .eq("checkout_request_id", CheckoutRequestID)
       .single();
 
-    if (!error && data) {
+    if (error) {
+      logger.error({ error }, "Error finding transaction");
+    }
+
+    if (data) {
       existingTransaction = data;
       logger.info({ transactionId: data.id, retryAttempt: i }, "Found transaction by CheckoutRequestID");
       break; // Found, exit loop

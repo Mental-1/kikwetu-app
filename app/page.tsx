@@ -2,13 +2,15 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { ErrorBoundary } from "react-error-boundary";
 import { RecentListingsSkeleton } from "@/components/skeletons/recent-listings-skeleton";
-import { RecentListings } from "@/components/recent-listings";
 import { CategoriesSkeleton } from "@/components/categories-skeleton";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
-import CategoriesSection from "@/components/categories-section";
 import { getFilteredListingsAction } from "@/app/actions/search";
 import { DEFAULT_FILTERS } from "@/lib/search-utils";
+import React from "react";
+
+const CategoriesSection = React.lazy(() => import("@/components/categories-section"));
+const RecentListings = React.lazy(() => import("@/components/recent-listings"));
 
 export default async function HomePage() {
   const { data: initialListings } = await getFilteredListingsAction({
@@ -46,9 +48,7 @@ export default async function HomePage() {
               <Link href="/listings">See All</Link>
             </Button>
           </div>
-          <Suspense fallback={<CategoriesSkeleton />}>
-            <CategoriesSection />
-          </Suspense>
+          <CategoriesSection />
         </div>
       </section>
       {/* Recent Listings Section */}

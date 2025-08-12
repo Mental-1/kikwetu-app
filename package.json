@@ -74,6 +74,7 @@
     "drizzle-orm": "^0.44.2",
     "embla-carousel-react": "8.5.1",
     "fp-ts": "^2.16.10",
+    "framer-motion": "^12.23.12",
     "graphql": "latest",
     "graphql-request": "latest",
     "graphql-tag": "latest",

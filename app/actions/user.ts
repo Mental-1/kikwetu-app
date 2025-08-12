@@ -1,3 +1,5 @@
+"use server";
+
 import { getSupabaseServer } from "@/utils/supabase/server";
 
 export async function followUser(userIdToFollow: string) {

@@ -26,6 +26,7 @@ export interface FeedMedia {
   poster?: string;
   avatar?: string;
   username: string;
+  seller_id: string; // Added seller_id
   tags: string[];
   gallery?: string[]; // optional gallery for image carousels
   title: string;
@@ -126,6 +127,10 @@ const SearchOverlay: React.FC<{
   );
 };
 
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/auth-context";
+
 const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const isMobile = useIsMobile();
   const [liked, setLiked] = React.useState(false);
@@ -135,6 +140,10 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const [following, setFollowing] = React.useState(false);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
   const touchStartXRef = React.useRef<number | null>(null);
+
+  const router = useRouter();
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   // Gallery navigation handlers
   const nextImage = React.useCallback(() => {
@@ -204,8 +213,87 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
     touchStartXRef.current = null;
   };
 
+  const handleSendMessage = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to send messages.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          listingId: item.id,
+          sellerId: item.seller_id,
+        }),
+      });
+
+      if (response.ok) {
+        const { conversationId } = await response.json();
+        router.push(`/dashboard/messages?conversationId=${conversationId}`);
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to start conversation.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start conversation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const url = window.location.href;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: item?.title,
+          text: item?.description || "",
+          url,
+        });
+      } catch (error) {
+        // User cancelled sharing
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({
+          title: "Link copied",
+          description: "Listing link copied to clipboard",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to copy link",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   return (
-    <article className="relative h-screen w-full overflow-hidden flex items-center justify-center">
+    <article className="relative h-[calc(100vh-64px)] w-full overflow-hidden flex items-center justify-center">
       <Link
         href={`/listings/${item.id}`}
         className="absolute inset-0 z-10"
@@ -295,7 +383,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
       )}
 
       {/* Subtle gradient overlay for readability */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-background/30 md:rounded-xl" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40 md:rounded-xl" />
 
       {/* Search trigger top-left */}
       <button
@@ -305,22 +393,24 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
           setSearchOpen(true);
         }}
         aria-label="Open search"
-        className="absolute top-4 left-4 z-30 rounded-full p-2 border bg-background/50 border-border backdrop-blur-sm hover:scale-110 transition-transform"
+        className="absolute top-4 left-4 z-30 rounded-full p-2 border bg-black/50 border-border backdrop-blur-sm hover:scale-110 transition-transform"
       >
-        <Search className="h-5 w-5" />
+        <Search className="h-5 w-5 text-white" />
       </button>
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Avatar with follow badge - top-right of avatar */}
-      <div className="absolute bottom-28 right-4 md:bottom-32 z-20 flex flex-col items-center gap-4">
+      <div className="absolute bottom-[calc(64px+1rem)] right-4 md:bottom-32 z-20 flex flex-col items-center gap-4">
         <div className="relative">
-          <Avatar className="h-14 w-14 ring-2 ring-background/50 shadow">
-            <AvatarImage src={item.avatar} alt={`${item.username} avatar`} />
-            <AvatarFallback>
-              {item.username.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <Link href={`/seller/${item.seller_id}`} className="block">
+            <Avatar className="h-14 w-14 ring-2 ring-white/50 shadow">
+              <AvatarImage src={item.avatar} alt={`${item.username} avatar`} />
+              <AvatarFallback>
+                {item.username.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -345,16 +435,16 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
             }}
           >
             <Heart
-              className={`h-5 w-5 ${liked ? "fill-current text-primary" : ""}`}
+              className={`h-5 w-5 ${liked ? "fill-current text-red-500" : ""}`}
             />
           </ActionButton>
           <ActionButton label="Review">
             <Star className="h-5 w-5" />
           </ActionButton>
-          <ActionButton label="Message">
+          <ActionButton label="Message" onClick={handleSendMessage}>
             <MessageCircle className="h-5 w-5" />
           </ActionButton>
-          <ActionButton label="Share">
+          <ActionButton label="Share" onClick={handleShare}>
             <Share2 className="h-5 w-5" />
           </ActionButton>
           <ActionButton
@@ -373,27 +463,24 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
       </div>
 
       {/* Bottom-left info: hashtags */}
-      <div className="absolute bottom-6 left-4 right-28 md:right-40 z-20 space-y-2">
-        <p className="text-sm text-foreground/90">@{item.username}</p>
+      <div className="absolute bottom-[calc(64px+1rem)] left-4 right-28 md:right-40 z-20 space-y-2 text-white">
+        <p className="text-sm text-white/90">@{item.username}</p>
         <Hashtags tags={item.tags} />
 
         {/* Product info */}
         <div className="space-y-1">
-          <h3 className="text-lg font-semibold text-foreground line-clamp-2">
-            {item.title}
-          </h3>
-          {item.description && (
-            <p className="text-sm text-foreground/80 line-clamp-2">
-              {item.description}
-            </p>
-          )}
-          {item.price && (
-            <p className="text-lg font-bold text-primary">
-              ${item.price.toLocaleString()}
-            </p>
-          )}
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold line-clamp-1">
+              {item.title}
+            </h3>
+            {item.price && (
+              <p className="text-lg font-bold flex-shrink-0">
+                ${item.price.toLocaleString()}
+              </p>
+            )}
+          </div>
           {item.location && (
-            <div className="flex items-center gap-1 text-sm text-foreground/70">
+            <div className="flex items-center gap-1 text-sm text-white/70">
               <MapPin className="h-4 w-4" />
               <span>{item.location}</span>
             </div>

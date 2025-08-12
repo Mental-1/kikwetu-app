@@ -355,6 +355,7 @@ const DiscoverFeed = () => {
                 src: listing.images?.[0] || "/placeholder.svg",
                 avatar: listing.seller_avatar || "/placeholder-user.jpg",
                 username: listing.seller_username || "Unknown User",
+                seller_id: listing.profiles.id, // Added seller_id
                 tags: [], // Placeholder for now
                 gallery: listing.images || undefined,
                 title: listing.title,

@@ -226,26 +226,6 @@ const DiscoverFeed = () => {
     }
   }, [isRefreshing]);
 
-  if (isLoading && !data) {
-    return (
-      <div className="h-screen w-full flex justify-center items-center bg-black">
-        <div className="flex gap-2">
-          <div className="w-4 h-4 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]"></div>
-          <div className="w-4 h-4 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]"></div>
-          <div className="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Suspense fallback={null}>
-        <ErrorModal onRetry={() => window.location.reload()} />
-      </Suspense>
-    );
-  }
-
   // Navigate to specific item
   const navigateToItem = useCallback(
     (index: number) => {
@@ -300,6 +280,26 @@ const DiscoverFeed = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeIndex, allListings.length, navigateToItem]); // Added navigateToItem to dependencies
+
+  if (isLoading && !data) {
+    return (
+      <div className="h-screen w-full flex justify-center items-center bg-black">
+        <div className="flex gap-2">
+          <div className="w-4 h-4 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]"></div>
+          <div className="w-4 h-4 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]"></div>
+          <div className="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Suspense fallback={null}>
+        <ErrorModal onRetry={() => window.location.reload()} />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="h-screen w-full flex justify-center bg-black relative overflow-hidden">

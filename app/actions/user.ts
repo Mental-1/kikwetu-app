@@ -93,7 +93,7 @@ export async function getSellerProfileData(sellerId: string) {
 }
 
 export async function toggleLikeListing(listingId: string) {
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

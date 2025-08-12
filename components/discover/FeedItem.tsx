@@ -3,6 +3,7 @@ import { Search, Plus, Heart, Star, MessageCircle, Share2, Bookmark, X, MapPin }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Link from "next/link";
 
 
 export interface FeedMedia {
@@ -141,23 +142,25 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
             style={{ transform: `translateX(-${galleryIndex * 100}%)` }}
           >
             {item.gallery.map((image, idx) => (
-              <img
+              <Image
                 key={idx}
                 src={image}
                 alt={`${item.username} gallery image ${idx + 1}`}
                 loading="lazy"
                 className="h-full w-full object-cover shrink-0 grow-0 basis-full"
+                fill
               />
             ))}
           </div>
           <GalleryIndicators count={item.gallery.length} current={galleryIndex} />
         </div>
       ) : (
-        <img
+        <Image
           src={item.src}
           alt={`${item.username} product preview`}
           className="absolute inset-0 h-full w-full object-cover md:rounded-xl"
           loading="lazy"
+          fill
         />
       )}
 

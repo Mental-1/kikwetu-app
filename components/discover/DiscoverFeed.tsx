@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearch } from "@/hooks/useSearch";
+import { FeedItem, FeedMedia } from "./FeedItem";
 import DiscoverItem from "./DiscoverItem";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";

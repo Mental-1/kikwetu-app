@@ -246,6 +246,29 @@ const DiscoverFeed = () => {
     );
   }
 
+  // Navigate to specific item
+  const navigateToItem = useCallback(
+    (index: number) => {
+      if (
+        !scrollContainerRef.current ||
+        index < 0 ||
+        index >= allListings.length
+      )
+        return;
+
+      const container = scrollContainerRef.current;
+      const targetScrollTop = index * container.clientHeight;
+
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: "smooth",
+      });
+
+      setActiveIndex(index);
+    },
+    [allListings.length, scrollContainerRef], // Added scrollContainerRef to dependencies
+  );
+
   // Keyboard navigation for desktop
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -276,30 +299,7 @@ const DiscoverFeed = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, allListings.length]);
-
-  // Navigate to specific item
-  const navigateToItem = useCallback(
-    (index: number) => {
-      if (
-        !scrollContainerRef.current ||
-        index < 0 ||
-        index >= allListings.length
-      )
-        return;
-
-      const container = scrollContainerRef.current;
-      const targetScrollTop = index * container.clientHeight;
-
-      container.scrollTo({
-        top: targetScrollTop,
-        behavior: "smooth",
-      });
-
-      setActiveIndex(index);
-    },
-    [allListings.length],
-  );
+  }, [activeIndex, allListings.length, navigateToItem]); // Added navigateToItem to dependencies
 
   return (
     <div className="h-screen w-full flex justify-center bg-black relative overflow-hidden">

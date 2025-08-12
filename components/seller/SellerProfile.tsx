@@ -134,7 +134,7 @@ const SellerProfile = ({ seller }: { seller: { id: string } }) => {
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold mb-4">Seller's Listings</h2>
+      <h2 className="text-2xl font-bold mb-4">Seller&apos;s Listings</h2>
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {sellerProfile.listings.map((listing: any) => (
           <ListingCard key={listing.id} listing={listing} />

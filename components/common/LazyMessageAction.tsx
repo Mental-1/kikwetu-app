@@ -14,7 +14,7 @@ const LazyMessageAction: React.FC<LazyMessageActionProps> = ({ sellerId, listing
   const { toast } = useToast();
   const { sendMessage } = useSendMessage({ sellerId, listingId });
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (e: React.MouseEvent) => {
     if (!user) {
       toast({
         title: "Please sign in",
@@ -33,7 +33,7 @@ const LazyMessageAction: React.FC<LazyMessageActionProps> = ({ sellerId, listing
       return;
     }
 
-    sendMessage("Hello! I'm interested in your profile.");
+    sendMessage(e);
   };
 
   return (

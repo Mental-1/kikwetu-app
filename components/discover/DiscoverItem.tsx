@@ -13,7 +13,7 @@ const DiscoverItem = ({ listing }: { listing: any }) => {
       <div className="relative z-20 h-full">
         <TopOverlay />
         <LeftOverlay username={listing.seller_username} tags={listing.tags || []} />
-        <RightOverlay sellerId={listing.user_id} sellerAvatar={listing.seller_avatar} />
+        <RightOverlay sellerId={listing.user_id} sellerAvatar={listing.seller_avatar} listingId={listing.id} />
       </div>
     </div>
   );

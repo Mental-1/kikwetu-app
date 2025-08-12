@@ -5,30 +5,38 @@ import ActionButton from "./ActionButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { followUser, unfollowUser } from "@/app/actions/user";
+import { followUser, unfollowUser, toggleLikeListing } from "@/app/actions/user";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface RightOverlayProps {
     sellerId: string;
     sellerAvatar: string;
+    listingId: string;
 }
 
-const RightOverlay = ({ sellerId, sellerAvatar }: RightOverlayProps) => {
+const RightOverlay = ({ sellerId, sellerAvatar, listingId }: RightOverlayProps) => {
     const { user } = useAuth();
     const { toast } = useToast();
+    const queryClient = useQueryClient();
+
     const [isFollowing, setIsFollowing] = useState(false); // This should be fetched from backend
+    const [isLiked, setIsLiked] = useState(false); // This should be fetched from backend
+    const [likeCount, setLikeCount] = useState(0); // This should be fetched from backend
 
     // Dummy check for now, in real app, fetch from DB
     useEffect(() => {
         // Simulate fetching follow status
         if (user && user.id !== sellerId) {
-            // In a real app, you'd check if user.id follows sellerId from your 'followers' table
-            // For now, let's just set it to false by default
-            setIsFollowing(false);
+            // You would fetch the actual follow status here
+            setIsFollowing(false); // Placeholder
         }
-    }, [user, sellerId]);
+        // Simulate fetching like status and count
+        setIsLiked(false); // Placeholder
+        setLikeCount(Math.floor(Math.random() * 100)); // Placeholder
+    }, [user, sellerId, listingId]);
 
     const handleFollowToggle = async () => {
         if (!user) {
@@ -64,6 +72,8 @@ const RightOverlay = ({ sellerId, sellerAvatar }: RightOverlayProps) => {
                     description: "You are now following this user.",
                 });
             }
+            // Invalidate seller profile query to update follower count
+            queryClient.invalidateQueries({ queryKey: ["sellerProfile", sellerId] });
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -73,10 +83,50 @@ const RightOverlay = ({ sellerId, sellerAvatar }: RightOverlayProps) => {
         }
     };
 
+    const likeMutation = useMutation({
+        mutationFn: toggleLikeListing,
+        onMutate: async () => {
+            // Optimistically update the UI
+            const previousLiked = isLiked;
+            const previousLikeCount = likeCount;
+
+            setIsLiked(!previousLiked);
+            setLikeCount((prev) => (previousLiked ? prev - 1 : prev + 1));
+
+            return { previousLiked, previousLikeCount };
+        },
+        onError: (err, variables, context) => {
+            // Rollback on error
+            setIsLiked(context?.previousLiked || false);
+            setLikeCount(context?.previousLikeCount || 0);
+            toast({
+                title: "Error",
+                description: err.message || "Failed to like/unlike listing.",
+                variant: "destructive",
+            });
+        },
+        onSettled: () => {
+            // Invalidate discover listings query to refetch and ensure consistency
+            queryClient.invalidateQueries({ queryKey: ["discoverListings"] });
+        },
+    });
+
+    const handleLikeToggle = () => {
+        if (!user) {
+            toast({
+                title: "Login Required",
+                description: "Please login to like listings.",
+                variant: "destructive",
+            });
+            return;
+        }
+        likeMutation.mutate(listingId);
+    };
+
   return (
     <div className="absolute bottom-24 right-2 flex flex-col items-center gap-4">
         <div className="relative">
-            <Link href={`/seller/${sellerId}`}> {/* Use sellerId for the link */}
+            <Link href={`/seller/${sellerId}`}>
                 <Avatar className="w-12 h-12 border-2 border-white cursor-pointer">
                     <AvatarImage src={sellerAvatar || "https://github.com/shadcn.png"} alt="Seller Avatar" />
                     <AvatarFallback>SE</AvatarFallback>
@@ -85,7 +135,7 @@ const RightOverlay = ({ sellerId, sellerAvatar }: RightOverlayProps) => {
             {user && user.id !== sellerId && (
                 <Button
                     size="icon"
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full" // Removed bg-primary and variant secondary
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full" 
                     onClick={handleFollowToggle}
                     variant={isFollowing ? "default" : "secondary"}
                 >
@@ -93,7 +143,7 @@ const RightOverlay = ({ sellerId, sellerAvatar }: RightOverlayProps) => {
                 </Button>
             )}
         </div>
-      <ActionButton icon={<Heart className="w-6 h-6" />} label="Like" activeColor="text-red-500" />
+      <ActionButton icon={<Heart className="w-6 h-6" />} label={likeCount.toString()} onClick={handleLikeToggle} activeColor={isLiked ? "text-red-500" : ""} />
       <ActionButton icon={<Star className="w-6 h-6" />} label="Review" activeColor="text-yellow-500" />
       <ActionButton icon={<MessageCircle className="w-6 h-6" />} label="Message" activeColor="text-blue-500" />
       <ActionButton icon={<Share2 className="w-6 h-6" />} label="Share" />

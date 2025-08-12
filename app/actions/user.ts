@@ -1,5 +1,3 @@
-"use server";
-
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -102,4 +100,52 @@ export async function getSellerProfileData(sellerId: string) {
         averageRating: averageRating,
         ratingCount: ratingCount,
     };
+}
+
+export async function toggleLikeListing(listingId: string) {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("You must be logged in to like/unlike a listing.");
+  }
+
+  // Check if the user has already liked the listing
+  const { data: existingLike, error: checkError } = await supabase
+    .from("likes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("listing_id", listingId)
+    .single();
+
+  if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows found
+    throw new Error(checkError.message);
+  }
+
+  if (existingLike) {
+    // User has liked it, so unlike
+    const { error: deleteError } = await supabase
+      .from("likes")
+      .delete()
+      .match({ user_id: user.id, listing_id: listingId });
+
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
+    revalidatePath("/discover");
+    return { liked: false };
+  } else {
+    // User has not liked it, so like
+    const { error: insertError } = await supabase
+      .from("likes")
+      .insert([
+        { user_id: user.id, listing_id: listingId },
+      ]);
+
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+    revalidatePath("/discover");
+    return { liked: true };
+  }
 }

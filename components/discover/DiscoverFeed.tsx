@@ -1,16 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearch } from "@/hooks/useSearch";
 import DiscoverItem from "./DiscoverItem";
-import ErrorModal from "./ErrorModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowDown, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import throttle from "lodash.throttle";
+import React, { Suspense } from "react";
+
+const ErrorModal = React.lazy(() => import("./ErrorModal"));
+
+const PULL_THRESHOLD = 100; // Pixels to pull to trigger refresh
 
 const DiscoverFeed = () => {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const queryClient = useQueryClient();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const [startY, setStartY] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -30,6 +45,7 @@ const DiscoverFeed = () => {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    refetch,
   } = useSearch({
     filters: {
         categories: [],
@@ -48,6 +64,59 @@ const DiscoverFeed = () => {
 
   const allListings = data?.pages.flatMap((page) => page.data) ?? [];
 
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (scrollContainerRef.current && scrollContainerRef.current.scrollTop === 0) {
+      setStartY(e.touches[0].clientY);
+      setIsPulling(true);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isPulling) return;
+
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - startY;
+
+    if (distance > 0) {
+      e.preventDefault(); // Prevent native scroll
+      setPullDistance(distance);
+    } else {
+      setIsPulling(false);
+      setPullDistance(0);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (isPulling) {
+      setIsPulling(false);
+      if (pullDistance > PULL_THRESHOLD) {
+        setIsRefreshing(true);
+        try {
+          await refetch();
+        } catch (err) {
+          console.error("Pull to refresh failed:", err);
+        } finally {
+          setIsRefreshing(false);
+          setPullDistance(0);
+        }
+      } else {
+        setPullDistance(0);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isRefreshing) {
+      setPullDistance(0); // Reset pull distance after refresh completes
+    }
+  }, [isRefreshing]);
+
+  const setActiveIndexThrottled = useRef(
+    throttle((index: number) => {
+      setActiveIndex(index);
+    }, 100)
+  ).current;
+
   if (isLoading && !data) {
     return (
       <div className="h-screen w-full flex justify-center items-center bg-black">
@@ -61,15 +130,39 @@ const DiscoverFeed = () => {
   }
 
   if (error) {
-    return <ErrorModal onRetry={() => window.location.reload()} />;
+    return (
+      <Suspense fallback={null}>
+        <ErrorModal onRetry={() => window.location.reload()} />
+      </Suspense>
+    );
   }
 
   return (
     <div className="h-screen w-full flex justify-center bg-black">
-      <div className="relative h-full w-full md:w-[400px] lg:w-[470px] overflow-hidden">
+      <div
+        ref={scrollContainerRef}
+        className="relative h-full w-full md:w-[400px] lg:w-[470px] overflow-y-auto snap-y snap-mandatory"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {isPulling && (
+          <div
+            className="absolute top-0 left-0 w-full flex justify-center items-center text-white"
+            style={{ height: pullDistance > PULL_THRESHOLD ? PULL_THRESHOLD : pullDistance }}
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : (
+              <ArrowDown
+                className={cn("h-6 w-6 transition-transform duration-200", pullDistance > PULL_THRESHOLD && "rotate-180")}
+              />
+            )}
+          </div>
+        )}
         <AnimatePresence initial={false}>
           {allListings.map((listing, index) => (
-            index >= activeIndex - 2 && index <= activeIndex + 2 ? (
+            index >= activeIndex - 1 && index <= activeIndex + 1 ? (
               <motion.div
                 key={listing.id}
                 className="absolute h-full w-full"
@@ -78,8 +171,8 @@ const DiscoverFeed = () => {
                 exit={{ y: "-100%" }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 onViewportEnter={() => {
-                    if(index > activeIndex) setActiveIndex(index);
-                    if (index === allListings.length - 2 && hasNextPage && !isFetchingNextPage) {
+                    if(index > activeIndex) setActiveIndexThrottled(index);
+                    if (index === allListings.length - 1 && hasNextPage && !isFetchingNextPage) {
                         fetchNextPage();
                     }
                 }}

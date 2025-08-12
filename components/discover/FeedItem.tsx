@@ -1,11 +1,23 @@
 import React from "react";
-import { Search, Plus, Heart, Star, MessageCircle, Share2, Bookmark, X, MapPin } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Heart,
+  Star,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  X,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Link from "next/link";
 import Image from "next/image";
-
+import { cn } from "@/lib/utils";
 
 export interface FeedMedia {
   id: string;
@@ -25,15 +37,19 @@ export interface FeedMedia {
 const ActionButton: React.FC<{
   label: string;
   active?: boolean;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   children: React.ReactNode;
 }> = ({ label, active, onClick, children }) => (
   <button
     aria-label={label}
     onClick={onClick}
-    className={`flex flex-col items-center gap-1 hover-scale focus:outline-none`}
+    className={`flex flex-col items-center gap-1 hover:scale-110 transition-transform focus:outline-none`}
   >
-    <div className={`rounded-full p-3 border bg-background/40 border-border backdrop-blur-sm transition`}>{children}</div>
+    <div
+      className={`rounded-full p-3 border bg-background/40 border-border backdrop-blur-sm transition`}
+    >
+      {children}
+    </div>
     <span className={`text-xs text-foreground/80`}>{label}</span>
   </button>
 );
@@ -45,7 +61,11 @@ const Hashtags: React.FC<{ tags: string[] }> = ({ tags }) => {
   return (
     <div className="flex flex-wrap items-center gap-2 max-w-[80vw] md:max-w-[60vw]">
       {visible.map((tag) => (
-        <button key={tag} className="text-sm text-primary story-link" aria-label={`View tag ${tag}`}>
+        <button
+          key={tag}
+          className="text-sm text-primary story-link"
+          aria-label={`View tag ${tag}`}
+        >
           {tag}
         </button>
       ))}
@@ -62,7 +82,10 @@ const Hashtags: React.FC<{ tags: string[] }> = ({ tags }) => {
   );
 };
 
-const GalleryIndicators: React.FC<{ count: number; current: number }> = ({ count, current }) => {
+const GalleryIndicators: React.FC<{ count: number; current: number }> = ({
+  count,
+  current,
+}) => {
   if (count <= 1) return null;
   return (
     <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-center gap-2">
@@ -83,11 +106,19 @@ const SearchOverlay: React.FC<{
 }> = ({ open, onClose }) => {
   if (!open) return null;
   return (
-    <div className="absolute top-4 left-4 right-4 md:right-auto md:w-96 z-30 animate-enter">
+    <div className="absolute top-4 left-4 right-4 md:right-auto md:w-96 z-30 animate-in fade-in-0 slide-in-from-top-2 duration-200">
       <div className="relative">
-        <Input placeholder="Search products, tags, stores..." className="pl-10" aria-label="Search" />
+        <Input
+          placeholder="Search products, tags, stores..."
+          className="pl-10"
+          aria-label="Search"
+        />
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/70" />
-        <button onClick={onClose} aria-label="Close search" className="absolute right-3 top-1/2 -translate-y-1/2">
+        <button
+          onClick={onClose}
+          aria-label="Close search"
+          className="absolute right-3 top-1/2 -translate-y-1/2"
+        >
           <X className="h-4 w-4 text-foreground/70" />
         </button>
       </div>
@@ -105,13 +136,86 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const [galleryIndex, setGalleryIndex] = React.useState(0);
   const touchStartXRef = React.useRef<number | null>(null);
 
+  // Gallery navigation handlers
+  const nextImage = React.useCallback(() => {
+    if (!item.gallery || item.gallery.length <= 1) return;
+    setGalleryIndex((prev) => (prev + 1) % item.gallery!.length);
+  }, [item.gallery]);
+
+  const prevImage = React.useCallback(() => {
+    if (!item.gallery || item.gallery.length <= 1) return;
+    setGalleryIndex(
+      (prev) => (prev - 1 + item.gallery!.length) % item.gallery!.length,
+    );
+  }, [item.gallery]);
+
+  // Keyboard navigation for gallery (desktop only)
+  React.useEffect(() => {
+    if (isMobile || !item.gallery || item.gallery.length <= 1) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle gallery navigation if this is the focused element or no input is focused
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowLeft":
+          e.preventDefault();
+          prevImage();
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          nextImage();
+          break;
+      }
+    };
+
+    // Add event listener when component mounts
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobile, item.gallery, nextImage, prevImage]);
+
+  // Mobile touch handlers for gallery
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!item.gallery || item.gallery.length <= 1) return;
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!item.gallery || item.gallery.length <= 1 || !touchStartXRef.current)
+      return;
+
+    const endX = e.changedTouches[0].clientX;
+    const diff = touchStartXRef.current - endX;
+    const threshold = 50;
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        nextImage();
+      } else {
+        prevImage();
+      }
+    }
+
+    touchStartXRef.current = null;
+  };
+
   return (
     <article className="relative h-screen w-full overflow-hidden flex items-center justify-center">
-      <Link href={`/listings/${item.id}`} className="absolute inset-0 z-10" aria-label={`View ${item.title}`}></Link>
+      <Link
+        href={`/listings/${item.id}`}
+        className="absolute inset-0 z-10"
+        aria-label={`View ${item.title}`}
+      ></Link>
+
       {/* Background media */}
       {item.type === "video" ? (
         <video
-          className="absolute inset-0 h-full w-full object-cover md:rounded-xl"
+          className="absolute inset-0 h-full w-full object-contain md:rounded-xl"
           src={item.src}
           poster={item.poster}
           playsInline
@@ -122,57 +226,86 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
       ) : item.gallery && item.gallery.length > 0 ? (
         <div
           className="absolute inset-0 h-full w-full overflow-hidden md:rounded-xl"
-          onTouchStart={(e) => {
-            touchStartXRef.current = e.touches[0].clientX;
-          }}
-          onTouchEnd={(e) => {
-            const endX = e.changedTouches[0].clientX;
-            const startX = touchStartXRef.current ?? endX;
-            const diff = startX - endX;
-            if (Math.abs(diff) > 50) {
-              setGalleryIndex((prev) => {
-                const next = diff > 0 ? prev + 1 : prev - 1;
-                return Math.max(0, Math.min(next, item.gallery!.length - 1));
-              });
-            }
-            touchStartXRef.current = null;
-          }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           <div
-            className="flex h-full w-full transition-transform duration-300"
+            className="flex h-full w-full transition-transform duration-300 ease-out"
             style={{ transform: `translateX(-${galleryIndex * 100}%)` }}
           >
             {item.gallery.map((image, idx) => (
-              <Image
+              <div
                 key={idx}
-                src={image}
-                alt={`${item.username} gallery image ${idx + 1}`}
-                loading="lazy"
-                className="h-full w-full object-cover shrink-0 grow-0 basis-full"
-                fill
-              />
+                className="relative h-full w-full shrink-0 grow-0 basis-full"
+              >
+                <Image
+                  src={image}
+                  alt={`${item.username} gallery image ${idx + 1}`}
+                  fill
+                  className="object-contain"
+                  loading="lazy"
+                  sizes="(max-width: 768px) 100vw, 600px"
+                />
+              </div>
             ))}
           </div>
-          <GalleryIndicators count={item.gallery.length} current={galleryIndex} />
+
+          {/* Desktop-only gallery navigation buttons */}
+          {!isMobile && item.gallery.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  prevImage();
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-full p-3 bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  nextImage();
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 rounded-full p-3 bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label="Next image"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+
+          <GalleryIndicators
+            count={item.gallery.length}
+            current={galleryIndex}
+          />
         </div>
       ) : (
         <Image
           src={item.src}
           alt={`${item.username} product preview`}
-          className="absolute inset-0 h-full w-full object-cover md:rounded-xl"
-          loading="lazy"
           fill
+          className="absolute inset-0 h-full w-full object-contain md:rounded-xl"
+          loading="lazy"
+          sizes="(max-width: 768px) 100vw, 600px"
         />
       )}
 
-      {/* subtle gradient overlay for readability */}
+      {/* Subtle gradient overlay for readability */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-background/30 md:rounded-xl" />
 
       {/* Search trigger top-left */}
       <button
-        onClick={() => setSearchOpen(true)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setSearchOpen(true);
+        }}
         aria-label="Open search"
-        className="absolute top-4 left-4 z-30 rounded-full p-2 border bg-background/50 border-border backdrop-blur-sm hover-scale"
+        className="absolute top-4 left-4 z-30 rounded-full p-2 border bg-background/50 border-border backdrop-blur-sm hover:scale-110 transition-transform"
       >
         <Search className="h-5 w-5" />
       </button>
@@ -184,12 +317,18 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
         <div className="relative">
           <Avatar className="h-14 w-14 ring-2 ring-background/50 shadow">
             <AvatarImage src={item.avatar} alt={`${item.username} avatar`} />
-            <AvatarFallback>{item.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>
+              {item.username.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <button
-            onClick={() => setFollowing((v) => !v)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setFollowing((v) => !v);
+            }}
             aria-label={following ? "Following" : "Follow"}
-            className="absolute -bottom-1 -right-1 rounded-full p-1 bg-primary text-primary-foreground shadow"
+            className="absolute -bottom-1 -right-1 rounded-full p-1 bg-primary text-primary-foreground shadow hover:scale-110 transition-transform"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -197,8 +336,17 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
 
         {/* Actions */}
         <div className="flex flex-col items-center gap-4">
-          <ActionButton label={liked ? "Liked" : "Like"} onClick={() => setLiked((v) => !v)}>
-            <Heart className={`h-5 w-5 ${liked ? "fill-current text-primary" : ""}`} />
+          <ActionButton
+            label={liked ? "Liked" : "Like"}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setLiked((v) => !v);
+            }}
+          >
+            <Heart
+              className={`h-5 w-5 ${liked ? "fill-current text-primary" : ""}`}
+            />
           </ActionButton>
           <ActionButton label="Review">
             <Star className="h-5 w-5" />
@@ -209,8 +357,17 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
           <ActionButton label="Share">
             <Share2 className="h-5 w-5" />
           </ActionButton>
-          <ActionButton label={saved ? "Saved" : "Save"} onClick={() => setSaved((v) => !v)}>
-            <Bookmark className={`h-5 w-5 ${saved ? "fill-current text-primary" : ""}`} />
+          <ActionButton
+            label={saved ? "Saved" : "Save"}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setSaved((v) => !v);
+            }}
+          >
+            <Bookmark
+              className={`h-5 w-5 ${saved ? "fill-current text-primary" : ""}`}
+            />
           </ActionButton>
         </div>
       </div>
@@ -219,6 +376,29 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
       <div className="absolute bottom-6 left-4 right-28 md:right-40 z-20 space-y-2">
         <p className="text-sm text-foreground/90">@{item.username}</p>
         <Hashtags tags={item.tags} />
+
+        {/* Product info */}
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold text-foreground line-clamp-2">
+            {item.title}
+          </h3>
+          {item.description && (
+            <p className="text-sm text-foreground/80 line-clamp-2">
+              {item.description}
+            </p>
+          )}
+          {item.price && (
+            <p className="text-lg font-bold text-primary">
+              ${item.price.toLocaleString()}
+            </p>
+          )}
+          {item.location && (
+            <div className="flex items-center gap-1 text-sm text-foreground/70">
+              <MapPin className="h-4 w-4" />
+              <span>{item.location}</span>
+            </div>
+          )}
+        </div>
       </div>
     </article>
   );

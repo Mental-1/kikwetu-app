@@ -112,8 +112,6 @@
         z-index: 0 !important;
     }
 
-    
-
     /* Back to top button */
     .back-to-top {
         position: fixed;
@@ -173,4 +171,38 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         @apply bg-foreground;
     }
+}
+
+/* Hide scrollbar for webkit browsers (Chrome, Safari, Edge) */
+.overflow-y-auto::-webkit-scrollbar {
+    display: none;
+}
+
+/* Ensure scrolling still works */
+.overflow-y-auto {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+/* Additional utility classes for better control */
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+
+/* Smooth scroll behavior */
+.snap-y {
+    scroll-snap-type: y mandatory;
+}
+
+.snap-start {
+    scroll-snap-align: start;
+}
+
+.snap-always {
+    scroll-snap-stop: always;
 }

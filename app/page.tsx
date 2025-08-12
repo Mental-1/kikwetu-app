@@ -48,9 +48,7 @@ export default async function HomePage() {
               <Link href="/listings">See All</Link>
             </Button>
           </div>
-          <Suspense fallback={<CategoriesSkeleton />}>
-            <CategoriesSection />
-          </Suspense>
+          <CategoriesSection />
         </div>
       </section>
       {/* Recent Listings Section */}

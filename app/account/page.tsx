@@ -401,6 +401,11 @@ function AccountDetails() {
   return (
     <div className="container px-4 py-8">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-4">
+          <Link href="/dashboard">
+            <Button variant="outline" className="mb-4">Back to Dashboard</Button>
+          </Link>
+        </div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold">My Account</h1>
           <p className="text-muted-foreground">

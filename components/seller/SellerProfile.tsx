@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { followUser, unfollowUser } from "@/app/actions/user";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const SellerProfile = ({ seller }: { seller: { id: string } }) => {
   const { user } = useAuth();
@@ -106,38 +107,34 @@ const SellerProfile = ({ seller }: { seller: { id: string } }) => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="bg-card p-6 rounded-lg shadow-md mb-8">
-        <div className="flex items-center gap-6">
+      <div className="bg-card p-6 rounded-lg shadow-md mb-8 text-center">
+        <div className="flex flex-col items-center gap-4">
           <Avatar className="w-24 h-24 border-4 border-primary">
             <AvatarImage src={sellerProfile.avatar_url || "/placeholder.svg"} alt={sellerProfile.full_name} />
             <AvatarFallback>{sellerProfile.full_name?.substring(0, 2).toUpperCase() || "SE"}</AvatarFallback>
           </Avatar>
-          <div>
-            <h1 className="text-3xl font-bold">{sellerProfile.full_name}</h1>
-            <p className="text-muted-foreground">@{sellerProfile.username}</p>
-            <p className="text-muted-foreground">{sellerProfile.location}</p>
-            <div className="flex items-center gap-4 mt-2">
-              <div>
-                <span className="font-bold">{followersCount}</span> Followers
-              </div>
+          <div className="flex flex-col items-center px-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center break-words">{sellerProfile.full_name} <span className="text-muted-foreground text-lg sm:text-xl">@{sellerProfile.username}</span></h1>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mt-2">
               <div className="flex items-center gap-1">
                 <Star className="w-5 h-5 text-yellow-500" />
-                <span className="font-bold">{averageRating.toFixed(1)}</span> ({ratingCount} ratings) 
+                <span className="font-bold">{averageRating.toFixed(1)}</span> ({ratingCount} ratings)
               </div>
+              <p className="text-muted-foreground">{followersCount} followers</p>
             </div>
           </div>
-          <div className="ml-auto flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 w-full px-4 sm:w-auto">
             {user && user.id !== seller.id && (
-                <Button variant="outline" onClick={handleFollowToggle}>
+                <Button variant="outline" onClick={handleFollowToggle} className="rounded-full px-6 w-full sm:w-auto">
                     {isFollowing ? "Unfollow" : "Follow"}
                 </Button>
             )}
-            <Button>Message</Button>
+            <Button className="rounded-full px-6 w-full sm:w-auto">Message</Button>
           </div>
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold mb-4">Listings from {sellerProfile.full_name}</h2>
+      <h2 className="text-2xl font-bold mb-4">Seller's Listings</h2>
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {sellerProfile.listings.map((listing: any) => (
           <ListingCard key={listing.id} listing={listing} />

@@ -86,7 +86,7 @@ const BottomNavBar = () => {
             key={mapRoute.href}
             href={mapRoute.href}
             className={cn(
-              "inline-flex flex-col items-center justify-center px-2 hover:bg-muted",
+              "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
               mapRoute.active ? "text-primary" : "text-muted-foreground"
             )}
           >

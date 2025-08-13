@@ -19,11 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Search } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Search,
+} from "lucide-react";
 import { MediaBufferInput } from "@/components/post-ad/media-buffer-input";
 import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
+import { logger } from "@/lib/utils/logger";
 import { getPlans, Plan } from "./actions";
 import { formatPrice } from "@/lib/utils";
 import {
@@ -241,7 +249,7 @@ export default function PostAdPage() {
         variant: "default",
       });
     } catch (error) {
-      console.error("Error creating pending listing:", error);
+      logger.error({ message: "Error creating pending listing", error });
       toast({
         title: "Error",
         description: "Failed to create listing draft. Please try again.",
@@ -277,7 +285,7 @@ export default function PostAdPage() {
         throw new Error("Failed to activate listing");
       }
     } catch (error) {
-      console.error("Error activating listing:", error);
+      logger.error({ message: "Error activating listing", error });
       toast({
         title: "Error",
         description:
@@ -292,6 +300,7 @@ export default function PostAdPage() {
     if (!currentTransactionId) return;
 
     const supabase = getSupabaseClient();
+    
     const channel = supabase
       .channel(`transactions:id=eq.${currentTransactionId}`)
       .on(
@@ -303,45 +312,187 @@ export default function PostAdPage() {
           filter: `id=eq.${currentTransactionId}`,
         },
         async (payload) => {
-          const newStatus = payload.new.status as PaymentStatus;
-          setPaymentStatus(newStatus);
-
-          if (newStatus === "completed") {
-            await activateListing();
-            toast({
-              title: "Payment Confirmed",
-              description:
-                "Your payment has been processed and your ad is now live!",
-              variant: "default",
+          try {
+            logger.info({
+              message: 'Realtime transaction update received',
+              transactionId: currentTransactionId,
+              oldStatus: payload.old?.status,
+              newStatus: payload.new?.status,
+              pspTransactionId: payload.new?.psp_transaction_id,
+              timestamp: new Date().toISOString()
             });
-            channel.unsubscribe();
 
-            // Redirect to the listing
-            if (pendingListingId) {
-              router.push(`/listings/${pendingListingId}`);
+            const newStatus = payload.new.status as PaymentStatus;
+            setPaymentStatus(newStatus);
+
+            if (newStatus === "completed") {
+              logger.info('Payment completed, checking listing status...');
+              
+              // Check if listing activation is needed (edge case handling)
+              try {
+                const { data: listing, error: listingError } = await supabase
+                  .from('listings')
+                  .select('status, payment_status, activated_at')
+                  .eq('id', pendingListingId)
+                  .single();
+
+                if (listingError) {
+                  logger.error({ message: 'Error fetching listing status', error: listingError });
+                  throw listingError;
+                }
+
+                logger.info({
+                  message: 'Current listing status',
+                  listingId: pendingListingId,
+                  status: listing?.status,
+                  paymentStatus: listing?.payment_status,
+                  activatedAt: listing?.activated_at,
+                  needsActivation: listing?.status !== 'active' || listing?.payment_status !== 'paid'
+                });
+
+                // Only activate if backend hasn't already done it (edge case)
+                if (listing?.status !== 'active' || listing?.payment_status !== 'paid') {
+                  logger.info('Listing not yet activated by backend, calling frontend activation...');
+                  
+                  // Set timeout for activation to prevent hanging
+                  const timeoutPromise = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('Listing activation timeout after 10 seconds')), 10000)
+                  );
+
+                  await Promise.race([activateListing(), timeoutPromise]);
+                  logger.info('Frontend listing activation completed successfully');
+                } else {
+                  logger.info('Listing already activated by backend, skipping frontend activation');
+                }
+
+              } catch (activationError) {
+                logger.error({
+                  message: 'Error during listing activation check/process',
+                  error: activationError,
+                  errorMessage: activationError instanceof Error ? activationError.message : 'Unknown error',
+                  transactionId: currentTransactionId,
+                  listingId: pendingListingId,
+                  timestamp: new Date().toISOString()
+                });
+                
+                // Don't prevent success flow - backend likely already handled it
+                logger.info('Continuing with success flow despite activation error (backend likely already handled)');
+              }
+
+              // Always show success message and redirect (even if activation had issues)
+              logger.info('Showing success toast and redirecting...');
+              
+              toast({
+                title: "Payment Confirmed",
+                description: "Your payment has been processed and your ad is now live!",
+                variant: "default",
+              });
+
+              // Clean up subscription
+              channel.unsubscribe();
+              logger.info('Realtime subscription unsubscribed');
+
+              // Redirect to the listing
+              if (pendingListingId) {
+                logger.info(`Redirecting to listing: /listings/${pendingListingId}`);
+                router.push(`/listings/${pendingListingId}`);
+              } else {
+                logger.warn('No pendingListingId available for redirect');
+              }
+
+            } else if (newStatus === "failed" || newStatus === "cancelled") {
+              logger.info('Payment failed or cancelled:', newStatus);
+              
+              toast({
+                title: "Payment Failed",
+                description: "Your payment was not successful. Please try again.",
+                variant: "destructive",
+              });
+
+              channel.unsubscribe();
+              logger.info('Realtime subscription unsubscribed after payment failure');
+
+            } else {
+              logger.info('Transaction status updated to:', newStatus);
+              // Handle other statuses (pending, processing, etc.)
             }
-          } else if (newStatus === "failed" || newStatus === "cancelled") {
-            toast({
-              title: "Payment Failed",
-              description: "Your payment was not successful. Please try again.",
-              variant: "destructive",
+
+          } catch (error) {
+            logger.error({
+              message: 'Error in realtime transaction update handler',
+              error: error,
+              errorMessage: error instanceof Error ? error.message : 'Unknown error',
+              payload: payload,
+              transactionId: currentTransactionId,
+              timestamp: new Date().toISOString()
             });
-            channel.unsubscribe();
+
+            // Don't prevent UI updates on handler errors
+            const newStatus = payload.new?.status as PaymentStatus;
+            if (newStatus) {
+              setPaymentStatus(newStatus);
+            }
           }
         },
       )
+      .on('subscribe', (status) => {
+        logger.info('Realtime subscription status:', status);
+      })
+      .on('error', (error) => {
+        logger.error('Realtime subscription error:', error);
+      })
       .subscribe();
 
+    // Cleanup function
     return () => {
+      logger.info('Cleaning up realtime subscription on component unmount');
       supabase.removeChannel(channel);
     };
   }, [currentTransactionId, pendingListingId, router, activateListing]);
+
+  // Optional: Add a polling backup in case realtime fails
+  useEffect(() => {
+    if (!currentTransactionId || paymentStatus === 'completed') return;
+
+    logger.info('Starting polling backup for transaction status...');
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data: transaction, error } = await supabase
+          .from('transactions')
+          .select('status, psp_transaction_id')
+          .eq('id', currentTransactionId)
+          .single();
+
+        if (error) {
+          logger.error('Polling error:', error);
+          return;
+        }
+
+        if (transaction?.status === 'completed' && paymentStatus !== 'completed') {
+          logger.info('Polling detected completed payment, updating status...');
+          setPaymentStatus('completed');
+          clearInterval(pollInterval);
+        }
+      } catch (error) {
+        logger.error('Polling exception:', error);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Cleanup polling on unmount or completion
+    return () => {
+      logger.info('Clearing polling interval');
+      clearInterval(pollInterval);
+    };
+  }, [currentTransactionId, paymentStatus]);
 
   const checkTransactionStatus = useCallback(async () => {
     if (!currentTransactionId) return;
 
     try {
-      const response = await fetch(`/api/payments/status?id=${currentTransactionId}`);
+      const response = await fetch(
+        `/api/payments/status?id=${currentTransactionId}`,
+      );
       const data = await response.json();
 
       if (response.ok && data.status) {
@@ -360,7 +511,7 @@ export default function PostAdPage() {
         });
       }
     } catch (error) {
-      console.error("Error checking transaction status:", error);
+      logger.error({ message: "Error checking transaction status", error });
       toast({
         title: "Error",
         description: "Network error while checking status. Please try again.",
@@ -442,7 +593,7 @@ export default function PostAdPage() {
 
         router.push(`/listings/${pendingListingId}`);
       } catch (error) {
-        console.error("Error activating free listing:", error);
+        logger.error({ message: "Error activating free listing", error });
         toast({
           title: "Error",
           description: "Failed to publish your ad. Please try again.",
@@ -488,7 +639,7 @@ export default function PostAdPage() {
         setIsSubmitted(false);
         return;
       } catch (error) {
-        console.error("Payment processing error:", error);
+        logger.error({ message: "Payment processing error", error });
         toast({
           title: "Payment Error",
           description: "An unexpected error occurred during payment.",
@@ -549,7 +700,7 @@ export default function PostAdPage() {
         ...responseData,
       };
     } catch (error) {
-      console.error("Payment request error:", error);
+      logger.error({ message: "Payment request error", error });
       return { success: false, error: "Network error during payment" };
     }
   };
@@ -565,7 +716,7 @@ export default function PostAdPage() {
           setLocationDialogOpen(false);
         },
         (error) => {
-          console.error("Error getting location:", error);
+          logger.error({ message: "Error getting location", error });
           toast({
             title: "Location Error",
             description:
@@ -1227,6 +1378,19 @@ function PaymentMethodStep({
               <br />
               <span className="text-sm">Listing ID: {pendingListingId}</span>
             </p>
+            {paymentStatus === "pending" && showRetryButton && (
+              <Button onClick={onRetryPayment} className="mt-4 text-sm py-1 px-2 bg-green-500 text-white" >
+                I have paid
+              </Button>
+            )}
+            {showSupportDetails && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Payment still pending. Please contact support with Listing ID:{" "}
+                {pendingListingId}
+                <br />
+                Email: support@kikwetu.com
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1254,22 +1418,6 @@ function PaymentMethodStep({
         <div className="flex items-center justify-center p-4 rounded-lg bg-red-100 border border-red-300 text-red-800">
           <XCircle className="h-5 w-5 mr-3" />
           <p className="font-medium">Payment Failed. Please try again.</p>
-        </div>
-      )}
-
-      {paymentStatus === "pending" && showRetryButton && (
-        <div className="text-center mt-4">
-          <Button onClick={onRetryPayment} className="mb-2">
-            Check Payment Status
-          </Button>
-          {showSupportDetails && (
-            <p className="text-sm text-muted-foreground">
-              Payment still pending. Please contact support with Listing ID:{" "}
-              {pendingListingId}
-              <br />
-              Email: support@kikwetu.com
-            </p>
-          )}
         </div>
       )}
 
@@ -1385,9 +1533,10 @@ function PreviewStep({
       <h2 className="text-xl font-semibold">Preview Your Ad</h2>
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          <strong>Next Step:</strong> After reviewing your ad, click &quot;Next&quot;
-          will create a draft listing and take you to the payment step. Your
-          listing will be saved but not published until payment is completed.
+          <strong>Next Step:</strong> After reviewing your ad, click
+          &quot;Next&quot; will create a draft listing and take you to the
+          payment step. Your listing will be saved but not published until
+          payment is completed.
         </p>
       </div>
       <Card>

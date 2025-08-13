@@ -63,7 +63,7 @@ export default function RecentListings({ initialListings }: RecentListingsProps)
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="h-3 w-3 text-white" />
-                    {listing.views}
+                    {listing.views} views
                   </div>
                 </div>
               </div>

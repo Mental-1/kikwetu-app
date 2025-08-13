@@ -356,7 +356,7 @@ export default function UserListingsPage() {
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <div className="flex items-center">
                         <Eye className="h-4 w-4 mr-1" />
-                        {listing.views} Impressions
+                        {listing.views} views
                       </div>
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-1" />
@@ -424,7 +424,7 @@ export default function UserListingsPage() {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="w-[75%] mx-auto rounded-lg">
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Listing</AlertDialogTitle>
                             <AlertDialogDescription>
@@ -436,6 +436,7 @@ export default function UserListingsPage() {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDelete(listing.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               Delete
                             </AlertDialogAction>
@@ -537,7 +538,7 @@ export default function UserListingsPage() {
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <div className="flex items-center">
                         <Eye className="h-4 w-4 mr-1" />
-                        {listing.views} Impressions
+                        {listing.views} views
                       </div>
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-1" />

@@ -3,10 +3,15 @@ import { getSupabaseServiceRole } from "@/utils/supabase/server";
 import crypto from "crypto";
 import pino from "pino";
 
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-if (!PAYSTACK_SECRET_KEY) {
-  throw new Error("PAYSTACK_SECRET_KEY environment variable is required");
+function getRequiredEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} environment variable is required`);
+  }
+  return value;
 }
+
+const PAYSTACK_SECRET_KEY = getRequiredEnvVar("PAYSTACK_SECRET_KEY");
 
 const logger = pino({
   level: process.env.NODE_ENV === "production" ? "info" : "debug",

@@ -128,11 +128,9 @@ const DiscoverFeed = () => {
     fetchNextPage,
   ]); // Removed isScrolling from dependencies
 
-  const debouncedHandleScroll = useCallback(
-    debounce(() => {
-      handleScroll();
-    }, 50),
-    [handleScroll],
+  const debouncedHandleScroll = useMemo(
+    () => debounce(handleScroll, 50),
+    [handleScroll]
   );
 
   // Snap to nearest item when scrolling stops

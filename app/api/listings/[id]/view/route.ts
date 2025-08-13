@@ -40,8 +40,8 @@ export async function POST(
       );
     }
 
-    if (!data || data.length === 0) {
-      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+    if (!data || data.length === 0 || typeof data[0]?.views !== 'number') {
+      return NextResponse.json({ error: "Listing not found or views not returned" }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, views: data[0].views });

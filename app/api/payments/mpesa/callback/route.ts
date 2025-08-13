@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         psp: "mpesa",
         status: "received",
         payload: parsedBody,
-        next_retry_at: new Date().toISOString(),
+        next_retry_at: new Date(Date.now() + 1000).toISOString(),
       })
       .select()
       .single();

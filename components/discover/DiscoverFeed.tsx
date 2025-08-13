@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearch } from "@/hooks/useSearch";
 import FeedItem, { FeedMedia } from "./FeedItem";
 import { useSearchParams } from "next/navigation";

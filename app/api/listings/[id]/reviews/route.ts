@@ -61,3 +61,56 @@ export async function GET(
     );
   }
 }
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const listingId = params.id;
+  logger.info({ listingId }, "Submitting review for listing");
+
+  try {
+    const supabase = await getSupabaseRouteHandler(cookies);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      logger.error({ authError }, "Unauthorized review submission");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { rating, comment } = body;
+
+    if (typeof rating !== "number" || rating < 1 || rating > 5) {
+      return NextResponse.json({ error: "Invalid rating" }, { status: 400 });
+    }
+    if (typeof comment !== "string" || comment.trim().length === 0) {
+      return NextResponse.json({ error: "Comment cannot be empty" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("reviews")
+      .insert({
+        reviewer_id: user.id,
+        listing_id: listingId,
+        rating: rating,
+        review: comment,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error({ error }, "Error inserting review");
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    logger.info({ reviewId: data.id }, "Review submitted successfully");
+    return NextResponse.json({ success: true, review: data });
+  } catch (error) {
+    logger.error({ error }, "Unhandled error submitting review");
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}

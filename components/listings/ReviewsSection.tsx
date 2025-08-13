@@ -40,9 +40,9 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId }) => 
       }
       return response.json();
     },
-    getNextPageParam: (lastPage) => {
-      // lastPage will be { data: Review[], totalCount: number, hasMore: boolean }
-      return lastPage.hasMore ? lastPage.page + 1 : undefined; // Assuming API returns current page number
+    getNextPageParam: (_lastPage, _allPages, lastPageParam) => {
+      const current = typeof lastPageParam === "number" ? lastPageParam : 1;
+      return _lastPage.hasMore ? current + 1 : undefined;
     },
     initialPageParam: 1,
   });

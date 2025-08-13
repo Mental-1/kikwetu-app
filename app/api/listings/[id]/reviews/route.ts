@@ -13,8 +13,12 @@ export async function GET(
 ) {
   const listingId = params.id;
   const searchParams = request.nextUrl.searchParams;
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const pageSize = parseInt(searchParams.get("pageSize") || "10", 10); // Default pageSize to 10
+  let page = Number.parseInt(searchParams.get("page") || "1", 10);
+  let pageSize = Number.parseInt(searchParams.get("pageSize") || "10", 10); // Default pageSize to 10
+  if (!Number.isFinite(page) || page < 1) page = 1;
+  if (!Number.isFinite(pageSize) || pageSize < 1) pageSize = 10;
+  // hard cap to protect DB
+  if (pageSize > 50) pageSize = 50;
 
   logger.info({ listingId, page, pageSize }, "Fetching reviews for listing");
 
@@ -52,6 +56,8 @@ export async function GET(
       data: reviews,
       totalCount,
       hasMore,
+      page,
+      pageSize,
     });
   } catch (error) {
     logger.error({ error }, "Unhandled error fetching reviews");

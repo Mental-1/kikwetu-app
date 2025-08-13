@@ -428,7 +428,11 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
         {/* Product info */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Link href={`/listings/${item.id}`} className="z-20">
+            <Link
+              href={`/listings/${item.id}`}
+              className="z-20"
+              aria-label={`View listing ${item.title}`}
+            >
               <h3 className="text-lg font-semibold line-clamp-1">
                 {item.title}
               </h3>

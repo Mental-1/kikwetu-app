@@ -401,7 +401,7 @@ export default function PostAdPage() {
               }
 
             } else if (newStatus === "failed" || newStatus === "cancelled") {
-              logger.info('Payment failed or cancelled:', newStatus);
+              logger.info('Payment failed or cancelled', { status: newStatus });
               
               toast({
                 title: "Payment Failed",
@@ -413,7 +413,7 @@ export default function PostAdPage() {
               logger.info('Realtime subscription unsubscribed after payment failure');
 
             } else {
-              logger.info('Transaction status updated to:', newStatus);
+              logger.info('Transaction status updated to', { status: newStatus });
               // Handle other statuses (pending, processing, etc.)
             }
 
@@ -436,10 +436,10 @@ export default function PostAdPage() {
         },
       )
       .on('subscribe', (status) => {
-        logger.info('Realtime subscription status:', status);
+        logger.info('Realtime subscription status', { status });
       })
       .on('error', (error) => {
-        logger.error('Realtime subscription error:', error);
+        logger.error('Realtime subscription error', { error });
       })
       .subscribe();
 
@@ -465,7 +465,7 @@ export default function PostAdPage() {
           .single();
 
         if (error) {
-          logger.error('Polling error:', error);
+          logger.error('Polling error', { error });
           return;
         }
 
@@ -475,7 +475,7 @@ export default function PostAdPage() {
           clearInterval(pollInterval);
         }
       } catch (error) {
-        logger.error('Polling exception:', error);
+        logger.error('Polling exception', { error });
       }
     }, 5000); // Poll every 5 seconds
 

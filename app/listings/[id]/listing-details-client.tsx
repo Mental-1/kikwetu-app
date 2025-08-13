@@ -484,7 +484,7 @@ export function ListingDetailsClient({ listing }: { listing: Listing }) {
                   <CardTitle>Reviews</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ReviewsSection reviews={listing.reviews || []} listingId={listing.id} />
+                  <ReviewsSection listingId={listing.id} />
                 </CardContent>
               </Card>
             </div>

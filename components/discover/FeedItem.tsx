@@ -246,12 +246,6 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
 
   return (
     <article className="relative h-[calc(100vh-64px)] w-full overflow-hidden flex items-center justify-center">
-      <Link
-        href={`/listings/${item.id}`}
-        className="absolute inset-0 z-10"
-        aria-label={`View ${item.title}`}
-      ></Link>
-
       {/* Background media */}
       {item.type === "video" ? (
         <video
@@ -265,7 +259,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
         />
       ) : item.gallery && item.gallery.length > 0 ? (
         <div
-          className="absolute inset-0 h-full w-full overflow-hidden md:rounded-xl"
+          className="absolute inset-0 h-full w-full overflow-hidden md:rounded-xl z-[15]"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -428,17 +422,22 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
 
       {/* Bottom-left info: hashtags */}
       <div className="absolute bottom-[calc(64px+1rem)] left-4 right-28 md:right-40 z-20 space-y-2 text-white">
-        <p className="text-sm text-white/90">@{item.username}</p>
+        <p className="text-base text-white/90">@{item.username}</p>
         <Hashtags tags={item.tags} />
 
         {/* Product info */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold line-clamp-1">
-              {item.title}
-            </h3>
+            <Link
+              href={`/listings/${item.id}`}
+              aria-label={`View listing ${item.title}`}
+            >
+              <h3 className="text-lg font-semibold line-clamp-1">
+                {item.title}
+              </h3>
+            </Link>
             {item.price !== null && item.price !== undefined && (
-              <p className="text-lg font-bold flex-shrink-0">
+              <p className="text-lg font-bold flex-shrink-0 text-green-500">
                 Ksh {item.price.toLocaleString()}
               </p>
             )}

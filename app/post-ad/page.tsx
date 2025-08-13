@@ -435,13 +435,13 @@ export default function PostAdPage() {
           }
         },
       )
-      .on('subscribe', (status) => {
-        logger.info({ status }, 'Realtime subscription status');
-      })
-      .on('error', (error) => {
-        logger.error({ error }, 'Realtime subscription error');
-      })
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          logger.error({ error: err }, 'Realtime subscription error');
+        } else {
+          logger.info({ status }, 'Realtime subscription status');
+        }
+      });
 
     // Cleanup function
     return () => {

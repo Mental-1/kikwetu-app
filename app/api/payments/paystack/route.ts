@@ -361,7 +361,7 @@ export async function POST(request: NextRequest) {
           responseText,
         },
         "Failed to parse PayStack API response as JSON",
-_      );
+      );
       throw new Error("Invalid JSON response from PayStack API");
     }
 

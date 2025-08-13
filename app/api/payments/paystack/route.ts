@@ -10,6 +10,20 @@ const logger = pino({
   level: process.env.NODE_ENV === "production" ? "info" : "debug",
 });
 
+// Validate environment at startup
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+
+if (!PAYSTACK_SECRET_KEY) {
+  throw new Error("PAYSTACK_SECRET_KEY environment variable is required");
+}
+if (!NEXT_PUBLIC_APP_URL) {
+  throw new Error("NEXT_PUBLIC_APP_URL environment variable is required");
+}
+if (!PAYSTACK_SECRET_KEY.startsWith("sk_")) {
+  logger.warn("PayStack secret key might be invalid - should start with 'sk_'");
+}
+
 // PayStack API response types for better type safety
 interface PayStackInitializeResponse {
   status: boolean;
@@ -31,34 +45,51 @@ function generateSecureReference(userId: string): string {
 }
 
 /**
- * Validates PayStack environment variables with enhanced logging
+ * Reverses a PayStack transaction to prevent orphaned transactions.
+ * @param reference The reference of the transaction to reverse.
  */
-function validatePayStackConfig(): void {
-  const secretKey = process.env.PAYSTACK_SECRET_KEY;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+async function reversePaystackTransaction(reference: string) {
+  logger.info({ reference }, "Reversing PayStack transaction due to database error.");
 
-  logger.debug(
-    {
-      hasSecretKey: !!secretKey,
-      secretKeyLength: secretKey?.length,
-      secretKeyPrefix: secretKey?.substring(0, 7),
-      appUrl: appUrl,
-      environment: process.env.NODE_ENV,
-    },
-    "Environment variables check",
-  );
+  try {
+    const response = await fetch("https://api.paystack.co/refund", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        transaction: reference,
+      }),
+    });
 
-  if (!secretKey) {
-    throw new Error("PAYSTACK_SECRET_KEY is not configured");
-  }
-  if (!appUrl) {
-    throw new Error("NEXT_PUBLIC_APP_URL is not configured");
-  }
+    const responseData = await response.json();
 
-  // Validate secret key format (PayStack secret keys start with 'sk_')
-  if (!secretKey.startsWith("sk_")) {
-    logger.warn(
-      "PayStack secret key might be invalid - should start with 'sk_'",
+    if (!response.ok) {
+      logger.error(
+        {
+          reference,
+          statusCode: response.status,
+          response: responseData,
+        },
+        "PayStack refund API call failed."
+      );
+    } else {
+      logger.info(
+        {
+          reference,
+          response: responseData,
+        },
+        "PayStack transaction successfully reversed."
+      );
+    }
+  } catch (error) {
+    logger.error(
+      {
+        reference,
+        error,
+      },
+      "An unexpected error occurred during PayStack transaction reversal."
     );
   }
 }
@@ -70,9 +101,6 @@ export async function POST(request: NextRequest) {
   logger.info("--- PayStack Payment Initialization Request Received ---");
 
   try {
-    // Validate environment configuration first
-    validatePayStackConfig();
-
     const body = await request.json();
     logger.debug(
       {
@@ -203,7 +231,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Enhanced amount conversion to kobo (PayStack requires amount in kobo for KES)
-    const amountInKobo = Math.round(parseFloat(amount.toString()) * 100);
+    // Use string manipulation to avoid floating-point precision issues
+    const amountStr = amount.toString();
+    const [whole, decimal = "0"] = amountStr.split(".");
+    const paddedDecimal = decimal.padEnd(2, "0").slice(0, 2);
+    const amountInKobo = parseInt(whole + paddedDecimal, 10);
 
     logger.debug(
       {
@@ -221,7 +253,7 @@ export async function POST(request: NextRequest) {
       amount: amountInKobo, // Use converted amount
       currency: "KES",
       reference: reference,
-      callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/paystack/callback`,
+      callback_url: `${NEXT_PUBLIC_APP_URL}/api/payments/paystack/callback`,
       metadata: {
         user_id: user.id,
         listing_id: listingId,
@@ -256,8 +288,8 @@ export async function POST(request: NextRequest) {
       logger.info(
         {
           url: "https://api.paystack.co/transaction/initialize",
-          hasSecretKey: !!process.env.PAYSTACK_SECRET_KEY,
-          secretKeyPrefix: process.env.PAYSTACK_SECRET_KEY?.substring(0, 7),
+          hasSecretKey: !!PAYSTACK_SECRET_KEY,
+          secretKeyPrefix: PAYSTACK_SECRET_KEY?.substring(0, 7),
           method: "POST",
         },
         "Making PayStack API request",
@@ -266,7 +298,7 @@ export async function POST(request: NextRequest) {
       response = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(paystackRequestBody),
@@ -329,7 +361,7 @@ export async function POST(request: NextRequest) {
           responseText,
         },
         "Failed to parse PayStack API response as JSON",
-      );
+_      );
       throw new Error("Invalid JSON response from PayStack API");
     }
 
@@ -392,11 +424,8 @@ export async function POST(request: NextRequest) {
         "Database insert failed with detailed error",
       );
 
-      // Consider reversing the PayStack transaction here if needed
-      // This would require implementing a cleanup mechanism
-      logger.warn(
-        "PayStack transaction was initialized but database save failed - may need manual cleanup",
-      );
+      // Automatically reverse the PayStack transaction
+      await reversePaystackTransaction(reference);
 
       throw new Error(`Failed to save transaction: ${dbError.message}`);
     }
@@ -458,12 +487,11 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     };
 
-    // Add additional context for debugging in non-production
-    if (process.env.NODE_ENV !== "production") {
+    // Add additional context for debugging only in development
+    if (process.env.NODE_ENV === "development") {
       (errorResponse as any).debug = {
         errorType:
           error instanceof Error ? error.constructor.name : typeof error,
-        stack: error instanceof Error ? error.stack : undefined,
       };
     }
 

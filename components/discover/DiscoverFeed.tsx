@@ -358,7 +358,8 @@ const DiscoverFeed = () => {
             ref={(el) => {
               itemsRef.current[index] = el;
             }}
-            className="h-screen w-full snap-start snap-always flex-shrink-0"
+            className="h-screen w-full snap-start snap-always flex-shrink-0 animate-fade-in-slide-up"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
             <FeedItem
               item={{

@@ -1,9 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseRouteHandler } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { getSupabaseServiceRole } from "@/utils/supabase/server";
 import pino from "pino";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
+
+const MPESA_CALLBACK_TOKEN = process.env.MPESA_CALLBACK_TOKEN;
+if (!MPESA_CALLBACK_TOKEN) {
+  throw new Error("MPESA_CALLBACK_TOKEN environment variable is required");
+}
 
 const logger = pino({
   level: process.env.NODE_ENV === "development" ? "debug" : "info",
@@ -16,10 +21,9 @@ const logger = pino({
 export async function POST(request: NextRequest) {
   logger.info("--- M-Pesa Callback Route Invoked ---");
 
-  const expectedToken = process.env.MPESA_CALLBACK_TOKEN;
   const callbackToken = request.nextUrl.searchParams.get("token");
 
-  if (!expectedToken || callbackToken !== expectedToken) {
+  if (callbackToken !== MPESA_CALLBACK_TOKEN) {
     logger.warn(
       "Unauthorized M-Pesa callback attempt. Invalid or missing token.",
     );
@@ -68,9 +72,9 @@ export async function POST(request: NextRequest) {
     );
 
     // Generate a unique PSP event ID for M-Pesa (they don't provide one)
-    const pspEventId = `mpesa_${CheckoutRequestID}_${Date.now()}`;
+    const pspEventId = `mpesa_${CheckoutRequestID}_${randomUUID()}`;
 
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = getSupabaseServiceRole();
 
     // Insert webhook event for processing by cron job
     const { data: webhookEvent, error: insertError } = await supabase

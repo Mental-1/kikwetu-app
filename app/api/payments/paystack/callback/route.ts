@@ -1,8 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { getSupabaseServiceRole } from "@/utils/supabase/server";
 import crypto from "crypto";
-import { cookies } from "next/headers";
 import pino from "pino";
+
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+if (!PAYSTACK_SECRET_KEY) {
+  throw new Error("PAYSTACK_SECRET_KEY environment variable is required");
+}
 
 const logger = pino({
   level: process.env.NODE_ENV === "production" ? "info" : "debug",
@@ -16,7 +20,7 @@ export async function POST(request: NextRequest) {
   logger.info("--- Paystack Webhook Received ---");
 
   try {
-    const body = await request.text();
+    const body = await request.clone().text();
     const signature = request.headers.get("x-paystack-signature");
 
     logger.debug(
@@ -25,16 +29,8 @@ export async function POST(request: NextRequest) {
     );
 
     // Verify webhook signature
-    if (!process.env.PAYSTACK_SECRET_KEY) {
-      logger.error("PAYSTACK_SECRET_KEY not configured");
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 },
-      );
-    }
-
     const hash = crypto
-      .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY)
+      .createHmac("sha512", PAYSTACK_SECRET_KEY)
       .update(body)
       .digest("hex");
 
@@ -47,10 +43,10 @@ export async function POST(request: NextRequest) {
 
     let parsedEvent;
     try {
-      parsedEvent = JSON.parse(body);
+      parsedEvent = await request.json();
     } catch (parseError) {
       logger.error(
-        { parseError, body },
+        { parseError },
         "Failed to parse Paystack webhook body.",
       );
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
@@ -76,7 +72,7 @@ export async function POST(request: NextRequest) {
       "Paystack webhook event details:",
     );
 
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = getSupabaseServiceRole();
 
     // Insert webhook event for processing by cron job
     const { data: webhookEvent, error: insertError } = await supabase

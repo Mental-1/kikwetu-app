@@ -44,8 +44,12 @@ export const useSearch = ({
       return result;
     },
     getNextPageParam: (lastPage, allPages) => {
-      // If the last page has more items, we can fetch the next page
-      return lastPage.hasMore ? allPages.length + 1 : undefined;
+      // If the last page was not full, we've reached the end.
+      if (lastPage.data.length < pageSize) {
+        return undefined;
+      }
+      // Otherwise, assume there's a next page.
+      return allPages.length + 1;
     },
     initialPageParam: 1,
     initialData: initialData ? { pages: [initialData], pageParams: [1] } : undefined,

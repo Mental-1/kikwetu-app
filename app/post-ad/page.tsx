@@ -454,6 +454,7 @@ export default function PostAdPage() {
   useEffect(() => {
     if (!currentTransactionId || paymentStatus === 'completed') return;
 
+    const supabase = getSupabaseClient();
     logger.info('Starting polling backup for transaction status...');
     
     const pollInterval = setInterval(async () => {

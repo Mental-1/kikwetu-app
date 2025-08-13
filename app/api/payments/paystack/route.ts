@@ -10,16 +10,17 @@ const logger = pino({
   level: process.env.NODE_ENV === "production" ? "info" : "debug",
 });
 
-// Validate environment at startup
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+function getRequiredEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} environment variable is required`);
+  }
+  return value;
+}
 
-if (!PAYSTACK_SECRET_KEY) {
-  throw new Error("PAYSTACK_SECRET_KEY environment variable is required");
-}
-if (!NEXT_PUBLIC_APP_URL) {
-  throw new Error("NEXT_PUBLIC_APP_URL environment variable is required");
-}
+// Validate environment at startup
+const PAYSTACK_SECRET_KEY = getRequiredEnvVar("PAYSTACK_SECRET_KEY");
+const NEXT_PUBLIC_APP_URL = getRequiredEnvVar("NEXT_PUBLIC_APP_URL");
 if (!PAYSTACK_SECRET_KEY.startsWith("sk_")) {
   logger.warn("PayStack secret key might be invalid - should start with 'sk_'");
 }

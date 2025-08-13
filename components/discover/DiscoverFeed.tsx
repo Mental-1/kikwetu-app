@@ -133,6 +133,13 @@ const DiscoverFeed = () => {
     [handleScroll]
   );
 
+  // Clear any pending scroll callbacks when unmounting
+  useEffect(() => {
+    return () => {
+      debouncedHandleScroll.cancel?.();
+    };
+  }, [debouncedHandleScroll]);
+
   // Snap to nearest item when scrolling stops
   const snapToNearestItem = useCallback(() => {
     if (!scrollContainerRef.current) return;

@@ -23,7 +23,7 @@ const BottomNavBar = () => {
     {
       href: "/discover",
       label: "Discover",
-      active: pathname?.startsWith("/discover"),
+      active: pathname === "/discover" || pathname?.startsWith("/discover/"),
       icon: <Compass className="h-4 w-4" />,
     },
   ];
@@ -45,14 +45,14 @@ const BottomNavBar = () => {
   const listingsRoute = {
     href: "/listings",
     label: "Listings",
-    active: pathname?.startsWith("/listings"),
+    active: pathname === "/listings" || pathname?.startsWith("/listings/"),
     icon: <List className="h-4 w-4" />,
   };
 
   const mapRoute = {
       href: "/map",
       label: "Map",
-      active: pathname?.startsWith("/map"),
+      active: pathname === "/map" || pathname?.startsWith("/map/"),
       icon: <MapIcon className="h-4 w-4" />,
   }
 

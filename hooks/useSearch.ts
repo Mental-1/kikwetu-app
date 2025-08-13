@@ -45,7 +45,8 @@ export const useSearch = ({
     },
     getNextPageParam: (lastPage, allPages) => {
       // If the last page was not full, we've reached the end.
-      if (lastPage.data.length < pageSize) {
+      const count = Array.isArray(lastPage?.data) ? lastPage.data.length : 0;
+      if (count < pageSize) {
         return undefined;
       }
       // Otherwise, assume there's a next page.

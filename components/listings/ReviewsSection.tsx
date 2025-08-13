@@ -199,7 +199,11 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId }) => 
 
       {/* Load More Button */}
       {hasNextPage && (
-        <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+        <Button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          className="w-full text-primary hover:underline bg-transparent shadow-none p-0"
+        >
           {isFetchingNextPage ? "Loading more..." : "Load More Reviews"}
         </Button>
       )}

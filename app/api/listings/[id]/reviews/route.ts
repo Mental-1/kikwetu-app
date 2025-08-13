@@ -1,11 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import pino from "pino";
-
-const logger = pino({
-  level: process.env.NODE_ENV === "production" ? "info" : "debug",
-});
+import { logger } from "@/lib/utils/logger";
 
 export async function GET(
   request: NextRequest,
@@ -38,7 +34,7 @@ export async function GET(
         created_at,
         reviewer:profiles(id, username, avatar_url)
       `,
-        { count: "exact" },
+        { count: "estimated" },
       )
       .eq("listing_id", listingId)
       .order("created_at", { ascending: false })
@@ -85,13 +81,14 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { rating, comment } = body;
+    const rating = Number(body?.rating);
+    const review = String(body?.review ?? body?.comment ?? "").trim();
 
-    if (typeof rating !== "number" || rating < 1 || rating > 5) {
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
       return NextResponse.json({ error: "Invalid rating" }, { status: 400 });
     }
-    if (typeof comment !== "string" || comment.trim().length === 0) {
-      return NextResponse.json({ error: "Comment cannot be empty" }, { status: 400 });
+    if (review.length === 0 || review.length > 2000) {
+      return NextResponse.json({ error: "Invalid review" }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -99,10 +96,10 @@ export async function POST(
       .insert({
         reviewer_id: user.id,
         listing_id: listingId,
-        rating: rating,
-        review: comment,
+        rating,
+        review,
       })
-      .select()
+      .select("id")
       .single();
 
     if (error) {
@@ -111,7 +108,7 @@ export async function POST(
     }
 
     logger.info({ reviewId: data.id }, "Review submitted successfully");
-    return NextResponse.json({ success: true, review: data });
+    return NextResponse.json({ success: true, id: data.id }, { status: 201 });
   } catch (error) {
     logger.error({ error }, "Unhandled error submitting review");
     return NextResponse.json(

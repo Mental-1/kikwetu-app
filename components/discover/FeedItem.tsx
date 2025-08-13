@@ -422,7 +422,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
 
       {/* Bottom-left info: hashtags */}
       <div className="absolute bottom-[calc(64px+1rem)] left-4 right-28 md:right-40 z-20 space-y-2 text-white">
-        <p className="text-sm text-white/90">@{item.username}</p>
+        <p className="text-base text-white/90">@{item.username}</p>
         <Hashtags tags={item.tags} />
 
         {/* Product info */}
@@ -430,7 +430,6 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
           <div className="flex items-center gap-2">
             <Link
               href={`/listings/${item.id}`}
-              className="z-20"
               aria-label={`View listing ${item.title}`}
             >
               <h3 className="text-lg font-semibold line-clamp-1">
@@ -438,7 +437,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
               </h3>
             </Link>
             {item.price !== null && item.price !== undefined && (
-              <p className="text-lg font-bold flex-shrink-0">
+              <p className="text-lg font-bold flex-shrink-0 text-green-500">
                 Ksh {item.price.toLocaleString()}
               </p>
             )}

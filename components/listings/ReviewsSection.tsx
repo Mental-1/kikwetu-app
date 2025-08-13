@@ -170,7 +170,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId }) => 
                 <Avatar className="h-8 w-8 mr-2">
                   <AvatarImage
                     src={review.reviewer.avatar_url || "/placeholder-user.jpg"}
-                    alt={review.reviewer.username}
+                    alt={review.reviewer.username || "User avatar"}
                   />
                   <AvatarFallback>
                     {review.reviewer.username?.charAt(0) || "U"}

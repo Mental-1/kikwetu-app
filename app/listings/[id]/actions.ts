@@ -82,6 +82,7 @@ export async function toggleSaveListing(listingId: string, userId: string) {
     }
 
     revalidatePath(`/listings/${listingId}`);
+    revalidatePath('/dashboard/listings'); // Revalidate dashboard listings
     return { success: true, saved: false };
   } else {
     // Save the listing
@@ -94,6 +95,7 @@ export async function toggleSaveListing(listingId: string, userId: string) {
     }
 
     revalidatePath(`/listings/${listingId}`);
+    revalidatePath('/dashboard/listings'); // Revalidate dashboard listings
     return { success: true, saved: true };
   }
 }

@@ -31,14 +31,35 @@ function generateSecureReference(userId: string): string {
 }
 
 /**
- * Validates PayStack environment variables
+ * Validates PayStack environment variables with enhanced logging
  */
 function validatePayStackConfig(): void {
-  if (!process.env.PAYSTACK_SECRET_KEY) {
+  const secretKey = process.env.PAYSTACK_SECRET_KEY;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  logger.debug(
+    {
+      hasSecretKey: !!secretKey,
+      secretKeyLength: secretKey?.length,
+      secretKeyPrefix: secretKey?.substring(0, 7),
+      appUrl: appUrl,
+      environment: process.env.NODE_ENV,
+    },
+    "Environment variables check",
+  );
+
+  if (!secretKey) {
     throw new Error("PAYSTACK_SECRET_KEY is not configured");
   }
-  if (!process.env.NEXT_PUBLIC_APP_URL) {
+  if (!appUrl) {
     throw new Error("NEXT_PUBLIC_APP_URL is not configured");
+  }
+
+  // Validate secret key format (PayStack secret keys start with 'sk_')
+  if (!secretKey.startsWith("sk_")) {
+    logger.warn(
+      "PayStack secret key might be invalid - should start with 'sk_'",
+    );
   }
 }
 
@@ -53,9 +74,27 @@ export async function POST(request: NextRequest) {
     validatePayStackConfig();
 
     const body = await request.json();
-    logger.debug({ body }, "Request body parsed.");
+    logger.debug(
+      {
+        body,
+        bodyKeys: Object.keys(body),
+      },
+      "Request body parsed.",
+    );
 
     const validatedData = paystackPaymentSchema.safeParse(body);
+
+    logger.debug(
+      {
+        rawBody: body,
+        validationSuccess: validatedData.success,
+        validatedData: validatedData.success ? validatedData.data : null,
+        validationErrors: validatedData.success
+          ? null
+          : validatedData.error.issues,
+      },
+      "Schema validation details",
+    );
 
     if (!validatedData.success) {
       logger.error(
@@ -74,7 +113,16 @@ export async function POST(request: NextRequest) {
 
     const { email, amount, listingId } = validatedData.data;
 
-    // Validate amount is positive
+    // Enhanced amount validation with logging
+    logger.debug(
+      {
+        originalAmount: amount,
+        amountType: typeof amount,
+        amountString: amount.toString(),
+      },
+      "Amount validation details",
+    );
+
     if (amount <= 0) {
       logger.error({ amount }, "Invalid amount: must be positive");
       return NextResponse.json(
@@ -90,15 +138,24 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      logger.error({ authError }, "Unauthorized: User authentication failed.");
+      logger.error(
+        {
+          authError,
+          hasUser: !!user,
+          userId: user?.id,
+        },
+        "Unauthorized: User authentication failed.",
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     logger.info({ userId: user.id }, "User authenticated successfully.");
 
     // Generate secure reference
     const reference = generateSecureReference(user.id);
+    logger.debug({ reference }, "Generated transaction reference");
 
     // Verify listing exists and user has permission (optional but recommended)
+    logger.debug({ listingId }, "Fetching listing details");
     const { data: listing, error: listingError } = await supabase
       .from("listings")
       .select("id, price")
@@ -106,9 +163,26 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (listingError || !listing) {
-      logger.error({ listingError, listingId }, "Listing not found");
+      logger.error(
+        {
+          listingError,
+          listingId,
+          listingErrorCode: listingError?.code,
+          listingErrorMessage: listingError?.message,
+        },
+        "Listing not found",
+      );
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
+
+    logger.debug(
+      {
+        listingId: listing.id,
+        listingPrice: listing.price,
+        providedAmount: amount,
+      },
+      "Listing details retrieved",
+    );
 
     // Optional: Verify amount matches listing price
     const PRICE_TOLERANCE = 1; // Allow 1 KES difference for rounding
@@ -117,6 +191,8 @@ export async function POST(request: NextRequest) {
         {
           providedAmount: amount,
           listingPrice: listing.price,
+          difference: Math.abs(listing.price - amount),
+          tolerance: PRICE_TOLERANCE,
         },
         "Amount mismatch with listing price",
       );
@@ -126,11 +202,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Enhanced amount conversion to kobo (PayStack requires amount in kobo for KES)
+    const amountInKobo = Math.round(parseFloat(amount.toString()) * 100);
+
+    logger.debug(
+      {
+        originalAmount: amount,
+        amountInKobo: amountInKobo,
+        conversionMultiplier: 100,
+      },
+      "Amount conversion to kobo",
+    );
+
     // Initialize PayStack transaction
     logger.info("Attempting to initialize PayStack transaction.");
     const paystackRequestBody = {
       email: email,
-      amount: Math.round(amount * 100), // Ensure integer kobo/cents
+      amount: amountInKobo, // Use converted amount
       currency: "KES",
       reference: reference,
       callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/paystack/callback`,
@@ -152,102 +240,233 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    logger.debug({ paystackRequestBody }, "PayStack API Request Body:");
-
-    const response = await fetch(
-      "https://api.paystack.co/transaction/initialize",
+    logger.debug(
       {
+        paystackRequestBody,
+        callbackUrl: paystackRequestBody.callback_url,
+      },
+      "PayStack API Request Body:",
+    );
+
+    // Enhanced PayStack API call with detailed error handling
+    let response: Response;
+    let responseText: string;
+
+    try {
+      logger.info(
+        {
+          url: "https://api.paystack.co/transaction/initialize",
+          hasSecretKey: !!process.env.PAYSTACK_SECRET_KEY,
+          secretKeyPrefix: process.env.PAYSTACK_SECRET_KEY?.substring(0, 7),
+          method: "POST",
+        },
+        "Making PayStack API request",
+      );
+
+      response = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(paystackRequestBody),
-      },
-    );
+      });
+
+      // Get response text first for better error handling
+      responseText = await response.text();
+
+      logger.debug(
+        {
+          responseStatus: response.status,
+          responseStatusText: response.statusText,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
+          responseBody: responseText,
+          responseOk: response.ok,
+        },
+        "Raw PayStack API response",
+      );
+    } catch (fetchError) {
+      logger.error(
+        {
+          error: fetchError,
+          errorMessage:
+            fetchError instanceof Error
+              ? fetchError.message
+              : "Unknown fetch error",
+          errorName: fetchError instanceof Error ? fetchError.name : undefined,
+          stack: fetchError instanceof Error ? fetchError.stack : undefined,
+        },
+        "Network error during PayStack API call",
+      );
+      throw new Error(
+        `Network error: ${fetchError instanceof Error ? fetchError.message : "Unknown error"}`,
+      );
+    }
 
     if (!response.ok) {
       logger.error(
         {
           status: response.status,
           statusText: response.statusText,
+          responseBody: responseText,
+          headers: Object.fromEntries(response.headers.entries()),
         },
-        "PayStack API request failed",
+        "PayStack API request failed with detailed error",
       );
-      throw new Error(`PayStack API request failed: ${response.status}`);
+      throw new Error(
+        `PayStack API request failed: ${response.status} - ${responseText}`,
+      );
     }
 
-    const data: PayStackInitializeResponse = await response.json();
-    logger.debug({ paystackApiResponse: data }, "PayStack API Response:");
+    // Parse the JSON response
+    let data: PayStackInitializeResponse;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      logger.error(
+        {
+          parseError,
+          responseText,
+        },
+        "Failed to parse PayStack API response as JSON",
+      );
+      throw new Error("Invalid JSON response from PayStack API");
+    }
+
+    logger.debug(
+      { paystackApiResponse: data },
+      "PayStack API Response parsed:",
+    );
 
     if (!data.status || !data.data) {
       logger.error(
-        { paystackError: data.message },
+        {
+          paystackError: data.message,
+          paystackStatus: data.status,
+          paystackData: data.data,
+        },
         "PayStack initialization failed.",
       );
       throw new Error(data.message || "PayStack initialization failed");
     }
     logger.info("PayStack transaction initialized successfully.");
 
-    // Save transaction to database with additional metadata
+    // Save transaction to database with additional metadata and enhanced error handling
     logger.info("Attempting to save transaction to database.");
+
+    const transactionData = {
+      user_id: user.id,
+      payment_method: "paystack",
+      amount: amount,
+      status: "pending",
+      email: email,
+      reference: reference,
+      listing_id: listingId,
+      paystack_access_code: data.data.access_code,
+      created_at: new Date().toISOString(),
+    };
+
+    logger.debug(
+      {
+        insertData: transactionData,
+      },
+      "About to insert transaction",
+    );
+
     const { data: transaction, error: dbError } = await supabase
       .from("transactions")
-      .insert({
-        user_id: user.id,
-        payment_method: "paystack",
-        amount: amount,
-        status: "pending",
-        email: email,
-        reference: reference,
-        listing_id: listingId,
-        paystack_access_code: data.data.access_code,
-        created_at: new Date().toISOString(),
-      })
+      .insert(transactionData)
       .select()
       .single();
 
     if (dbError) {
-      logger.error({ dbError }, "Failed to save transaction to database.");
+      logger.error(
+        {
+          dbError,
+          errorCode: dbError.code,
+          errorMessage: dbError.message,
+          errorDetails: dbError.details,
+          errorHint: dbError.hint,
+          insertData: transactionData,
+        },
+        "Database insert failed with detailed error",
+      );
 
       // Consider reversing the PayStack transaction here if needed
       // This would require implementing a cleanup mechanism
+      logger.warn(
+        "PayStack transaction was initialized but database save failed - may need manual cleanup",
+      );
 
-      throw new Error("Failed to save transaction");
+      throw new Error(`Failed to save transaction: ${dbError.message}`);
     }
+
     logger.info(
-      { transactionId: transaction.id },
+      {
+        transactionId: transaction.id,
+        reference: transaction.reference,
+      },
       "Transaction saved to database successfully.",
     );
 
-    logger.info("Returning success response with authorization URL.");
-    return NextResponse.json({
+    const successResponse = {
       success: true,
       authorization_url: data.data.authorization_url,
       access_code: data.data.access_code,
       reference: data.data.reference,
       transaction: transaction,
-    });
+    };
+
+    logger.info(
+      {
+        response: successResponse,
+      },
+      "Returning success response with authorization URL.",
+    );
+
+    return NextResponse.json(successResponse);
   } catch (error) {
-    logger.error({ error }, "PayStack payment error caught in catch block:");
+    logger.error(
+      {
+        error,
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        errorName: error instanceof Error ? error.name : undefined,
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorType: typeof error,
+      },
+      "PayStack payment error caught in catch block:",
+    );
 
     // Return appropriate error responses based on error type
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation failed", details: error.issues },
+        {
+          error: "Validation failed",
+          details: error.issues,
+          success: false,
+        },
         { status: 400 },
       );
     }
 
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Payment initialization failed",
-        success: false,
-      },
-      { status: 500 },
-    );
+    // Enhanced error response
+    const errorMessage =
+      error instanceof Error ? error.message : "Payment initialization failed";
+    const errorResponse = {
+      error: errorMessage,
+      success: false,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Add additional context for debugging in non-production
+    if (process.env.NODE_ENV !== "production") {
+      (errorResponse as any).debug = {
+        errorType:
+          error instanceof Error ? error.constructor.name : typeof error,
+        stack: error instanceof Error ? error.stack : undefined,
+      };
+    }
+
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }

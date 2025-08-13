@@ -9,202 +9,9 @@ const logger = pino({
   level: process.env.NODE_ENV === "development" ? "debug" : "info",
 });
 
-async function processMpesaCallback(parsedBody: any) {
-  const supabase = await getSupabaseRouteHandler(cookies);
-  const { Body } = parsedBody;
-
-  if (!Body?.stkCallback) {
-    logger.error("Invalid callback data: 'stkCallback' missing.");
-    return;
-  }
-
-  const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } =
-    Body.stkCallback;
-
-  logger.info(
-    { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata },
-    "M-Pesa Callback Details:",
-  );
-
-  let existingTransaction = null;
-  const MAX_RETRIES = 5;
-  const RETRY_DELAY_MS = 500; // 0.5 seconds
-
-  for (let i = 0; i < MAX_RETRIES; i++) {
-    logger.info({ retryAttempt: i }, "Attempting to find transaction");
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("checkout_request_id", CheckoutRequestID)
-      .single();
-
-    if (error) {
-      logger.error({ error }, "Error finding transaction");
-    }
-
-    if (data) {
-      existingTransaction = data;
-      logger.info({ transactionId: data.id, retryAttempt: i }, "Found transaction by CheckoutRequestID");
-      break; // Found, exit loop
-    }
-
-    if (i < MAX_RETRIES - 1) {
-      const withJitter = (base: number) => base + Math.floor(Math.random() * base * 0.5);
-      const delay = withJitter(RETRY_DELAY_MS);
-      if (i === 0 || i === MAX_RETRIES - 2) {
-        logger.warn({ CheckoutRequestID, retryAttempt: i, delay }, "Transaction not found, retrying...");
-      } else {
-        logger.debug({ CheckoutRequestID, retryAttempt: i, delay }, "Transaction not found, retrying...");
-      }
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-
-  // FINAL FALLBACK: If no transaction found by CheckoutRequestID or transactionToken
-  if (!existingTransaction) {
-    // Store for investigation
-    const { error: orphanError } = await supabase
-      .from("orphaned_callbacks")
-      .insert({
-        checkout_request_id: CheckoutRequestID,
-        result_code: ResultCode,
-        result_description: ResultDesc,
-        callback_metadata: CallbackMetadata,
-        raw_callback: parsedBody,
-        created_at: new Date().toISOString(),
-      });
-
-    logger.error(
-      {
-        CheckoutRequestID,
-        orphanStored: !orphanError,
-      },
-      "CRITICAL: All matching methods failed",
-    );
-    return;
-  }
-
-  if (
-    existingTransaction.status === "completed" ||
-    existingTransaction.status === "failed"
-  ) {
-    logger.warn(
-      { CheckoutRequestID, currentStatus: existingTransaction.status },
-      "Transaction already processed.",
-    );
-    return;
-  }
-
-  // Determine transaction status
-  const status = ResultCode === 0 ? "completed" : "failed";
-  logger.info(`Updating transaction status to: ${status}`);
-
-  // Extract M-Pesa receipt number
-  let reference = null;
-  if (CallbackMetadata?.Item) {
-    const mpesaReceiptItem = CallbackMetadata.Item.find(
-      (item: any) => item.Name === "MpesaReceiptNumber",
-    );
-    if (mpesaReceiptItem) {
-      reference = mpesaReceiptItem.Value;
-      logger.info({ reference }, "M-Pesa Receipt Number found:");
-    }
-  }
-
-  // Update transaction status
-  const { data: updatedTransaction, error: updateError } = await supabase
-    .from("transactions")
-    .update({
-      status,
-      ...(reference ? { reference } : {}),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", existingTransaction.id)
-    .eq("status", "pending")
-    .select()
-    .single();
-
-  if (updateError) {
-    logger.error(
-      { updateError, CheckoutRequestID },
-      "Failed to update transaction:",
-    );
-    return;
-  }
-
-  if (!updatedTransaction) {
-    logger.warn(
-      { CheckoutRequestID },
-      "No transaction updated - likely already processed.",
-    );
-    return;
-  }
-
-  logger.info(
-    { transactionId: updatedTransaction.id, status },
-    "Transaction updated successfully.",
-  );
-
-  logger.info({ existingTransaction, status }, "Checking if listing should be activated");
-  // If payment successful, activate the listing
-  if (status === "completed" && existingTransaction.listing_id) {
-    logger.info(
-      { listingId: existingTransaction.listing_id },
-      "Activating listing...",
-    );
-
-    const { error: listingUpdateError } = await supabase
-      .from("listings")
-      .update({
-        status: "active",
-        payment_status: "paid",
-        payment_method: "mpesa",
-      })
-      .eq("id", existingTransaction.listing_id);
-
-    if (listingUpdateError) {
-      logger.error(
-        { listingUpdateError, listingId: existingTransaction.listing_id },
-        "Failed to activate listing:",
-      );
-    } else {
-      logger.info(
-        { listingId: existingTransaction.listing_id },
-        "Listing activated successfully.",
-      );
-    }
-
-    // Send notification
-    if (existingTransaction.user_id) {
-      const { error: notificationError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: existingTransaction.user_id,
-          title: "Payment Successful",
-          message: `Your payment of KES ${existingTransaction.amount} has been processed successfully. Your listing is now live!`,
-          type: "payment",
-        });
-
-      if (notificationError) {
-        logger.error({ notificationError }, "Failed to send notification:");
-      } else {
-        logger.info(
-          { userId: existingTransaction.user_id },
-          "Notification sent successfully.",
-        );
-      }
-    }
-  }
-
-  logger.info("--- M-Pesa Callback Processing Complete ---");
-}
-
-
 /**
- * Handles M-Pesa payment callback POST requests, updates transaction status, and activates listings.
- *
- * FIXED: Removed signature verification since M-Pesa doesn't send signatures by default.
- * If you have signature verification configured with Safaricom, re-enable the signature check.
+ * Handles M-Pesa payment callback POST requests by storing them in webhook_events table
+ * for processing by the cron job worker.
  */
 export async function POST(request: NextRequest) {
   logger.info("--- M-Pesa Callback Route Invoked ---");
@@ -213,31 +20,110 @@ export async function POST(request: NextRequest) {
   const callbackToken = request.nextUrl.searchParams.get("token");
 
   if (!expectedToken || callbackToken !== expectedToken) {
-    logger.warn("Unauthorized M-Pesa callback attempt. Invalid or missing token.");
+    logger.warn(
+      "Unauthorized M-Pesa callback attempt. Invalid or missing token.",
+    );
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
   try {
     const body = await request.text();
-    logger.debug({ body }, "Raw Callback Body:");
-    logger.info("Processing M-Pesa callback...");
+    logger.debug({ body }, "Raw M-Pesa Callback Body:");
 
     let parsedBody;
     try {
       parsedBody = JSON.parse(body);
-      logger.debug({ parsedBody }, "Parsed Callback Body:");
+      logger.debug({ parsedBody }, "Parsed M-Pesa Callback Body:");
     } catch (parseError) {
-      logger.error({ parseError, body }, "Failed to parse callback body.");
+      logger.error(
+        { parseError, body },
+        "Failed to parse M-Pesa callback body.",
+      );
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    // Process the callback asynchronously
-    processMpesaCallback(parsedBody).catch(error => {
-        logger.error({ error }, "Error in background M-Pesa callback processing");
-    });
+    // Validate callback structure
+    const { Body } = parsedBody;
+    if (!Body?.stkCallback) {
+      logger.error("Invalid M-Pesa callback data: 'stkCallback' missing.");
+      return NextResponse.json(
+        { error: "Invalid callback structure" },
+        { status: 400 },
+      );
+    }
+
+    const { CheckoutRequestID, ResultCode, ResultDesc } = Body.stkCallback;
+
+    if (!CheckoutRequestID) {
+      logger.error("Missing CheckoutRequestID in M-Pesa callback.");
+      return NextResponse.json(
+        { error: "Missing CheckoutRequestID" },
+        { status: 400 },
+      );
+    }
+
+    logger.info(
+      { CheckoutRequestID, ResultCode, ResultDesc },
+      "M-Pesa Callback Details:",
+    );
+
+    // Generate a unique PSP event ID for M-Pesa (they don't provide one)
+    const pspEventId = `mpesa_${CheckoutRequestID}_${Date.now()}`;
+
+    const supabase = await getSupabaseRouteHandler(cookies);
+
+    // Insert webhook event for processing by cron job
+    const { data: webhookEvent, error: insertError } = await supabase
+      .from("webhook_events")
+      .insert({
+        psp_event_id: pspEventId,
+        psp: "mpesa",
+        status: "received",
+        payload: parsedBody,
+        next_retry_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      // Check if it's a duplicate event
+      if (insertError.code === "23505") {
+        // Unique constraint violation
+        logger.warn(
+          { CheckoutRequestID, pspEventId },
+          "Duplicate M-Pesa webhook event received, ignoring.",
+        );
+        return NextResponse.json({
+          success: true,
+          message: "Duplicate event ignored",
+        });
+      }
+
+      logger.error(
+        { insertError, CheckoutRequestID },
+        "Failed to insert M-Pesa webhook event:",
+      );
+      return NextResponse.json(
+        { error: "Failed to store webhook event" },
+        { status: 500 },
+      );
+    }
+
+    logger.info(
+      {
+        webhookEventId: webhookEvent.id,
+        CheckoutRequestID,
+        pspEventId,
+      },
+      "M-Pesa webhook event stored successfully for processing.",
+    );
 
     // Immediately acknowledge the callback
-    return NextResponse.json({ success: true, message: "Callback received" });
-
+    return NextResponse.json({
+      success: true,
+      message: "Callback received and queued for processing",
+      event_id: webhookEvent.id,
+    });
   } catch (error) {
     logger.error({ error }, "M-Pesa callback error:");
     return NextResponse.json(

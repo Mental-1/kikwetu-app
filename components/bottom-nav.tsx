@@ -26,12 +26,6 @@ const BottomNavBar = () => {
       active: pathname === "/discover",
       icon: <Compass className="h-4 w-4" />,
     },
-    {
-      href: "/listings",
-      label: "Listings",
-      active: pathname === "/listings",
-      icon: <List className="h-4 w-4" />,
-    },
   ];
 
   const postAdRoute = {
@@ -44,6 +38,13 @@ const BottomNavBar = () => {
         router.push("/auth");
       }
     },
+  };
+
+  const listingsRoute = {
+    href: "/listings",
+    label: "Listings",
+    active: pathname === "/listings",
+    icon: <List className="h-4 w-4" />,
   };
 
   const mapRoute = {
@@ -60,19 +61,28 @@ const BottomNavBar = () => {
   return (
     <div className="fixed bottom-0 left-0 z-[999] w-full h-16 bg-background border-t">
       <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
-        {routes.map((route) => (
-          <Link
-            key={route.href}
-            href={route.href}
-            className={cn(
-              "inline-flex flex-col items-center justify-center px-2 hover:bg-muted",
-              route.active ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            {route.icon}
-            <span className="text-xs">{route.label}</span>
-          </Link>
-        ))}
+        <Link
+          key={routes[0].href}
+          href={routes[0].href}
+          className={cn(
+            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted",
+            routes[0].active ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          {routes[0].icon}
+          <span className="text-xs">{routes[0].label}</span>
+        </Link>
+        <Link
+          key={routes[1].href}
+          href={routes[1].href}
+          className={cn(
+            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted",
+            routes[1].active ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          {routes[1].icon}
+          <span className="text-xs">{routes[1].label}</span>
+        </Link>
         <button
           onClick={postAdRoute.onClick}
           className="inline-flex flex-col items-center justify-center px-2 hover:bg-muted text-muted-foreground"
@@ -82,6 +92,17 @@ const BottomNavBar = () => {
           </div>
           <span className="text-xs">{postAdRoute.label}</span>
         </button>
+        <Link
+          key={listingsRoute.href}
+          href={listingsRoute.href}
+          className={cn(
+            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted",
+            listingsRoute.active ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          {listingsRoute.icon}
+          <span className="text-xs">{listingsRoute.label}</span>
+        </Link>
         <Link
             key={mapRoute.href}
             href={mapRoute.href}

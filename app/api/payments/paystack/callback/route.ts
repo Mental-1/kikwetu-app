@@ -9,22 +9,32 @@ const logger = pino({
 });
 
 /**
- * Handles Paystack webhook POST requests to process payment events.
+ * Handles Paystack webhook POST requests by storing them in webhook_events table
+ * for processing by the cron job worker.
  */
 export async function POST(request: NextRequest) {
   logger.info("--- Paystack Webhook Received ---");
+
   try {
     const body = await request.text();
     const signature = request.headers.get("x-paystack-signature");
 
     logger.debug(
       { signature: signature?.substring(0, 20) + "..." },
-      "Webhook signature (masked):",
+      "Paystack webhook signature (masked):",
     );
 
     // Verify webhook signature
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      logger.error("PAYSTACK_SECRET_KEY not configured");
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 },
+      );
+    }
+
     const hash = crypto
-      .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY!)
+      .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY)
       .update(body)
       .digest("hex");
 
@@ -35,133 +45,102 @@ export async function POST(request: NextRequest) {
 
     logger.info("Paystack webhook signature verified successfully.");
 
-    const event = JSON.parse(body);
-    logger.debug(
-      { event: event.event, reference: event.data?.reference },
-      "Webhook event:",
-    );
-
-    if (event.event === "charge.success") {
-      const { reference, status, amount, gateway_response } = event.data;
-
-      logger.info(
-        { reference, status, amount },
-        "Processing successful charge:",
+    let parsedEvent;
+    try {
+      parsedEvent = JSON.parse(body);
+    } catch (parseError) {
+      logger.error(
+        { parseError, body },
+        "Failed to parse Paystack webhook body.",
       );
-
-      const supabase = await getSupabaseRouteHandler(cookies);
-
-      // Get the existing transaction with listing_id
-      const { data: existingTransaction, error: fetchError } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("reference", reference)
-        .single();
-
-      if (fetchError || !existingTransaction) {
-        logger.error({ fetchError, reference }, "Transaction not found:");
-        return NextResponse.json(
-          { error: "Transaction not found" },
-          { status: 404 },
-        );
-      }
-
-      if (existingTransaction.status === "completed") {
-        logger.warn({ reference }, "Transaction already processed.");
-        return NextResponse.json({ success: true });
-      }
-
-      // Update transaction status
-      const transactionStatus = status === "success" ? "completed" : "failed";
-      logger.info(
-        { reference, transactionStatus },
-        "Updating transaction status:",
-      );
-
-      const { error: transactionUpdateError } = await supabase
-        .from("transactions")
-        .update({
-          status: transactionStatus,
-          reference: reference,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("reference", reference);
-
-      if (transactionUpdateError) {
-        logger.error(
-          { transactionUpdateError, reference },
-          "Failed to update transaction:",
-        );
-        return NextResponse.json(
-          { error: "Failed to update transaction" },
-          { status: 500 },
-        );
-      }
-
-      logger.info({ reference }, "Transaction updated successfully.");
-
-      // If payment successful and we have a listing_id, activate the listing
-      if (transactionStatus === "completed" && existingTransaction.listing_id) {
-        logger.info(
-          { listingId: existingTransaction.listing_id },
-          "Activating listing:",
-        );
-
-        const { error: listingError } = await supabase
-          .from("listings")
-          .update({
-            status: "active",
-            payment_status: "paid",
-            payment_method: "paystack",
-          })
-          .eq("id", existingTransaction.listing_id);
-
-        if (listingError) {
-          logger.error(
-            { listingError, listingId: existingTransaction.listing_id },
-            "Failed to activate listing:",
-          );
-        } else {
-          logger.info(
-            { listingId: existingTransaction.listing_id },
-            "Listing activated successfully.",
-          );
-        }
-
-        // Send notification to user
-        if (existingTransaction.user_id) {
-          logger.info(
-            { userId: existingTransaction.user_id },
-            "Sending notification:",
-          );
-
-          const { error: notificationError } = await supabase
-            .from("notifications")
-            .insert({
-              user_id: existingTransaction.user_id,
-              title: "Payment Successful",
-              message: `Your payment of Ksh${amount / 100} has been processed successfully. Your listing is now live!`,
-              type: "payment",
-            });
-
-          if (notificationError) {
-            logger.error({ notificationError }, "Failed to send notification:");
-          } else {
-            logger.info(
-              { userId: existingTransaction.user_id },
-              "Notification sent successfully.",
-            );
-          }
-        }
-      }
-    } else {
-      logger.info({ eventType: event.event }, "Ignoring non-success event:");
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    logger.info("--- Paystack Webhook Processing Complete ---");
-    return NextResponse.json({ success: true });
+    // Validate required fields
+    if (!parsedEvent.id || !parsedEvent.event) {
+      logger.error(
+        "Missing required fields in Paystack webhook (id or event).",
+      );
+      return NextResponse.json(
+        { error: "Invalid webhook structure" },
+        { status: 400 },
+      );
+    }
+
+    logger.debug(
+      {
+        eventId: parsedEvent.id,
+        event: parsedEvent.event,
+        reference: parsedEvent.data?.reference,
+      },
+      "Paystack webhook event details:",
+    );
+
+    const supabase = await getSupabaseRouteHandler(cookies);
+
+    // Insert webhook event for processing by cron job
+    const { data: webhookEvent, error: insertError } = await supabase
+      .from("webhook_events")
+      .insert({
+        psp_event_id: parsedEvent.id, // Paystack provides unique event IDs
+        psp: "paystack",
+        status: "received",
+        payload: parsedEvent,
+        next_retry_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      // Check if it's a duplicate event
+      if (insertError.code === "23505") {
+        // Unique constraint violation
+        logger.warn(
+          {
+            paystackEventId: parsedEvent.id,
+            event: parsedEvent.event,
+            reference: parsedEvent.data?.reference,
+          },
+          "Duplicate Paystack webhook event received, ignoring.",
+        );
+        return NextResponse.json({
+          success: true,
+          message: "Duplicate event ignored",
+        });
+      }
+
+      logger.error(
+        {
+          insertError,
+          paystackEventId: parsedEvent.id,
+          event: parsedEvent.event,
+        },
+        "Failed to insert Paystack webhook event:",
+      );
+      return NextResponse.json(
+        { error: "Failed to store webhook event" },
+        { status: 500 },
+      );
+    }
+
+    logger.info(
+      {
+        webhookEventId: webhookEvent.id,
+        paystackEventId: parsedEvent.id,
+        event: parsedEvent.event,
+        reference: parsedEvent.data?.reference,
+      },
+      "Paystack webhook event stored successfully for processing.",
+    );
+
+    // Acknowledge the webhook immediately
+    return NextResponse.json({
+      success: true,
+      message: "Webhook received and queued for processing",
+      event_id: webhookEvent.id,
+    });
   } catch (error) {
-    logger.error({ error }, "PayStack webhook error:");
+    logger.error({ error }, "Paystack webhook error:");
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 },

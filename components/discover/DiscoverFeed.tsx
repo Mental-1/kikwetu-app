@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearch } from "@/hooks/useSearch";
 import FeedItem, { FeedMedia } from "./FeedItem";
 import { useSearchParams } from "next/navigation";
@@ -128,12 +128,17 @@ const DiscoverFeed = () => {
     fetchNextPage,
   ]); // Removed isScrolling from dependencies
 
-  const debouncedHandleScroll = useCallback(
-    debounce(() => {
-      handleScroll();
-    }, 50),
-    [handleScroll],
+  const debouncedHandleScroll = useMemo(
+    () => debounce(handleScroll, 50),
+    [handleScroll]
   );
+
+  // Clear any pending scroll callbacks when unmounting
+  useEffect(() => {
+    return () => {
+      debouncedHandleScroll.cancel?.();
+    };
+  }, [debouncedHandleScroll]);
 
   // Snap to nearest item when scrolling stops
   const snapToNearestItem = useCallback(() => {
@@ -358,7 +363,8 @@ const DiscoverFeed = () => {
             ref={(el) => {
               itemsRef.current[index] = el;
             }}
-            className="h-screen w-full snap-start snap-always flex-shrink-0"
+            className="h-screen w-full snap-start snap-always flex-shrink-0 animate-fade-in-slide-up"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
             <FeedItem
               item={{

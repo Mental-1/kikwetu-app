@@ -23,10 +23,12 @@ const BottomNavBar = () => {
     {
       href: "/discover",
       label: "Discover",
-      active: pathname === "/discover",
+      active: pathname === "/discover" || pathname?.startsWith("/discover/"),
       icon: <Compass className="h-4 w-4" />,
     },
   ];
+
+  const [homeRoute, discoverRoute] = routes;
 
   const postAdRoute = {
     label: "Post Ad",
@@ -43,14 +45,14 @@ const BottomNavBar = () => {
   const listingsRoute = {
     href: "/listings",
     label: "Listings",
-    active: pathname === "/listings",
+    active: pathname === "/listings" || pathname?.startsWith("/listings/"),
     icon: <List className="h-4 w-4" />,
   };
 
   const mapRoute = {
       href: "/map",
       label: "Map",
-      active: pathname === "/map",
+      active: pathname === "/map" || pathname?.startsWith("/map/"),
       icon: <MapIcon className="h-4 w-4" />,
   }
 
@@ -62,26 +64,26 @@ const BottomNavBar = () => {
     <div className="fixed bottom-0 left-0 z-[999] w-full h-16 bg-background border-t">
       <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
         <Link
-          key={routes[0].href}
-          href={routes[0].href}
+          href={homeRoute.href}
+          aria-current={homeRoute.active ? "page" : undefined}
           className={cn(
-            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted",
-            routes[0].active ? "text-primary" : "text-muted-foreground"
+            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
+            homeRoute.active ? "text-primary" : "text-muted-foreground"
           )}
         >
-          {routes[0].icon}
-          <span className="text-xs">{routes[0].label}</span>
+          {homeRoute.icon}
+          <span className="text-xs">{homeRoute.label}</span>
         </Link>
         <Link
-          key={routes[1].href}
-          href={routes[1].href}
+          href={discoverRoute.href}
+          aria-current={discoverRoute.active ? "page" : undefined}
           className={cn(
-            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted",
-            routes[1].active ? "text-primary" : "text-muted-foreground"
+            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
+            discoverRoute.active ? "text-primary" : "text-muted-foreground"
           )}
         >
-          {routes[1].icon}
-          <span className="text-xs">{routes[1].label}</span>
+          {discoverRoute.icon}
+          <span className="text-xs">{discoverRoute.label}</span>
         </Link>
         <button
           onClick={postAdRoute.onClick}
@@ -93,10 +95,10 @@ const BottomNavBar = () => {
           <span className="text-xs">{postAdRoute.label}</span>
         </button>
         <Link
-          key={listingsRoute.href}
           href={listingsRoute.href}
+          aria-current={listingsRoute.active ? "page" : undefined}
           className={cn(
-            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted",
+            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
             listingsRoute.active ? "text-primary" : "text-muted-foreground"
           )}
         >
@@ -104,8 +106,8 @@ const BottomNavBar = () => {
           <span className="text-xs">{listingsRoute.label}</span>
         </Link>
         <Link
-            key={mapRoute.href}
             href={mapRoute.href}
+            aria-current={mapRoute.active ? "page" : undefined}
             className={cn(
               "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
               mapRoute.active ? "text-primary" : "text-muted-foreground"

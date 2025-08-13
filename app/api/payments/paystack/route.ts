@@ -27,7 +27,7 @@ interface PayStackInitializeResponse {
 function generateSecureReference(userId: string): string {
   const timestamp = Date.now();
   const randomBytes = crypto.randomBytes(8).toString("hex");
-  return `kikwetu_${userId}_${timestamp}_${randomBytes}`;
+  return `bidsy_${userId}_${timestamp}_${randomBytes}`;
 }
 
 /**
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Optional: Verify amount matches listing price
-    const PRICE_TOLERANCE = 1;
+    const PRICE_TOLERANCE = 1; // Allow 1 KES difference for rounding
     if (listing.price && Math.abs(listing.price - amount) > PRICE_TOLERANCE) {
       logger.error(
         {
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
     logger.info("Attempting to initialize PayStack transaction.");
     const paystackRequestBody = {
       email: email,
-      amount: amountInKobo,
+      amount: amountInKobo, // Use converted amount
       currency: "KES",
       reference: reference,
       callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/paystack/callback`,
@@ -253,12 +253,15 @@ export async function POST(request: NextRequest) {
     let responseText: string;
 
     try {
-      logger.info("Making PayStack API request", {
-        url: "https://api.paystack.co/transaction/initialize",
-        hasSecretKey: !!process.env.PAYSTACK_SECRET_KEY,
-        secretKeyPrefix: process.env.PAYSTACK_SECRET_KEY?.substring(0, 7),
-        method: "POST",
-      });
+      logger.info(
+        {
+          url: "https://api.paystack.co/transaction/initialize",
+          hasSecretKey: !!process.env.PAYSTACK_SECRET_KEY,
+          secretKeyPrefix: process.env.PAYSTACK_SECRET_KEY?.substring(0, 7),
+          method: "POST",
+        },
+        "Making PayStack API request",
+      );
 
       response = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",

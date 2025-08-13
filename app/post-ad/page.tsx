@@ -470,7 +470,7 @@ export default function PostAdPage() {
           return;
         }
 
-        if (transaction?.status === 'completed' && paymentStatus !== 'completed') {
+        if (transaction?.status === 'completed') {
           logger.info('Polling detected completed payment, updating status...');
           setPaymentStatus('completed');
           clearInterval(pollInterval);

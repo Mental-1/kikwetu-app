@@ -35,7 +35,7 @@ export async function GET() {
   const { qr_code, secret } = enrollData.totp;
   const factor_id = enrollData.id;
 
-  cookieStore.set('2fa_factor_id', factor_id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'strict' });
+  cookies().set('2fa_factor_id', factor_id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'strict' });
 
   return new Response(JSON.stringify({ qrCode: qr_code, secret: secret }), {
     headers: { "Content-Type": "application/json" },

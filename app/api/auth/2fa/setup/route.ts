@@ -20,7 +20,7 @@ export async function POST() {
   const { qr_code, secret } = data.totp;
   const factor_id = data.id;
 
-  cookieStore.set('2fa_factor_id', factor_id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'strict' });
+  cookies().set('2fa_factor_id', factor_id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'strict' });
 
   return new Response(JSON.stringify({ qrCode: qr_code, secret: secret }), {
     headers: { "Content-Type": "application/json" },

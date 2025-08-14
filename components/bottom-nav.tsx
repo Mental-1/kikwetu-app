@@ -49,43 +49,12 @@ const BottomNavBar = () => {
     icon: <List className="h-4 w-4" />,
   };
 
-        icon: <Home className="h-4 w-4" />,
-    },
-    {
-      href: "/discover",
-      label: "Discover",
-      active: pathname === "/discover" || pathname?.startsWith("/discover/"),
-      icon: <Compass className="h-4 w-4" />,
-    },
-  ];
-
-  const [homeRoute, discoverRoute] = routes;
-
-  const postAdRoute = {
-    label: "Post Ad",
-    icon: <Plus className="h-4 w-4" />,
-    onClick: () => {
-      if (user) {
-        router.push("/post-ad");
-      } else {
-        router.push("/auth");
-      }
-    },
-  };
-
-  const listingsRoute = {
-    href: "/listings",
-    label: "Listings",
-    active: pathname === "/listings" || pathname?.startsWith("/listings/"),
-    icon: <List className="h-4 w-4" />,
-  };
-
   const mapRoute = {
-      href: "/map",
-      label: "Map",
-      active: pathname === "/map" || pathname?.startsWith("/map/"),
-      icon: <MapIcon className="h-4 w-4" />,
-  }
+    href: "/map",
+    label: "Map",
+    active: pathname === "/map" || pathname?.startsWith("/map/"),
+    icon: <MapIcon className="h-4 w-4" />,
+  };
 
   if (!isMobile) {
     return null;
@@ -99,7 +68,7 @@ const BottomNavBar = () => {
           aria-current={homeRoute.active ? "page" : undefined}
           className={cn(
             "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
-            homeRoute.active ? "text-primary" : "text-muted-foreground"
+            homeRoute.active ? "text-primary" : "text-muted-foreground",
           )}
         >
           {homeRoute.icon}
@@ -110,7 +79,7 @@ const BottomNavBar = () => {
           aria-current={discoverRoute.active ? "page" : undefined}
           className={cn(
             "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
-            discoverRoute.active ? "text-primary" : "text-muted-foreground"
+            discoverRoute.active ? "text-primary" : "text-muted-foreground",
           )}
         >
           {discoverRoute.icon}
@@ -130,23 +99,23 @@ const BottomNavBar = () => {
           aria-current={listingsRoute.active ? "page" : undefined}
           className={cn(
             "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
-            listingsRoute.active ? "text-primary" : "text-muted-foreground"
+            listingsRoute.active ? "text-primary" : "text-muted-foreground",
           )}
         >
           {listingsRoute.icon}
           <span className="text-xs">{listingsRoute.label}</span>
         </Link>
         <Link
-            href={mapRoute.href}
-            aria-current={mapRoute.active ? "page" : undefined}
-            className={cn(
-              "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
-              mapRoute.active ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            {mapRoute.icon}
-            <span className="text-xs">{mapRoute.label}</span>
-          </Link>
+          href={mapRoute.href}
+          aria-current={mapRoute.active ? "page" : undefined}
+          className={cn(
+            "inline-flex flex-col items-center justify-center px-2 hover:bg-muted focus:outline-none",
+            mapRoute.active ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          {mapRoute.icon}
+          <span className="text-xs">{mapRoute.label}</span>
+        </Link>
       </div>
     </div>
   );

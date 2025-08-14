@@ -3,8 +3,7 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from 'next/headers'
 
 export async function GET() {
-  const cookieStore = cookies()
-  const supabase = await getSupabaseRouteHandler(cookieStore);
+  const supabase = await getSupabaseRouteHandler(cookies);
 
   const { data, error } = await supabase.auth.mfa.listFactors();
 

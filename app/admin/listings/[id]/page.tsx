@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
-import ListingModerationActions from "@/components/admin/listing-moderation-actions";
+import ListingModerationActions from "@/components/admin/listing-actions";
 
 export default function ListingPreviewPage() {
   const router = useRouter();

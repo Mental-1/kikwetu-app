@@ -313,6 +313,7 @@ export default function PostAdPage() {
       }, 1000);
       return () => clearTimeout(timer);
     }
+    return; // Explicitly return void
   }, [paymentStatus]);
 
 

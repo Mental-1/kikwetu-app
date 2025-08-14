@@ -288,7 +288,7 @@ export default function AnalyticsCharts() {
     },
     scales: {
       x: {
-        type: 'time', // Change to 'time'
+        type: 'timeseries', // Change to 'timeseries'
         time: {
           unit: 'day', // Specify the unit
           tooltipFormat: 'MMM D', // Format for tooltips

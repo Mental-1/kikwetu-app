@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 
 export async function POST() {
   const cookieStore = cookies()
-  const supabase = getSupabaseRouteHandler(cookieStore);
+  const supabase = await getSupabaseRouteHandler(cookieStore);
 
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",

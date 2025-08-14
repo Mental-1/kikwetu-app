@@ -47,6 +47,10 @@ type Category = Database["public"]["Tables"]["categories"]["Row"];
 type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
 type PaymentStatus = "idle" | "pending" | "completed" | "failed" | "cancelled";
 
+const LISTING_ACTIVATION_TIMEOUT_MS = 40000;
+
+const POLLING_INTERVAL = 5000;
+
 const formatLocationData = (location: any) => {
   const isCoordinates = Array.isArray(location) && location.length === 2;
   return {
@@ -356,7 +360,7 @@ export default function PostAdPage() {
                   
                   // Set timeout for activation to prevent hanging
                   const timeoutPromise = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error('Listing activation timeout after 10 seconds')), 10000)
+                    setTimeout(() => reject(new Error(`Listing activation timeout after ${LISTING_ACTIVATION_TIMEOUT_MS / 1000} seconds`)), LISTING_ACTIVATION_TIMEOUT_MS)
                   );
 
                   await Promise.race([activateListing(), timeoutPromise]);
@@ -478,7 +482,7 @@ export default function PostAdPage() {
       } catch (error) {
         logger.error({ error }, 'Polling exception');
       }
-    }, 5000); // Poll every 5 seconds
+    }, POLLING_INTERVAL);
 
     // Cleanup polling on unmount or completion
     return () => {

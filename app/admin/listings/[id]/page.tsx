@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { getSupabaseClient } from "@/utils/supabase/client";
 import { Listing } from "@/lib/types/listing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ export default function ListingPreviewPage() {
 
   useEffect(() => {
     const fetchListingDetails = async () => {
-      const supabase = createClient();
+      const supabase = getSupabaseClient();
       try {
         const { data, error } = await supabase
           .from("listings")

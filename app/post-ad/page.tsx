@@ -334,14 +334,30 @@ export default function PostAdPage() {
               
               // Check if listing activation is needed (edge case handling)
               try {
-                const { data: listing, error: listingError } = await supabase
-                  .from('listings')
-                  .select('status, payment_status, activated_at')
-                  .eq('id', pendingListingId)
-                  .single();
+                let listing, listingError;
+                let retries = 3;
+                
+                while (retries > 0) {
+                  const result = await supabase
+                    .from('listings')
+                    .select('status, payment_status, activated_at')
+                    .eq('id', pendingListingId)
+                    .single();
+                  
+                  listing = result.data;
+                  listingError = result.error;
+                  
+                  if (!listingError) break;
+                  
+                  retries--;
+                  if (retries > 0) {
+                    logger.warn(`Retrying listing status check, ${retries} attempts remaining`);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Simple backoff for now
+                  }
+                }
 
                 if (listingError) {
-                  logger.error({ message: 'Error fetching listing status', error: listingError });
+                  logger.error({ message: 'Error fetching listing status after retries', error: listingError });
                   throw listingError;
                 }
 
@@ -1382,7 +1398,7 @@ function PaymentMethodStep({
                   <span className="text-sm">Listing ID: {pendingListingId}</span>
                 </p>
                 {showRetryButton && (
-                  <Button onClick={onRetryPayment} className="mt-4 text-sm py-1 px-2 bg-green-500 text-white" >
+                  <Button onClick={onRetryPayment} className="mt-4 text-sm py-1 px-2 bg-green-500 hover:bg-green-600 text-white transition-colors" >
                     I have paid
                   </Button>
                 )}

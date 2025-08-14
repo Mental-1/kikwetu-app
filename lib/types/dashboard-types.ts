@@ -19,10 +19,10 @@ export interface TransactionItem {
   payment_method: string;
   status: "completed" | "pending" | "failed";
   amount: number;
-  listings?: {
+  listings?: Array<{
     id: string;
     title: string;
-  };
+  }>;
 }
 
 export interface RecentActivityItem {

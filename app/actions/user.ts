@@ -52,8 +52,9 @@ export async function getSellerProfileData(sellerId: string) {
 
     const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*, listings!status=eq.active(*)")
+        .select("*, listings!inner(*)")
         .eq("id", sellerId)
+        .eq("listings.status", "active")
         .limit(20, { foreignTable: "listings" })
         .order("created_at", { foreignTable: "listings", ascending: false })
         .single();

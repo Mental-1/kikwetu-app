@@ -1,8 +1,8 @@
-
+import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from 'next/headers'
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
 
   const { data, error } = await supabase.auth.mfa.enroll({
@@ -20,9 +20,8 @@ export async function POST() {
   const { qr_code, secret } = data.totp;
   const factor_id = data.id;
 
-  cookies().set('2fa_factor_id', factor_id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'strict' });
+  const response = NextResponse.json({ qrCode: qr_code, secret: secret });
+  response.cookies.set('2fa_factor_id', factor_id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'strict' });
 
-  return new Response(JSON.stringify({ qrCode: qr_code, secret: secret }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return response;
 }

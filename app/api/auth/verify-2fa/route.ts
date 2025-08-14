@@ -3,11 +3,12 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const cookieStore = await cookies(); // Await cookies() here
+  const supabase = await getSupabaseRouteHandler(cookies); // Pass cookies function
+
   const { code } = await req.json();
 
-  const factorId = cookies().get("2fa_factor_id")?.value;
+  const factorId = cookieStore.get("2fa_factor_id")?.value; // Use cookieStore
 
   if (!factorId) {
     return NextResponse.json(
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    cookieStore.delete("2fa_factor_id");
+    cookieStore.delete("2fa_factor_id"); // Use cookieStore
 
     return NextResponse.json({ success: true, session: data });
   } catch (error) {

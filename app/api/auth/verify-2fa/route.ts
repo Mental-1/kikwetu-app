@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
-  const supabase = await getSupabaseRouteHandler(cookieStore);
+  const supabase = await getSupabaseRouteHandler(cookies);
   const { code } = await req.json();
 
   const factorId = cookieStore.get("2fa_factor_id")?.value;

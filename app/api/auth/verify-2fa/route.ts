@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
   const { code } = await req.json();
 
-  const factorId = cookieStore.get("2fa_factor_id")?.value;
+  const factorId = cookies().get("2fa_factor_id")?.value;
 
   if (!factorId) {
     return NextResponse.json(

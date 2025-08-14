@@ -94,6 +94,15 @@ export default function AnalyticsCharts() {
       const newUsersByDay = processDataByDay(usersData.users);
       const newListingsByDay = processDataByDay(listingsData);
 
+      const formattedNewUsersByDay = labels.map((label, index) => ({
+        x: label,
+        y: newUsersByDay[index],
+      }));
+      const formattedNewListingsByDay = labels.map((label, index) => ({
+        x: label,
+        y: newListingsByDay[index],
+      }));
+
       const categoryCounts: Record<string, number> = listingsData.reduce(
         (acc: Record<string, number>, listing) => {
           if (listing.categories && listing.categories.length > 0) {
@@ -120,8 +129,8 @@ export default function AnalyticsCharts() {
 
       setChartData({
         labels,
-        newUsersByDay,
-        newListingsByDay,
+        newUsersByDay: formattedNewUsersByDay,
+        newListingsByDay: formattedNewListingsByDay,
         categoryCounts,
         tierCounts,
       });
@@ -171,7 +180,6 @@ export default function AnalyticsCharts() {
   }
 
   const userGrowthData = {
-    labels: chartData.labels,
     datasets: [
       {
         label: "New Users",
@@ -184,7 +192,6 @@ export default function AnalyticsCharts() {
   };
 
   const listingsGrowthData = {
-    labels: chartData.labels,
     datasets: [
       {
         label: "New Listings",

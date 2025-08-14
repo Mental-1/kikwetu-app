@@ -303,8 +303,8 @@ export default function PostAdPage() {
   }, [pendingListingId, formData.paymentMethod]);
 
   // Payment status monitoring
+  // Auto-open on transitions that need user attention.
   useEffect(() => {
-    // Open the modal when entering a state that needs user attention.
     if (
       paymentStatus === "pending" ||
       paymentStatus === "failed" ||
@@ -312,12 +312,12 @@ export default function PostAdPage() {
     ) {
       setIsModalOpen(true);
     }
+  }, [paymentStatus]);
 
-    // If the modal is already open and payment completes, close it after a short delay.
+  // Auto-close shortly after completion if currently open.
+  useEffect(() => {
     if (paymentStatus === "completed" && isModalOpen) {
-      const timer = setTimeout(() => {
-        setIsModalOpen(false);
-      }, 1000);
+      const timer = setTimeout(() => setIsModalOpen(false), 1000);
       return () => clearTimeout(timer);
     }
     return undefined;

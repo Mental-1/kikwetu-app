@@ -11,14 +11,18 @@ export async function POST(req: NextRequest) {
   const factorId = cookieStore.get("2fa_factor_id")?.value; // Use cookieStore
 
   if (!factorId) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: "2FA factor ID not found. Please try again." },
       { status: 400 },
     );
+    response.cookies.set('2fa_in_progress', '', { expires: new Date(0), path: '/' });
+    return response;
   }
 
   if (!code) {
-    return NextResponse.json({ error: "Code is required" }, { status: 400 });
+    const response = NextResponse.json({ error: "Code is required" }, { status: 400 });
+    response.cookies.set('2fa_in_progress', '', { expires: new Date(0), path: '/' });
+    return response;
   }
 
   try {
@@ -26,7 +30,9 @@ export async function POST(req: NextRequest) {
 
     if (challengeError) {
       console.error("2FA challenge error:", challengeError);
-      return NextResponse.json({ error: challengeError.message }, { status: 400 });
+      const response = NextResponse.json({ error: challengeError.message }, { status: 400 });
+      response.cookies.set('2fa_in_progress', '', { expires: new Date(0), path: '/' });
+      return response;
     }
 
     const { data, error } = await supabase.auth.mfa.verify({
@@ -37,17 +43,26 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("2FA verification error:", error);
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      const response = NextResponse.json({ error: error.message }, { status: 400 });
+      response.cookies.set('2fa_in_progress', '', { expires: new Date(0), path: '/' });
+      return response;
     }
 
-    cookieStore.delete("2fa_factor_id"); // Use cookieStore
-
-    return NextResponse.json({ success: true, session: data });
+    // Delete the cookie by setting it with an expired date
+    const response = NextResponse.json({ success: true, session: data });
+    response.cookies.set('2fa_factor_id', '', {
+      expires: new Date(0),
+      path: '/',
+    });
+    response.cookies.set('2fa_in_progress', '', { expires: new Date(0), path: '/' });
+    return response;
   } catch (error) {
     console.error("Unexpected error during 2FA verification:", error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: "An unexpected error occurred" },
       { status: 500 },
     );
+    response.cookies.set('2fa_in_progress', '', { expires: new Date(0), path: '/' });
+    return response;
   }
 }

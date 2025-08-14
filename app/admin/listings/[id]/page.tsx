@@ -10,6 +10,20 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import ListingModerationActions from "@/components/admin/listing-actions";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+
+const getStatusBadgeClass = (status: string) => {
+  switch (status) {
+    case "approved":
+      return "bg-green-100 text-green-800";
+    case "rejected":
+      return "bg-red-100 text-red-800";
+    default:
+      return "bg-yellow-100 text-yellow-800";
+  }
+};
 
 export default function ListingPreviewPage() {
   const router = useRouter();
@@ -19,7 +33,15 @@ export default function ListingPreviewPage() {
 
   useEffect(() => {
     const fetchListingDetails = async () => {
-      const supabase = getSupabaseClient();
+      let supabase;
+      try {
+        supabase = getSupabaseClient();
+      } catch (clientError) {
+        console.error("Failed to initialize database client", clientError);
+        setError("Failed to initialize database client");
+        return; // Abort if client is not available
+      }
+
       try {
         const { data, error } = await supabase
           .from("listings")
@@ -79,7 +101,13 @@ export default function ListingPreviewPage() {
   }
 
   return (
-    <div>
+    <div className="container mx-auto py-8">
+      <Link href="/admin/listings" passHref>
+        <Button variant="outline" className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Listings
+        </Button>
+      </Link>
       <h1 className="text-3xl font-bold mb-2">Listing Preview</h1>
       <p className="text-muted-foreground mb-6">
         Review the listing details and media below. Press [A] to Approve or [R]
@@ -141,7 +169,7 @@ export default function ListingPreviewPage() {
                 <div className="flex justify-between">
                   <span className="font-medium">Current Status:</span>
                   <Badge
-                    className={`capitalize ${listing.status === "approved" ? "bg-green-100 text-green-800" : listing.status === "rejected" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}`}>
+                    className={`capitalize ${getStatusBadgeClass(listing.status)}`}>
                     {listing.status || "pending"}
                   </Badge>
                 </div>

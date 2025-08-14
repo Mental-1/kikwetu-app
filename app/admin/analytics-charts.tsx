@@ -271,6 +271,37 @@ export default function AnalyticsCharts() {
     },
   };
 
+  const lineChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const, // Changed to top for line charts
+        labels: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      title: {
+        display: true,
+        text: 'Chart.js Line Chart', // Updated title
+        color: "hsl(var(--foreground))",
+      },
+    },
+    scales: {
+      x: {
+        type: 'category', // Use 'category' for string labels (dates)
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      y: {
+        beginAtZero: true, // Start y-axis at zero
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+    },
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
       <Card className="rounded-xl">
@@ -278,7 +309,7 @@ export default function AnalyticsCharts() {
           <CardTitle>User Growth (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Line data={userGrowthData} options={options} />
+          <Line data={userGrowthData} options={lineChartOptions} />
         </CardContent>
       </Card>
       <Card className="rounded-xl">
@@ -286,7 +317,7 @@ export default function AnalyticsCharts() {
           <CardTitle>New Listings (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Line data={listingsGrowthData} options={options} />
+          <Line data={listingsGrowthData} options={lineChartOptions} />
         </CardContent>
       </Card>
       <Card className="lg:col-span-1 rounded-xl">

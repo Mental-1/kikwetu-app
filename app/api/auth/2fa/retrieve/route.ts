@@ -8,13 +8,13 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase.auth.mfa.listFactors();
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   const unverifiedFactor = data.totp.find(f => f.status === 'unverified');
 
   if (!unverifiedFactor) {
-    return new Response(JSON.stringify({ error: "No unverified 2FA factor found." }), { status: 404 });
+    return NextResponse.json({ error: "No unverified 2FA factor found." }, { status: 404 });
   }
 
   // The secret is not available from listFactors, so we can't return it.
@@ -25,11 +25,11 @@ export async function GET(req: NextRequest) {
   });
 
   if (enrollError) {
-    return new Response(JSON.stringify({ error: enrollError.message }), { status: 500 });
+    return NextResponse.json({ error: enrollError.message }, { status: 500 });
   }
 
   if (!enrollData?.totp?.qr_code || !enrollData?.totp?.secret || !enrollData.id) {
-    return new Response(JSON.stringify({ error: "Failed to enroll 2FA." }), { status: 500 });
+    return NextResponse.json({ error: "Failed to enroll 2FA." }, { status: 500 });
   }
 
   const { qr_code, secret } = enrollData.totp;

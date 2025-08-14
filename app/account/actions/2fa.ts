@@ -8,14 +8,13 @@ type Enable2FAResponse =
   | { success: false; message: string; qrCode: null; secret: null; };
 
 export async function enable2FA(): Promise<Enable2FAResponse> {
-  const response = await fetch("/api/auth/2fa/setup", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+  const supabase = await getSupabaseServer();
+  // Add the 2FA enrollment logic here directly
+  const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({
+    factorType: 'totp',
   });
-
-  if (!response.ok) {
+  
+  if (enrollError) {
     return {
       success: false,
       message: "Failed to enroll 2FA.",
@@ -24,30 +23,45 @@ export async function enable2FA(): Promise<Enable2FAResponse> {
     };
   }
 
-  const data = await response.json();
+  if (!enrollData?.totp?.qr_code || !enrollData?.totp?.secret || !enrollData.id) {
+    return {
+      success: false,
+      message: "Failed to enroll 2FA: Missing QR code or secret.",
+      qrCode: null,
+      secret: null,
+    };
+  }
 
   return {
     success: true,
     message: "Scan the QR code with your authenticator app and enter the code to verify.",
-    qrCode: data.qrCode,
-    secret: data.secret,
+    qrCode: enrollData.totp.qr_code,
+    secret: enrollData.totp.secret,
   };
 }
 
 export async function verify2FA(code: string) {
-  const response = await fetch("/api/auth/verify-2fa", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ code }),
+  const supabase = await getSupabaseServer();
+  // Add the verification logic here directly
+  const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+  if (factorsError) {
+    return { success: false, message: 'Failed to verify 2FA.' };
+  }
+  
+  const unverifiedFactor = factorsData.totp.find(f => f.status === 'unverified');
+  if (!unverifiedFactor) {
+    return { success: false, message: "No pending 2FA factor found." };
+  }
+  
+  const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+    factorId: unverifiedFactor.id,
+    code,
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
+  if (verifyError) {
     return {
       success: false,
-      message: errorData.error || "Invalid verification code. Please try again.",
+      message: verifyError.message || "Invalid verification code. Please try again.",
     };
   }
 

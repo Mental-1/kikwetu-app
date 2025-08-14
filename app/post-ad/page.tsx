@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import type { Database } from "@/utils/supabase/database.types";
 import Image from "next/image";
+import type { Dispatch, SetStateAction } from "react";
 
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
@@ -303,18 +304,24 @@ export default function PostAdPage() {
 
   // Payment status monitoring
   useEffect(() => {
-    if (paymentStatus === "pending" || paymentStatus === "completed" || paymentStatus === "failed" || paymentStatus === "cancelled") {
+    // Open the modal when entering a state that needs user attention.
+    if (
+      paymentStatus === "pending" ||
+      paymentStatus === "failed" ||
+      paymentStatus === "cancelled"
+    ) {
       setIsModalOpen(true);
     }
 
-    if (paymentStatus === "completed") {
+    // If the modal is already open and payment completes, close it after a short delay.
+    if (paymentStatus === "completed" && isModalOpen) {
       const timer = setTimeout(() => {
         setIsModalOpen(false);
       }, 1000);
       return () => clearTimeout(timer);
     }
-    return; // Explicitly return void
-  }, [paymentStatus]);
+    return undefined;
+  }, [paymentStatus, isModalOpen]);
 
 
   useEffect(() => {
@@ -1383,7 +1390,7 @@ function PaymentMethodStep({
   showSupportDetails: boolean;
   onRetryPayment: () => void;
   isModalOpen: boolean;
-  setIsModalOpen: (isOpen: boolean) => void;
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>; 
 }) {
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
@@ -1408,7 +1415,10 @@ function PaymentMethodStep({
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Payment Method</h2>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog open={isModalOpen} onOpenChange={(open) => {
+          // Prevent dismiss while payment is pending to reduce confusion.
+          if (paymentStatus !== "pending") setIsModalOpen(open);
+        }}>
         <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           {paymentStatus === "pending" && (
             <>

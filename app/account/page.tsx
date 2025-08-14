@@ -41,6 +41,7 @@ import { updatePassword } from "./actions/update-password";
 import { updateEmail } from "./actions/update-email";
 import { updateAvatarUrl } from "./actions/update-avatar-url";
 import { enable2FA, disable2FA, verify2FA } from "./actions/2fa";
+import { getTwoFaInProgressStatus } from "./actions/2fa-status";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import {
   Dialog,
@@ -158,7 +159,7 @@ function AccountDetails() {
     }
 
     const retrieve2FAData = async () => {
-      const twoFaInProgress = document.cookie.includes('2fa_in_progress=true');
+      const twoFaInProgress = await getTwoFaInProgressStatus();
       if (twoFaInProgress) {
         const response = await fetch('/api/auth/2fa/retrieve');
         if (response.ok) {
@@ -312,7 +313,6 @@ function AccountDetails() {
       if (success && qrCode && secret) {
         setQrCode(qrCode);
         secretRef.current = secret; // Store in ref
-        document.cookie = "2fa_in_progress=true; path=/";
         toast({ title: "Success", description: message });
       } else {
         toast({ title: "Error", description: message, variant: "destructive" });
@@ -347,7 +347,6 @@ function AccountDetails() {
         setShow2FAModal(false);
         setVerificationCode("");
         clearTwoFAState();
-        document.cookie = "2fa_in_progress=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         toast({
           title: "Success",
           description: message,
@@ -885,7 +884,11 @@ function AccountDetails() {
                   Scan the QR code with your authenticator app:
                 </p>
                 <Separator className="my-4" />
-                <div dangerouslySetInnerHTML={{ __html: qrCode }} />
+                <img
+                  src={`data:image/svg+xml;utf8,${encodeURIComponent(qrCode || "")}`}
+                  alt="2FA QR Code"
+                  className="mx-auto"
+                />
                 <Separator className="my-4" />
                 <div className="text-center text-sm text-muted-foreground break-all">
                   <p className="mb-2">

@@ -97,7 +97,11 @@ export default function UserTable() {
                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
                   <div className="flex items-center">
                     <span
-                      className={`capitalize px-2.5 py-0.5 rounded text-xs font-semibold ${user.banned_until && new Date(user.banned_until) > new Date() ? "bg-red-100 text-red-800" : "bg-green-700 text-white"}`}>
+                      className={`capitalize px-2.5 py-0.5 rounded text-xs font-semibold ${
+   user.banned_until && new Date(user.banned_until) > new Date()
+     ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100"
+     : "bg-green-700 text-white dark:bg-green-600"
+ }`}>
                         {user.banned_until &&
                         new Date(user.banned_until) > new Date()
                           ? "Banned"

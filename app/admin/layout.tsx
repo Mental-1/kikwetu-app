@@ -31,7 +31,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Admin
             </h2>
           </Link>
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+          <button
+            type="button"
+            aria-label="Toggle sidebar"
+            aria-expanded={!isCollapsed}
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
             <ChevronLeft className={`h-6 w-6 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
           </button>
         </div>
@@ -43,8 +49,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   href={item.href}
                   className="flex items-center px-5 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-semibold"
                 >
-                  <item.icon className="h-5 w-5 mr-3" />
-                  <span className={`${isCollapsed ? 'hidden' : 'block'}`}>{item.label}</span>
+                  <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
+                  <span className={isCollapsed ? 'hidden' : 'block'}>{item.label}</span>
                 </Link>
               </li>
             ))}

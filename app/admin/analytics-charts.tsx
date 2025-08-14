@@ -13,6 +13,7 @@ import {
   Legend,
   ArcElement,
   BarElement,
+  TimeScale,
 } from "chart.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +30,7 @@ ChartJS.register(
   Legend,
   ArcElement,
   BarElement,
+  TimeScale,
 );
 
 interface ChartData {
@@ -288,7 +290,11 @@ export default function AnalyticsCharts() {
     },
     scales: {
       x: {
-        type: 'category', // Use 'category' for string labels (dates)
+        type: 'time', // Change to 'time'
+        time: {
+          unit: 'day', // Specify the unit
+          tooltipFormat: 'MMM D', // Format for tooltips
+        },
         ticks: {
           color: "hsl(var(--foreground))",
         },

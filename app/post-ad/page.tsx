@@ -334,14 +334,30 @@ export default function PostAdPage() {
               
               // Check if listing activation is needed (edge case handling)
               try {
-                const { data: listing, error: listingError } = await supabase
-                  .from('listings')
-                  .select('status, payment_status, activated_at')
-                  .eq('id', pendingListingId)
-                  .single();
+                let listing, listingError;
+                let retries = 3;
+                
+                while (retries > 0) {
+                  const result = await supabase
+                    .from('listings')
+                    .select('status, payment_status, activated_at')
+                    .eq('id', pendingListingId)
+                    .single();
+                  
+                  listing = result.data;
+                  listingError = result.error;
+                  
+                  if (!listingError) break;
+                  
+                  retries--;
+                  if (retries > 0) {
+                    logger.warn(`Retrying listing status check, ${retries} attempts remaining`);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Simple backoff for now
+                  }
+                }
 
                 if (listingError) {
-                  logger.error({ message: 'Error fetching listing status', error: listingError });
+                  logger.error({ message: 'Error fetching listing status after retries', error: listingError });
                   throw listingError;
                 }
 
@@ -541,7 +557,7 @@ export default function PostAdPage() {
 
   // Handle final submission (payment or activation for free tier)
   const handleSubmit = async () => {
-    if (isSubmitted || isPublishingListing || paymentStatus === "pending")
+    if (isSubmitted || isPublishingListing || paymentStatus === "pending" || paymentStatus === "completed")
       return;
 
     if (!pendingListingId) {
@@ -850,7 +866,11 @@ export default function PostAdPage() {
 
                 {currentStep === steps.length - 1 ? (
                   <Button
-                    onClick={handleSubmit}
+                    onClick={
+                      (selectedTier?.price === 0 || paymentStatus === "completed") && pendingListingId
+                        ? () => router.push(`/listings/${pendingListingId}`)
+                        : handleSubmit
+                    }
                     disabled={
                       !isFormValid() ||
                       isSubmitted ||
@@ -861,9 +881,9 @@ export default function PostAdPage() {
                   >
                     {isPublishingListing
                       ? "Publishing..."
-                      : selectedTier?.price > 0 && paymentStatus !== "completed"
-                        ? "Pay & Publish"
-                        : "Publish Ad"}
+                      : (selectedTier?.price === 0 || paymentStatus === "completed") && pendingListingId
+                        ? "Go to listing"
+                        : "Pay & Publish"}
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
@@ -1365,38 +1385,67 @@ function PaymentMethodStep({
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Payment Method</h2>
 
-      <Dialog open={paymentStatus === "pending"}>
+      <Dialog open={paymentStatus === "pending" || paymentStatus === "completed" || paymentStatus === "failed" || paymentStatus === "cancelled"}>
         <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
-          <DialogTitle className="text-center">Processing Payment</DialogTitle>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            {paymentStatus === "pending" && (
-              <Clock className="h-12 w-12 text-orange-500 mb-4 animate-pulse" />
-            )}
-            {paymentStatus === "completed" && (
-              <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
-            )}
-            {(paymentStatus === "failed" || paymentStatus === "cancelled") && (
-              <XCircle className="h-12 w-12 text-red-500 mb-4" />
-            )}
-            <p className="text-muted-foreground text-center">
-              Please wait while we process your payment.
-              <br />
-              <span className="text-sm">Listing ID: {pendingListingId}</span>
-            </p>
-            {paymentStatus === "pending" && showRetryButton && (
-              <Button onClick={onRetryPayment} className="mt-4 text-sm py-1 px-2 bg-green-500 text-white" >
-                I have paid
-              </Button>
-            )}
-            {showSupportDetails && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Payment still pending. Please contact support with Listing ID:{" "}
-                {pendingListingId}
-                <br />
-                Email: support@kikwetu.com
-              </p>
-            )}
-          </div>
+          {paymentStatus === "pending" && (
+            <>
+              <DialogTitle className="text-center">Processing Payment</DialogTitle>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Clock className="h-12 w-12 text-orange-500 mb-4 animate-pulse" />
+                <p className="text-muted-foreground text-center">
+                  Please wait while we process your payment.
+                  <br />
+                  <span className="text-sm">Listing ID: {pendingListingId}</span>
+                </p>
+                {showRetryButton && (
+                  <Button onClick={onRetryPayment} className="mt-4 text-sm py-1 px-2 bg-green-500 hover:bg-green-600 text-white transition-colors" >
+                    I have paid
+                  </Button>
+                )}
+                {showSupportDetails && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Payment still pending. Please contact support with Listing ID:{" "}
+                    {pendingListingId}
+                    <br />
+                    Email: support@kikwetu.com
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+
+          {paymentStatus === "completed" && (
+            <>
+              <DialogTitle className="text-center text-green-600">Payment Successful!</DialogTitle>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+                <p className="text-lg font-medium">Proceed to published listing now. Thank you.</p>
+                <p className="text-muted-foreground text-center">
+                  Your ad is now live!
+                  <br />
+                  <span className="text-sm">Listing ID: {pendingListingId}</span>
+                </p>
+              </div>
+            </>
+          )}
+
+          {(paymentStatus === "failed" || paymentStatus === "cancelled") && (
+            <>
+              <DialogTitle className="text-center text-red-600">Payment Failed</DialogTitle>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <XCircle className="h-12 w-12 text-red-500 mb-4" />
+                <p className="text-lg font-medium">Sorry. Payment failed.</p>
+                <p className="text-muted-foreground text-center">
+                  Please try again.
+                  <br />
+                  <span className="text-sm">Listing ID: {pendingListingId}</span>
+                </p>
+                <Button onClick={onRetryPayment} className="mt-4 text-sm py-1 px-2 bg-red-500 text-white" >
+                  Pay again
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1410,32 +1459,12 @@ function PaymentMethodStep({
         </p>
       </div>
 
-      {paymentStatus === "completed" && (
-        <div className="flex items-center justify-center p-4 rounded-lg bg-green-100 border border-green-300 text-green-800">
-          <CheckCircle2 className="h-5 w-5 mr-3" />
-          <p className="font-medium">
-            Payment Confirmed. Your ad will be published shortly.
-          </p>
-        </div>
-      )}
-
-      {paymentStatus === "failed" && (
-        <div className="flex items-center justify-center p-4 rounded-lg bg-red-100 border border-red-300 text-red-800">
-          <XCircle className="h-5 w-5 mr-3" />
-          <p className="font-medium">Payment Failed. Please try again.</p>
-        </div>
-      )}
-
       <div className="space-y-4">
         <div>
           <Label>Choose Payment Method</Label>
           <div className="grid grid-cols-1 gap-3 mt-2">
             <Card
-              className={`cursor-pointer transition-all ${
-                formData.paymentMethod === "mpesa"
-                  ? "ring-2 ring-blue-500"
-                  : "hover:shadow-md"
-              }`}
+              className={`cursor-pointer transition-all ${formData.paymentMethod === "mpesa" ? "ring-2 ring-blue-500" : "hover:shadow-md"}`}
               onClick={() => updateFormData({ paymentMethod: "mpesa" })}
             >
               <CardContent className="p-4">
@@ -1457,11 +1486,7 @@ function PaymentMethodStep({
               </CardContent>
             </Card>
             <Card
-              className={`cursor-pointer transition-all ${
-                formData.paymentMethod === "paystack"
-                  ? "ring-2 ring-blue-500"
-                  : "hover:shadow-md"
-              }`}
+              className={`cursor-pointer transition-all ${formData.paymentMethod === "paystack" ? "ring-2 ring-blue-500" : "hover:shadow-md"}`}
               onClick={() => updateFormData({ paymentMethod: "paystack" })}
             >
               <CardContent className="p-4">

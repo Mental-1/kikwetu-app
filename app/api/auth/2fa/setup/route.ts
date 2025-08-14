@@ -1,11 +1,10 @@
 
-import { getSupabaseServer } from "@/utils/supabase/server";
-import { createServerClient } from '@supabase/ssr'
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from 'next/headers'
 
 export async function POST() {
   const cookieStore = cookies()
-  const supabase = await getSupabaseServer(cookieStore);
+  const supabase = getSupabaseRouteHandler(cookieStore);
 
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",

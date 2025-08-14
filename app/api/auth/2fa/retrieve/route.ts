@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { cookies } from 'next/headers'
+
+export async function GET(req: NextRequest) {
+  const supabase = await getSupabaseRouteHandler(cookies);
+
+  const { data, error } = await supabase.auth.mfa.listFactors();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const unverifiedFactor = data.totp.find(f => f.status === 'unverified');
+
+  if (!unverifiedFactor) {
+    return NextResponse.json({ error: "No unverified 2FA factor found." }, { status: 404 });
+  }
+
+  // The secret is not available from listFactors, so we can't return it.
+  // However, we can re-enroll to get a new secret and QR code.
+  // This will invalidate the old secret and QR code.
+  const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({
+    factorType: "totp",
+  });
+
+  if (enrollError) {
+    return NextResponse.json({ error: enrollError.message }, { status: 500 });
+  }
+
+  if (!enrollData?.totp?.qr_code || !enrollData?.totp?.secret || !enrollData.id) {
+    return NextResponse.json({ error: "Failed to enroll 2FA." }, { status: 500 });
+  }
+
+  const { qr_code, secret } = enrollData.totp;
+  const factor_id = enrollData.id;
+
+  const response = NextResponse.json({ qrCode: qr_code, secret: secret });
+  response.cookies.set('2fa_factor_id', factor_id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/', sameSite: 'strict' });
+
+  return response;
+}

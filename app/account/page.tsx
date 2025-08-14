@@ -41,6 +41,7 @@ import { updatePassword } from "./actions/update-password";
 import { updateEmail } from "./actions/update-email";
 import { updateAvatarUrl } from "./actions/update-avatar-url";
 import { enable2FA, disable2FA, verify2FA } from "./actions/2fa";
+import { getTwoFaInProgressStatus } from "./actions/2fa-status";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import {
   Dialog,
@@ -156,7 +157,22 @@ function AccountDetails() {
     if (accountData?.formData) {
       setFormData(accountData.formData);
     }
-  }, [accountData]);
+
+    const retrieve2FAData = async () => {
+      const twoFaInProgress = await getTwoFaInProgressStatus();
+      if (twoFaInProgress) {
+        const response = await fetch('/api/auth/2fa/retrieve');
+        if (response.ok) {
+          const data = await response.json();
+          setQrCode(data.qrCode);
+          secretRef.current = data.secret;
+          setShow2FAModal(true);
+        }
+      }
+    };
+
+    retrieve2FAData();
+  }, [accountData, setQrCode]);
 
   const handleSave = async () => {
     if (!user || !formData) return;
@@ -868,12 +884,10 @@ function AccountDetails() {
                   Scan the QR code with your authenticator app:
                 </p>
                 <Separator className="my-4" />
-                <Image
-                  src={qrCode}
-                  alt="QR Code"
-                  width={192}
-                  height={192}
-                  className="mx-auto w-48 h-48"
+                <img
+                  src={`data:image/svg+xml;utf8,${encodeURIComponent(qrCode || "")}`}
+                  alt="2FA QR Code"
+                  className="mx-auto"
                 />
                 <Separator className="my-4" />
                 <div className="text-center text-sm text-muted-foreground break-all">

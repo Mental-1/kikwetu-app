@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Line, Doughnut } from "react-chartjs-2";
+import { Line, Doughnut, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,6 +12,8 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  BarElement,
+  TimeScale,
 } from "chart.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,13 +29,16 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement,
+  BarElement,
+  TimeScale,
 );
 
 interface ChartData {
   labels: string[];
-  newUsersByDay: number[];
-  newListingsByDay: number[];
+  newUsersByDay: Array<{ x: string; y: number; }>;
+  newListingsByDay: Array<{ x: string; y: number; }>;
   categoryCounts: Record<string, number>;
+  tierCounts: Record<string, number>;
 }
 
 // Helper to generate date labels for the last 7 days
@@ -42,9 +47,7 @@ const getLast7DaysLabels = () => {
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    labels.push(
-      d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    );
+    labels.push(d.toISOString().split('T')[0]); // YYYY-MM-DD format
   }
   return labels;
 };
@@ -91,6 +94,15 @@ export default function AnalyticsCharts() {
       const newUsersByDay = processDataByDay(usersData.users);
       const newListingsByDay = processDataByDay(listingsData);
 
+      const formattedNewUsersByDay = labels.map((label, index) => ({
+        x: label,
+        y: newUsersByDay[index],
+      }));
+      const formattedNewListingsByDay = labels.map((label, index) => ({
+        x: label,
+        y: newListingsByDay[index],
+      }));
+
       const categoryCounts: Record<string, number> = listingsData.reduce(
         (acc: Record<string, number>, listing) => {
           if (listing.categories && listing.categories.length > 0) {
@@ -106,11 +118,21 @@ export default function AnalyticsCharts() {
         {},
       );
 
+      const tierCounts: Record<string, number> = listingsData.reduce(
+        (acc: Record<string, number>, listing) => {
+          const tierName = listing.plan_name || "Unknown";
+          acc[tierName] = (acc[tierName] || 0) + 1;
+          return acc;
+        },
+        {},
+      );
+
       setChartData({
         labels,
-        newUsersByDay,
-        newListingsByDay,
+        newUsersByDay: formattedNewUsersByDay,
+        newListingsByDay: formattedNewListingsByDay,
         categoryCounts,
+        tierCounts,
       });
       setLoading(false);
     };
@@ -158,26 +180,24 @@ export default function AnalyticsCharts() {
   }
 
   const userGrowthData = {
-    labels: chartData.labels,
     datasets: [
       {
         label: "New Users",
         data: chartData.newUsersByDay,
-        borderColor: "hsl(var(--primary))",
-        backgroundColor: "hsla(var(--primary), 0.2)",
+        borderColor: "hsl(var(--chart-green))",
+        backgroundColor: "hsla(var(--background), 0.2)",
         fill: true,
       },
     ],
   };
 
   const listingsGrowthData = {
-    labels: chartData.labels,
     datasets: [
       {
         label: "New Listings",
         data: chartData.newListingsByDay,
-        borderColor: "hsl(var(--accent))",
-        backgroundColor: "hsla(var(--accent), 0.2)",
+        borderColor: "hsl(var(--chart-blue))",
+        backgroundColor: "hsla(var(--background), 0.2)",
         fill: true,
       },
     ],
@@ -190,43 +210,155 @@ export default function AnalyticsCharts() {
         label: "Listings",
         data: Object.values(chartData.categoryCounts),
         backgroundColor: [
-          "hsl(var(--chart-1))",
-          "hsl(var(--chart-2))",
-          "hsl(var(--chart-3))",
-          "hsl(var(--chart-4))",
-          "hsl(var(--chart-5))",
-          "hsl(var(--chart-6))",
+          "#FF4081",
+          "#00B0FF",
+          "#FFC107",
+          "#00BCD4",
+          "#7C4DFF",
+          "#FF9800",
         ],
+        borderColor: "hsl(var(--border))",
+        borderWidth: 1,
       },
     ],
   };
 
+  const tierDistributionData = {
+    labels: Object.keys(chartData.tierCounts),
+    datasets: [
+      {
+        label: "Listings",
+        data: Object.values(chartData.tierCounts),
+        backgroundColor: [
+          "#FF4081",
+          "#00B0FF",
+          "#FFC107",
+          "#00BCD4",
+          "#7C4DFF",
+          "#FF9800",
+        ],
+        borderColor: "hsl(var(--border))",
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const options = {
+    indexAxis: 'y' as const,
+    elements: {
+      bar: {
+        borderWidth: 2,
+      },
+    },
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'right' as const,
+        labels: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      title: {
+        display: true,
+        text: 'Chart.js Horizontal Bar Chart',
+        color: "hsl(var(--foreground))",
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      y: {
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+    },
+  };
+
+  // TODO: The line charts (User Growth and New Listings) are currently using options
+  // meant for horizontal bar charts (indexAxis: 'y'). This causes time-series
+  // to render horizontally. These charts need a separate options object that
+  // removes indexAxis: 'y' and configures the x-axis as a time/linear scale
+  // appropriate for time-series (e.g., type: 'time' or 'linear' on x).
+  // The data structure for these charts might also need to be adjusted to {x, y} objects.
+
+  const lineChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const, // Changed to top for line charts
+        labels: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      title: {
+        display: true,
+        text: 'Chart.js Line Chart', // Updated title
+        color: "hsl(var(--foreground))",
+      },
+    },
+    scales: {
+      x: {
+        type: 'timeseries', // Change to 'timeseries'
+        time: {
+          unit: 'day', // Specify the unit
+          tooltipFormat: 'MMM D', // Format for tooltips
+        },
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      y: {
+        beginAtZero: true, // Start y-axis at zero
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+    },
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-      <Card>
+      <Card className="rounded-xl">
         <CardHeader>
           <CardTitle>User Growth (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Line data={userGrowthData} />
+          {/* TODO: This Line chart is problematic and needs to be fixed. */}
+          {/* <Line data={userGrowthData} options={lineChartOptions} /> */}
         </CardContent>
       </Card>
-      <Card>
+      <Card className="rounded-xl">
         <CardHeader>
           <CardTitle>New Listings (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Line data={listingsGrowthData} />
+          {/* TODO: This Line chart is problematic and needs to be fixed. */}
+          {/* <Line data={listingsGrowthData} options={lineChartOptions} /> */}
         </CardContent>
       </Card>
-      <Card className="lg:col-span-2">
+      <Card className="lg:col-span-1 rounded-xl">
         <CardHeader>
           <CardTitle>Listing Distribution by Category</CardTitle>
         </CardHeader>
-        <CardContent className="flex justify-center items-center h-80">
-          <Doughnut
+        <CardContent className="flex justify-center items-center h-96">
+          <Bar
             data={categoryDistributionData}
-            options={{ maintainAspectRatio: false }}
+            options={options}
+          />
+        </CardContent>
+      </Card>
+      <Card className="lg:col-span-1 rounded-xl">
+        <CardHeader>
+          <CardTitle>Listing Distribution by Tier</CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center items-center h-96">
+          <Bar
+            data={tierDistributionData}
+            options={options}
           />
         </CardContent>
       </Card>

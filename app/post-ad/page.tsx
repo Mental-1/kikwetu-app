@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import type { Database } from "@/utils/supabase/database.types";
 import Image from "next/image";
+import type { Dispatch, SetStateAction } from "react";
 
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
@@ -182,6 +183,8 @@ export default function PostAdPage() {
   >(null);
   const [showRetryButton, setShowRetryButton] = useState(false);
   const [showSupportDetails, setShowSupportDetails] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
 
   const { displayLocation, latitude, longitude } = formatLocationData(
     formData.location,
@@ -300,6 +303,27 @@ export default function PostAdPage() {
   }, [pendingListingId, formData.paymentMethod]);
 
   // Payment status monitoring
+  // Auto-open on transitions that need user attention.
+  useEffect(() => {
+    if (
+      paymentStatus === "pending" ||
+      paymentStatus === "failed" ||
+      paymentStatus === "cancelled"
+    ) {
+      setIsModalOpen(true);
+    }
+  }, [paymentStatus]);
+
+  // Auto-close shortly after completion if currently open.
+  useEffect(() => {
+    if (paymentStatus === "completed" && isModalOpen) {
+      const timer = setTimeout(() => setIsModalOpen(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [paymentStatus, isModalOpen]);
+
+
   useEffect(() => {
     if (!currentTransactionId) return;
 
@@ -805,6 +829,8 @@ export default function PostAdPage() {
             showRetryButton={showRetryButton}
             showSupportDetails={showSupportDetails}
             onRetryPayment={checkTransactionStatus}
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
           />
         );
       default:
@@ -1352,6 +1378,8 @@ function PaymentMethodStep({
   showRetryButton,
   showSupportDetails,
   onRetryPayment,
+  isModalOpen,
+  setIsModalOpen,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
@@ -1361,6 +1389,8 @@ function PaymentMethodStep({
   showRetryButton: boolean;
   showSupportDetails: boolean;
   onRetryPayment: () => void;
+  isModalOpen: boolean;
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>; 
 }) {
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
@@ -1385,7 +1415,10 @@ function PaymentMethodStep({
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Payment Method</h2>
 
-      <Dialog open={paymentStatus === "pending" || paymentStatus === "completed" || paymentStatus === "failed" || paymentStatus === "cancelled"}>
+      <Dialog open={isModalOpen} onOpenChange={(open) => {
+          // Prevent dismiss while payment is pending to reduce confusion.
+          if (paymentStatus !== "pending") setIsModalOpen(open);
+        }}>
         <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           {paymentStatus === "pending" && (
             <>

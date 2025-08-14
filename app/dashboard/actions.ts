@@ -23,7 +23,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const [ { data: allListings, error: listingsError }, { data: transactions, error: transactionsError } ] = await Promise.all([
     supabase.from("listings").select("id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at, status").eq("user_id", user.id),
-    supabase.from("transactions").select("id, created_at, payment_method, status, amount, listings(id, title)").eq("user_id", user.id)
+    supabase.from("transactions").select("id, created_at, payment_method, status, amount, listings:listing_id(id, title)").eq("user_id", user.id).order('created_at', { ascending: false }).limit(10)
   ]);
 
   if (listingsError) {

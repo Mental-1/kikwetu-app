@@ -1,97 +1,70 @@
+
 "use client";
 
-import { useRouter } from "next/navigation";
-import React, { useEffect, useCallback, useState } from "react";
-import { updateListingStatus } from "../actions";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { getSupabaseClient } from "@/utils/supabase/client";
+import { Listing } from "@/lib/types/listing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatPrice } from "@/lib/utils";
-import { Listing } from "@/lib/types/listing";
 import Image from "next/image";
+import { formatPrice } from "@/lib/utils";
+import ListingModerationActions from "@/components/admin/listing-actions";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
-const ListingModerationActions = ({ listing }: { listing: Listing }) => {
-  const router = useRouter();
-  const [isApproving, setIsApproving] = useState(false);
-  const [isRejecting, setIsRejecting] = useState(false);
-
-  const handleApprove = async () => {
-    setIsApproving(true);
-    try {
-      await updateListingStatus(listing.id, "approved");
-      router.push("/admin/listings");
-    } catch (error) {
-      console.error("Failed to approve listing:", error);
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  const handleReject = async () => {
-    setIsRejecting(true);
-    try {
-      await updateListingStatus(listing.id, "rejected");
-      router.push("/admin/listings");
-    } catch (error) {
-      console.error("Failed to reject listing:", error);
-    } finally {
-      setIsRejecting(false);
-    }
-  };
-
-  return (
-    <div className="flex gap-4 mt-4">
-      <Button
-        id="approve-button"
-        size="lg"
-        className="bg-green-600 hover:bg-green-700"
-        onClick={handleApprove}
-        disabled={isApproving || isRejecting}
-      >
-        {isApproving ? "Approving..." : "(A)pprove"}
-      </Button>
-      <Button
-        id="reject-button"
-        size="lg"
-        variant="destructive"
-        onClick={handleReject}
-        disabled={isApproving || isRejecting}
-      >
-        {isRejecting ? "Rejecting..." : "(R)eject"}
-      </Button>
-    </div>
-  );
+const getStatusBadgeClass = (status: string) => {
+  switch (status) {
+    case "approved":
+      return "bg-green-100 text-green-800";
+    case "rejected":
+      return "bg-red-100 text-red-800";
+    default:
+      return "bg-yellow-100 text-yellow-800";
+  }
 };
 
-export default function ListingPreviewPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const [listing, setListing] = useState<Listing | null>(null);
+export default function ListingPreviewPage() {
   const router = useRouter();
+  const params = useParams();
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchListingDetails = async () => {
+      let supabase;
       try {
-        const response = await fetch(`/api/listings/${params.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setListing(data);
+        supabase = getSupabaseClient();
+      } catch (clientError) {
+        console.error("Failed to initialize database client", clientError);
+        setError("Failed to initialize database client");
+        return; // Abort if client is not available
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("listings")
+          .select("*, profiles!inner(*)")
+          .eq("id", params.id)
+          .single();
+
+        if (error) throw error;
+        setListing(data as Listing);
+      } catch (error: any) {
+        if (error.code === 'PGRST116') {
+          setError('Listing not found');
         } else {
-          // Handle not found or other errors
-          router.push("/admin/listings");
+          console.error("Failed to fetch listing details", error);
+          setError(error.message || "Failed to fetch listing details");
         }
-      } catch (error) {
-        console.error("Failed to fetch listing details", error);
-        router.push("/admin/listings");
       }
     };
 
     if (params.id) {
       fetchListingDetails();
     }
-  }, [params.id, router]);
+  }, [params.id]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
@@ -119,12 +92,22 @@ export default function ListingPreviewPage({
     };
   }, [handleKeyDown]);
 
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   if (!listing) {
-    return <div>Loading...</div>;
+    return <div>Loading listing details...</div>;
   }
 
   return (
-    <div>
+    <div className="container mx-auto py-8">
+      <Link href="/admin/listings" passHref>
+        <Button variant="outline" className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Listings
+        </Button>
+      </Link>
       <h1 className="text-3xl font-bold mb-2">Listing Preview</h1>
       <p className="text-muted-foreground mb-6">
         Review the listing details and media below. Press [A] to Approve or [R]
@@ -186,8 +169,7 @@ export default function ListingPreviewPage({
                 <div className="flex justify-between">
                   <span className="font-medium">Current Status:</span>
                   <Badge
-                    className={`capitalize ${listing.status === "approved" ? "bg-green-100 text-green-800" : listing.status === "rejected" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}`}
-                  >
+                    className={`capitalize ${getStatusBadgeClass(listing.status)}`}>
                     {listing.status || "pending"}
                   </Badge>
                 </div>

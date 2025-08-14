@@ -78,7 +78,7 @@ const RoleManagementForm = ({
 
 export const RoleManagementView = ({ users }: { users: User[] }) => {
   return (
-    <div>
+    <div className="mx-auto max-w-screen-lg px-4">
       <h1 className="text-3xl font-bold mb-6">User Role Management</h1>
       <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
         <table className="min-w-full leading-normal">

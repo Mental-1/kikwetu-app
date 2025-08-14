@@ -37,12 +37,14 @@
         --sidebar-primary: 221 65% 54%;
         --sidebar-primary-foreground: 0 0% 100%;
 
-        --chart-1: 348 100% 69%;
-        --chart-2: 205 82% 58%;
-        --chart-3: 45 100% 67%;
-        --chart-4: 180 50% 58%;
-        --chart-5: 255 100% 70%;
-        --chart-6: 36 100% 62%;
+        --chart-green: 145 83% 39%;
+        --chart-blue: 210 100% 56%;
+        --chart-1: 348 100% 61%; /* Red */
+        --chart-2: 45 100% 51%; /* Yellow */
+        --chart-3: 180 100% 50%; /* Cyan */
+        --chart-4: 255 100% 67%; /* Purple */
+        --chart-5: 36 100% 50%; /* Orange */
+        --chart-6: 205 100% 50%; /* Deep Blue */
     }
 
     .dark {
@@ -77,12 +79,14 @@
         --sidebar-primary: 221 65% 64%;
         --sidebar-primary-foreground: 0 0% 100%;
 
-        --chart-1: 348 90% 65%;
-        --chart-2: 205 75% 55%;
-        --chart-3: 45 90% 65%;
-        --chart-4: 180 45% 55%;
-        --chart-5: 255 90% 65%;
-        --chart-6: 36 90% 60%;
+        --chart-green: 145 83% 49%;
+        --chart-blue: 210 100% 66%;
+        --chart-1: 348 100% 71%; /* Red */
+        --chart-2: 45 100% 61%; /* Yellow */
+        --chart-3: 180 100% 60%; /* Cyan */
+        --chart-4: 255 100% 77%; /* Purple */
+        --chart-5: 36 100% 60%; /* Orange */
+        --chart-6: 205 100% 60%; /* Deep Blue */
     }
 }
 

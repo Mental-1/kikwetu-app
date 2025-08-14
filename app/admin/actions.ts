@@ -14,6 +14,7 @@ export interface ListingCategoryData {
 interface ListingAnalyticsData {
   created_at: string;
   categories: ListingCategoryData[];
+  plan_name: string | null;
 }
 
 interface AnalyticsDataSuccess {
@@ -54,7 +55,7 @@ export async function getAnalyticsData(): Promise<
     });
   const { data: listingsData, error: listingsError } = await supabase
     .from("listings")
-    .select("created_at, categories (name)")
+    .select("created_at, categories (name), plan_name")
     .gte("created_at", sevenDaysAgo.toISOString());
 
   if (usersError || listingsError) {

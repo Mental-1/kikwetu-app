@@ -49,6 +49,37 @@ const BottomNavBar = () => {
     icon: <List className="h-4 w-4" />,
   };
 
+        icon: <Home className="h-4 w-4" />,
+    },
+    {
+      href: "/discover",
+      label: "Discover",
+      active: pathname === "/discover" || pathname?.startsWith("/discover/"),
+      icon: <Compass className="h-4 w-4" />,
+    },
+  ];
+
+  const [homeRoute, discoverRoute] = routes;
+
+  const postAdRoute = {
+    label: "Post Ad",
+    icon: <Plus className="h-4 w-4" />,
+    onClick: () => {
+      if (user) {
+        router.push("/post-ad");
+      } else {
+        router.push("/auth");
+      }
+    },
+  };
+
+  const listingsRoute = {
+    href: "/listings",
+    label: "Listings",
+    active: pathname === "/listings" || pathname?.startsWith("/listings/"),
+    icon: <List className="h-4 w-4" />,
+  };
+
   const mapRoute = {
       href: "/map",
       label: "Map",

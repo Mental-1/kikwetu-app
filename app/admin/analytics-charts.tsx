@@ -35,8 +35,8 @@ ChartJS.register(
 
 interface ChartData {
   labels: string[];
-  newUsersByDay: number[];
-  newListingsByDay: number[];
+  newUsersByDay: Array<{ x: string; y: number; }>;
+  newListingsByDay: Array<{ x: string; y: number; }>;
   categoryCounts: Record<string, number>;
   tierCounts: Record<string, number>;
 }

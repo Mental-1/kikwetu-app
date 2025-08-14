@@ -278,6 +278,13 @@ export default function AnalyticsCharts() {
     },
   };
 
+  // TODO: The line charts (User Growth and New Listings) are currently using options
+  // meant for horizontal bar charts (indexAxis: 'y'). This causes time-series
+  // to render horizontally. These charts need a separate options object that
+  // removes indexAxis: 'y' and configures the x-axis as a time/linear scale
+  // appropriate for time-series (e.g., type: 'time' or 'linear' on x).
+  // The data structure for these charts might also need to be adjusted to {x, y} objects.
+
   const lineChartOptions = {
     responsive: true,
     plugins: {
@@ -320,7 +327,8 @@ export default function AnalyticsCharts() {
           <CardTitle>User Growth (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Line data={userGrowthData} options={lineChartOptions} />
+          {/* TODO: This Line chart is problematic and needs to be fixed. */}
+          {/* <Line data={userGrowthData} options={lineChartOptions} /> */}
         </CardContent>
       </Card>
       <Card className="rounded-xl">
@@ -328,7 +336,8 @@ export default function AnalyticsCharts() {
           <CardTitle>New Listings (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Line data={listingsGrowthData} options={lineChartOptions} />
+          {/* TODO: This Line chart is problematic and needs to be fixed. */}
+          {/* <Line data={listingsGrowthData} options={lineChartOptions} /> */}
         </CardContent>
       </Card>
       <Card className="lg:col-span-1 rounded-xl">

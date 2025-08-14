@@ -40,7 +40,7 @@ export default async function ListingsPage() {
   const listings = await getAllListings();
 
   return (
-    <div className="mx-auto max-w-screen-xl mt-8">
+    <div className="mx-auto max-w-screen-lg px-4">
       <h1 className="text-3xl font-bold mb-6">Listing Moderation</h1>
       <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
         <table className="min-w-full leading-normal">

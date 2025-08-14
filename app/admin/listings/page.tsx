@@ -40,22 +40,22 @@ export default async function ListingsPage() {
   const listings = await getAllListings();
 
   return (
-    <div>
+    <div className="mx-auto max-w-screen-xl mt-8">
       <h1 className="text-3xl font-bold mb-6">Listing Moderation</h1>
       <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
         <table className="min-w-full leading-normal">
           <thead>
             <tr>
-              <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-left text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                 Title
               </th>
-              <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-left text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                 Author
               </th>
-              <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-left text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-left text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -75,7 +75,7 @@ export default async function ListingsPage() {
                 </td>
                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
                   <span
-                    className={`capitalize px-2.5 py-0.5 rounded text-xs font-semibold ${listing.status === "approved" ? "bg-green-100 text-green-800" : listing.status === "rejected" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}`}
+                    className={`capitalize px-2.5 py-0.5 rounded text-xs font-semibold ${listing.status === "approved" ? "bg-green-700 text-white" : listing.status === "rejected" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}`}
                   >
                     {listing.status || "pending"}
                   </span>

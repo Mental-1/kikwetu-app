@@ -1,23 +1,37 @@
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { 
+  LayoutDashboard, 
+  Users, 
+  Shield, 
+  List, 
+  DollarSign, 
+  ChevronLeft 
+} from "lucide-react";
 
 const navItems = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/users", label: "User Management" },
-  { href: "/admin/roles", label: "Role Management" },
-  { href: "/admin/listings", label: "Listing Moderation" },
+  { href: "/admin", label: "Site Growth", icon: LayoutDashboard },
+  { href: "/admin/users", label: "User Management", icon: Users },
+  { href: "/admin/roles", label: "Role Management", icon: Shield },
+  { href: "/admin/listings", label: "Listing Moderation", icon: List },
+  { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg">
-        <div className="p-5 border-b dark:border-gray-700">
+      <aside className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg`}>
+        <div className="p-5 border-b dark:border-gray-700 flex items-center justify-between">
           <Link href="/admin">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600 transition-colors">
-              Admin Panel
+            <h2 className={`text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600 transition-colors ${isCollapsed ? 'hidden' : 'block'}`}>
+              Admin
             </h2>
           </Link>
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+            <ChevronLeft className={`h-6 w-6 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+          </button>
         </div>
         <nav className="mt-4">
           <ul>
@@ -25,9 +39,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="block px-5 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="flex items-center px-5 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-semibold"
                 >
-                  {item.label}
+                  <item.icon className="h-5 w-5 mr-3" />
+                  <span className={`${isCollapsed ? 'hidden' : 'block'}`}>{item.label}</span>
                 </Link>
               </li>
             ))}

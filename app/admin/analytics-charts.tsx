@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Line, Doughnut } from "react-chartjs-2";
+import { Line, Doughnut, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  BarElement,
 } from "chart.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +28,7 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement,
+  BarElement,
 );
 
 interface ChartData {
@@ -34,6 +36,7 @@ interface ChartData {
   newUsersByDay: number[];
   newListingsByDay: number[];
   categoryCounts: Record<string, number>;
+  tierCounts: Record<string, number>;
 }
 
 // Helper to generate date labels for the last 7 days
@@ -106,11 +109,21 @@ export default function AnalyticsCharts() {
         {},
       );
 
+      const tierCounts: Record<string, number> = listingsData.reduce(
+        (acc: Record<string, number>, listing) => {
+          const tierName = listing.plan_name || "Unknown";
+          acc[tierName] = (acc[tierName] || 0) + 1;
+          return acc;
+        },
+        {},
+      );
+
       setChartData({
         labels,
         newUsersByDay,
         newListingsByDay,
         categoryCounts,
+        tierCounts,
       });
       setLoading(false);
     };
@@ -163,8 +176,8 @@ export default function AnalyticsCharts() {
       {
         label: "New Users",
         data: chartData.newUsersByDay,
-        borderColor: "hsl(var(--primary))",
-        backgroundColor: "hsla(var(--primary), 0.2)",
+        borderColor: "hsl(var(--chart-green))",
+        backgroundColor: "hsla(var(--background), 0.2)",
         fill: true,
       },
     ],
@@ -176,8 +189,8 @@ export default function AnalyticsCharts() {
       {
         label: "New Listings",
         data: chartData.newListingsByDay,
-        borderColor: "hsl(var(--accent))",
-        backgroundColor: "hsla(var(--accent), 0.2)",
+        borderColor: "hsl(var(--chart-blue))",
+        backgroundColor: "hsla(var(--background), 0.2)",
         fill: true,
       },
     ],
@@ -197,36 +210,104 @@ export default function AnalyticsCharts() {
           "hsl(var(--chart-5))",
           "hsl(var(--chart-6))",
         ],
+        borderColor: "hsl(var(--border))",
+        borderWidth: 1,
       },
     ],
   };
 
+  const tierDistributionData = {
+    labels: Object.keys(chartData.tierCounts),
+    datasets: [
+      {
+        label: "Listings",
+        data: Object.values(chartData.tierCounts),
+        backgroundColor: [
+          "hsl(var(--chart-1))",
+          "hsl(var(--chart-2))",
+          "hsl(var(--chart-3))",
+          "hsl(var(--chart-4))",
+          "hsl(var(--chart-5))",
+          "hsl(var(--chart-6))",
+        ],
+        borderColor: "hsl(var(--border))",
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const options = {
+    indexAxis: 'y' as const,
+    elements: {
+      bar: {
+        borderWidth: 2,
+      },
+    },
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'right' as const,
+        labels: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      title: {
+        display: true,
+        text: 'Chart.js Horizontal Bar Chart',
+        color: "hsl(var(--foreground))",
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      y: {
+        ticks: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+    },
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-      <Card>
+      <Card className="rounded-xl">
         <CardHeader>
           <CardTitle>User Growth (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Line data={userGrowthData} />
+          <Line data={userGrowthData} options={options} />
         </CardContent>
       </Card>
-      <Card>
+      <Card className="rounded-xl">
         <CardHeader>
           <CardTitle>New Listings (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Line data={listingsGrowthData} />
+          <Line data={listingsGrowthData} options={options} />
         </CardContent>
       </Card>
-      <Card className="lg:col-span-2">
+      <Card className="lg:col-span-1 rounded-xl">
         <CardHeader>
           <CardTitle>Listing Distribution by Category</CardTitle>
         </CardHeader>
-        <CardContent className="flex justify-center items-center h-80">
-          <Doughnut
+        <CardContent className="flex justify-center items-center h-96">
+          <Bar
             data={categoryDistributionData}
-            options={{ maintainAspectRatio: false }}
+            options={options}
+          />
+        </CardContent>
+      </Card>
+      <Card className="lg:col-span-1 rounded-xl">
+        <CardHeader>
+          <CardTitle>Listing Distribution by Tier</CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center items-center h-96">
+          <Bar
+            data={tierDistributionData}
+            options={options}
           />
         </CardContent>
       </Card>

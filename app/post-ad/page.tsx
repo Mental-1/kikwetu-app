@@ -182,6 +182,8 @@ export default function PostAdPage() {
   >(null);
   const [showRetryButton, setShowRetryButton] = useState(false);
   const [showSupportDetails, setShowSupportDetails] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
 
   const { displayLocation, latitude, longitude } = formatLocationData(
     formData.location,
@@ -300,6 +302,20 @@ export default function PostAdPage() {
   }, [pendingListingId, formData.paymentMethod]);
 
   // Payment status monitoring
+  useEffect(() => {
+    if (paymentStatus === "pending" || paymentStatus === "completed" || paymentStatus === "failed" || paymentStatus === "cancelled") {
+      setIsModalOpen(true);
+    }
+
+    if (paymentStatus === "completed") {
+      const timer = setTimeout(() => {
+        setIsModalOpen(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentStatus]);
+
+
   useEffect(() => {
     if (!currentTransactionId) return;
 
@@ -805,6 +821,8 @@ export default function PostAdPage() {
             showRetryButton={showRetryButton}
             showSupportDetails={showSupportDetails}
             onRetryPayment={checkTransactionStatus}
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
           />
         );
       default:
@@ -1352,6 +1370,8 @@ function PaymentMethodStep({
   showRetryButton,
   showSupportDetails,
   onRetryPayment,
+  isModalOpen,
+  setIsModalOpen,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
@@ -1361,6 +1381,8 @@ function PaymentMethodStep({
   showRetryButton: boolean;
   showSupportDetails: boolean;
   onRetryPayment: () => void;
+  isModalOpen: boolean;
+  setIsModalOpen: (isOpen: boolean) => void;
 }) {
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
@@ -1385,7 +1407,7 @@ function PaymentMethodStep({
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Payment Method</h2>
 
-      <Dialog open={paymentStatus === "pending" || paymentStatus === "completed" || paymentStatus === "failed" || paymentStatus === "cancelled"}>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="w-[75%] mx-auto rounded-xl sm:max-w-[425px]">
           {paymentStatus === "pending" && (
             <>

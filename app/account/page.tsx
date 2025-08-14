@@ -156,7 +156,22 @@ function AccountDetails() {
     if (accountData?.formData) {
       setFormData(accountData.formData);
     }
-  }, [accountData]);
+
+    const retrieve2FAData = async () => {
+      const twoFaInProgress = document.cookie.includes('2fa_in_progress=true');
+      if (twoFaInProgress) {
+        const response = await fetch('/api/auth/2fa/retrieve');
+        if (response.ok) {
+          const data = await response.json();
+          setQrCode(data.qrCode);
+          secretRef.current = data.secret;
+          setShow2FAModal(true);
+        }
+      }
+    };
+
+    retrieve2FAData();
+  }, [accountData, setQrCode]);
 
   const handleSave = async () => {
     if (!user || !formData) return;
@@ -297,6 +312,7 @@ function AccountDetails() {
       if (success && qrCode && secret) {
         setQrCode(qrCode);
         secretRef.current = secret; // Store in ref
+        document.cookie = "2fa_in_progress=true; path=/";
         toast({ title: "Success", description: message });
       } else {
         toast({ title: "Error", description: message, variant: "destructive" });
@@ -331,6 +347,7 @@ function AccountDetails() {
         setShow2FAModal(false);
         setVerificationCode("");
         clearTwoFAState();
+        document.cookie = "2fa_in_progress=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         toast({
           title: "Success",
           description: message,
@@ -868,13 +885,7 @@ function AccountDetails() {
                   Scan the QR code with your authenticator app:
                 </p>
                 <Separator className="my-4" />
-                <Image
-                  src={qrCode}
-                  alt="QR Code"
-                  width={192}
-                  height={192}
-                  className="mx-auto w-48 h-48"
-                />
+                <div dangerouslySetInnerHTML={{ __html: qrCode }} />
                 <Separator className="my-4" />
                 <div className="text-center text-sm text-muted-foreground break-all">
                   <p className="mb-2">

@@ -148,7 +148,7 @@ export default function TransactionsPage() {
                 transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>
-                      {transaction.listings && transaction.listings.length > 0 ? transaction.listings[0].title : "N/A"}
+                      {transaction.listings ? transaction.listings.id : "N/A"}
                     </TableCell>
                     <TableCell>{transaction.payment_method}</TableCell>
                     <TableCell>

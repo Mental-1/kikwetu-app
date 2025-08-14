@@ -22,7 +22,7 @@ export interface TransactionItem {
   listings?: {
     id: string;
     title: string;
-  }[];
+  };
 }
 
 export interface RecentActivityItem {

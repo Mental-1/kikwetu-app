@@ -8,13 +8,14 @@ type Enable2FAResponse =
   | { success: false; message: string; qrCode: null; secret: null; };
 
 export async function enable2FA(): Promise<Enable2FAResponse> {
-  const supabase = await getSupabaseServer();
-  const { data, error } = await supabase.auth.mfa.enroll({
-    factorType: "totp",
+  const response = await fetch("/api/auth/2fa/setup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 
-  if (error) {
-    console.error("Failed to enroll 2FA:", error);
+  if (!response.ok) {
     return {
       success: false,
       message: "Failed to enroll 2FA.",
@@ -23,46 +24,30 @@ export async function enable2FA(): Promise<Enable2FAResponse> {
     };
   }
 
-  if (!data?.totp?.qr_code || !data?.totp?.secret) {
-    return {
-      success: false,
-      message: "Failed to enroll 2FA.",
-      qrCode: null,
-      secret: null,
-    };
-  }
+  const data = await response.json();
+
   return {
     success: true,
     message: "Scan the QR code with your authenticator app and enter the code to verify.",
-    qrCode: data.totp.qr_code,
-    secret: data.totp.secret,
+    qrCode: data.qrCode,
+    secret: data.secret,
   };
 }
 
 export async function verify2FA(code: string) {
-  const supabase = await getSupabaseServer();
-
-  const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
-  if (factorsError) {
-    console.error('Could not list MFA factors:', factorsError);
-    return { success: false, message: 'Failed to verify 2FA. Please try again.' };
-  }
-
-  const unverifiedFactor = factorsData.totp.find(f => f.status === 'unverified');
-  if (!unverifiedFactor) {
-    return { success: false, message: "No unverified 2FA factor found to verify. Please try enabling it again." };
-  }
-
-  const { error } = await supabase.auth.mfa.challengeAndVerify({
-    factorId: unverifiedFactor.id,
-    code,
+  const response = await fetch("/api/auth/verify-2fa", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code }),
   });
 
-  if (error) {
-    console.error('Failed to verify 2FA:', error);
+  if (!response.ok) {
+    const errorData = await response.json();
     return {
       success: false,
-      message: 'Invalid verification code. Please try again.',
+      message: errorData.error || "Invalid verification code. Please try again.",
     };
   }
 

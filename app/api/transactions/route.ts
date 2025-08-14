@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from("transactions")
       .select(
-        "id, created_at, payment_method, status, amount, listings ( id, title )",
+        "*, listings:listing_id(id, title)",
         { count: "exact" },
       )
       .eq("user_id", user.id)

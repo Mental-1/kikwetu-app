@@ -17,6 +17,7 @@ import { Check, Clock, Eye, Plus, Star } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "@/components/ui/use-toast";
 import { formatPrice } from "@/lib/utils";
+import { ReferralCard } from "@/components/referral-card"; // Added import
 
 import {
   ListingItem,
@@ -473,6 +474,9 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* New: Referral Card */}
+          <ReferralCard />
         </div>
       </div>
     </div>

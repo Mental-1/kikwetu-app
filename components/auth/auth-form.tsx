@@ -2,8 +2,8 @@
 
 import { z } from "zod";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,7 @@ interface MFAError extends AuthError {
  */
 export function AuthForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -78,6 +79,14 @@ export function AuthForm() {
   const [twoFACode, setTwoFACode] = useState("");
   const { toast } = useToast();
   const supabase = getSupabaseClient();
+
+  useEffect(() => {
+    const referralCode = searchParams.get("referral_code");
+    if (referralCode) {
+      localStorage.setItem("referrer_code", referralCode);
+      router.replace(window.location.pathname, { shallow: true }); // Clear URL param
+    }
+  }, [searchParams, router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,6 +273,8 @@ export function AuthForm() {
         return;
       }
       // Sign up the user with metadata
+      const referrerCode = localStorage.getItem("referrer_code");
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -272,12 +283,44 @@ export function AuthForm() {
             username,
             full_name: full_name,
             phone_number: phone_number,
+            ...(referrerCode && { referrer_code: referrerCode }), // Conditionally add referrer_code
           },
         },
       });
+
+      // Clear referrer code from local storage after sign-up attempt
+      localStorage.removeItem("referrer_code");
+
       if (authError) {
         console.error("Signup error details:", authError);
         throw authError;
+      }
+
+      // Call the new referral completion API if a referrer code was present
+      if (referrerCode && authData.user) {
+        try {
+          await fetch("/api/auth/complete-referral-signup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              new_user_id: authData.user.id,
+              referrer_code: referrerCode,
+            }),
+          });
+          toast({
+            title: "Referral Applied",
+            description: "Your referrer has been credited!",
+          });
+        } catch (referralApiError) {
+          console.error("Error calling referral completion API:", referralApiError);
+          toast({
+            title: "Referral Error",
+            description: "Could not apply referral rewards at this time.",
+            variant: "destructive",
+          });
+        }
       }
 
       setAuthMode("sign-in");

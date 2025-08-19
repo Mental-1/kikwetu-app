@@ -92,6 +92,14 @@ export default function PostAdPage() {
     email: "",
   });
 
+  const [discountCodeInput, setDiscountCodeInput] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    type: string;
+    value: number;
+    code_id: number;
+  } | null>(null);
+  const [discountMessage, setDiscountMessage] = useState<string | null>(null);
+
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [manualLocation, setManualLocation] = useState("");
 
@@ -659,6 +667,7 @@ export default function PostAdPage() {
         const paymentResult = await processPayment(
           selectedTier,
           formData.paymentMethod,
+          appliedDiscount, // Pass appliedDiscount here
         );
 
         if (!paymentResult || !paymentResult.success) {
@@ -697,17 +706,29 @@ export default function PostAdPage() {
     }
   };
 
-  const processPayment = async (tier: Plan, paymentMethod: string) => {
+  const processPayment = async (tier: Plan, paymentMethod: string, appliedDiscount: { type: string; value: number; code_id: number } | null) => {
     if (!pendingListingId) {
       return { success: false, error: "No listing ID found." };
     }
 
+    let finalAmount = tier.price;
+    if (appliedDiscount) {
+      if (appliedDiscount.type === "PERCENTAGE_DISCOUNT") {
+        finalAmount = tier.price - (tier.price * appliedDiscount.value / 100);
+      } else if (appliedDiscount.type === "FIXED_AMOUNT_DISCOUNT") {
+        finalAmount = tier.price - appliedDiscount.value;
+      }
+      // Ensure amount doesn't go below zero
+      finalAmount = Math.max(0, finalAmount);
+    }
+
     const paymentData = {
-      amount: tier.price,
+      amount: finalAmount,
       phoneNumber: formData.phoneNumber,
       email: formData.email,
       description: `Kikwetu Listing - ${tier.name} Plan`,
       listingId: pendingListingId,
+      discountCodeId: appliedDiscount?.code_id, // Pass the applied discount code ID
     };
 
     let endpoint = "";
@@ -831,6 +852,12 @@ export default function PostAdPage() {
             onRetryPayment={checkTransactionStatus}
             isModalOpen={isModalOpen}
             setIsModalOpen={setIsModalOpen}
+            discountCodeInput={discountCodeInput}
+            setDiscountCodeInput={setDiscountCodeInput}
+            appliedDiscount={appliedDiscount}
+            setAppliedDiscount={setAppliedDiscount}
+            discountMessage={discountMessage}
+            setDiscountMessage={setDiscountMessage}
           />
         );
       default:
@@ -1380,6 +1407,12 @@ function PaymentMethodStep({
   onRetryPayment,
   isModalOpen,
   setIsModalOpen,
+  discountCodeInput,
+  setDiscountCodeInput,
+  appliedDiscount,
+  setAppliedDiscount,
+  discountMessage,
+  setDiscountMessage,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
@@ -1391,9 +1424,68 @@ function PaymentMethodStep({
   onRetryPayment: () => void;
   isModalOpen: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>; 
+  discountCodeInput: string;
+  setDiscountCodeInput: (value: string) => void;
+  appliedDiscount: { type: string; value: number; code_id: number } | null;
+  setAppliedDiscount: (value: { type: string; value: number; code_id: number } | null) => void;
+  discountMessage: string | null;
+  setDiscountMessage: (value: string | null) => void;
 }) {
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
+
+  const handleApplyDiscount = async () => {
+    if (!discountCodeInput) {
+      setDiscountMessage("Please enter a discount code.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/payments/apply-discount", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: discountCodeInput }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAppliedDiscount(null);
+        setDiscountMessage(data.error || "Failed to apply discount.");
+        toast({
+          title: "Error",
+          description: data.error || "Failed to apply discount.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAppliedDiscount(data);
+      if (data.type === "EXTRA_LISTING_DAYS") {
+        setDiscountMessage(`Success! ${data.value} extra days will be added to your listing.`);
+      } else if (data.type === "PERCENTAGE_DISCOUNT") {
+        setDiscountMessage(`Success! ${data.value}% discount applied.`);
+      } else if (data.type === "FIXED_AMOUNT_DISCOUNT") {
+        setDiscountMessage(`Success! Ksh ${data.value} discount applied.`);
+      }
+      toast({
+        title: "Discount Applied",
+        description: "Discount code successfully applied!",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error applying discount:", error);
+      setAppliedDiscount(null);
+      setDiscountMessage("An unexpected error occurred.");
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while applying discount.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (selectedTier.price === 0) {
     return (
@@ -1451,7 +1543,7 @@ function PaymentMethodStep({
             <>
               <DialogTitle className="text-center text-green-600">Payment Successful!</DialogTitle>
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+                <CheckCircle2 className="h-12 w-16 text-green-500 mx-auto mb-4" />
                 <p className="text-lg font-medium">Proceed to published listing now. Thank you.</p>
                 <p className="text-muted-foreground text-center">
                   Your ad is now live!
@@ -1487,12 +1579,49 @@ function PaymentMethodStep({
         <p className="text-2xl font-bold text-green-600">
           Ksh {selectedTier.price}
         </p>
+        {appliedDiscount && appliedDiscount.type !== "EXTRA_LISTING_DAYS" && (
+          <p className="text-lg font-bold text-blue-600">
+            Discounted Price: Ksh {selectedTier.price - (appliedDiscount.type === "PERCENTAGE_DISCOUNT" ? (selectedTier.price * appliedDiscount.value / 100) : appliedDiscount.value)}
+          </p>
+        )}
+        {discountMessage && (
+          <p className="text-sm text-green-600 mt-1">{discountMessage}</p>
+        )}
         <p className="text-sm text-muted-foreground mt-1">
           Listing ID: {pendingListingId || "Pending..."}
         </p>
       </div>
 
       <div className="space-y-4">
+        {/* Discount Code Input */}
+        <div className="space-y-2">
+          <Label htmlFor="discountCode">Discount Code</Label>
+          <div className="flex space-x-2">
+            <Input
+              id="discountCode"
+              placeholder="Enter discount code"
+              value={discountCodeInput}
+              onChange={(e) => {
+                setDiscountCodeInput(e.target.value);
+                setDiscountMessage(null); // Clear message on input change
+                setAppliedDiscount(null); // Clear applied discount on input change
+              }}
+              disabled={!!appliedDiscount}
+              className={discountMessage && !appliedDiscount ? "border-red-500 focus-visible:ring-red-500" : ""} // Added conditional class
+            />
+            {!appliedDiscount && (
+              <Button onClick={handleApplyDiscount} disabled={!discountCodeInput.trim()}>
+                Apply
+              </Button>
+            )}
+          </div>
+          {discountMessage && (
+            <p className={`text-sm ${appliedDiscount ? 'text-green-600' : 'text-red-600'}`}>
+              {discountMessage}
+            </p>
+          )}
+        </div>
+
         <div>
           <Label>Choose Payment Method</Label>
           <div className="grid grid-cols-1 gap-3 mt-2">

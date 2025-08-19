@@ -7,6 +7,7 @@ type Profile = {
   full_name: string;
   avatar_url: string;
   referral_code: string;
+  mfa_enabled: boolean;
   // Add other profile properties here
 };
 

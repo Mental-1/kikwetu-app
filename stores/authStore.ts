@@ -10,6 +10,7 @@ type Profile = {
   mfa_enabled: boolean;
   rating: number;
   reviews_count: number;
+  verified: boolean;
   // Add other profile properties here
 };
 

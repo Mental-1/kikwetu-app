@@ -31,7 +31,7 @@ import { MediaBufferInput } from "@/components/post-ad/media-buffer-input";
 import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
-import { logger } from "@/lib/utils";
+import { logger } from "@/lib/utils/logger";
 import { getPlans, Plan } from "./actions";
 import { formatPrice } from "@/lib/utils";
 import { usePostAdStore } from "@/stores/postAdStore";

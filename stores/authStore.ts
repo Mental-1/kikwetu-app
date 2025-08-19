@@ -14,6 +14,7 @@ type Profile = {
   phone_number: string | null;
   location: string | null;
   created_at: string;
+  listing_count: number;
   // Add other profile properties here
 };
 

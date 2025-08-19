@@ -750,10 +750,9 @@ export default function PostAdPage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setFormData((prev) => ({
-            ...prev,
+          updateFormData({
             location: [position.coords.latitude, position.coords.longitude],
-          }));
+          });
           setLocationDialogOpen(false);
         },
         (error) => {

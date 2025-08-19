@@ -15,6 +15,7 @@ type Profile = {
   location: string | null;
   created_at: string;
   listing_count: number;
+  email_verified: boolean;
   // Add other profile properties here
 };
 

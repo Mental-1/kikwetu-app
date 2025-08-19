@@ -11,6 +11,7 @@ type Profile = {
   rating: number;
   reviews_count: number;
   verified: boolean;
+  phone_number: string | null;
   // Add other profile properties here
 };
 

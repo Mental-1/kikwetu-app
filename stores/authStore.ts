@@ -16,6 +16,7 @@ type Profile = {
   created_at: string;
   listing_count: number;
   email_verified: boolean;
+  phone_verified: boolean;
   // Add other profile properties here
 };
 

@@ -13,6 +13,7 @@ type Profile = {
   verified: boolean;
   phone_number: string | null;
   location: string | null;
+  created_at: string;
   // Add other profile properties here
 };
 

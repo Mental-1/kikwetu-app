@@ -110,7 +110,8 @@
     "turbopack": "^0.0.1",
     "uuid": "^11.1.0",
     "vaul": "^0.9.9",
-    "zod": "latest"
+    "zod": "latest",
+    "zustand": "^5.0.7"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.0",

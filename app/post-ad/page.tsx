@@ -31,9 +31,10 @@ import { MediaBufferInput } from "@/components/post-ad/media-buffer-input";
 import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
-import { logger } from "@/lib/utils/logger";
+import { logger } from "@/lib/utils";
 import { getPlans, Plan } from "./actions";
 import { formatPrice } from "@/lib/utils";
+import { usePostAdStore } from "@/stores/postAdStore";
 import {
   Dialog,
   DialogContent,
@@ -75,37 +76,11 @@ export default function PostAdPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [pendingListingId, setPendingListingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    subcategory: "",
-    price: "",
-    negotiable: false,
-    condition: "new",
-    location: [] as number[],
-    tags: [] as string[],
-    mediaUrls: [] as string[],
-    paymentTier: "free",
-    paymentMethod: "",
-    phoneNumber: "",
-    email: "",
-  });
 
-  const [discountCodeInput, setDiscountCodeInput] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<{
-    type: string;
-    value: number;
-    code_id: number;
-  } | null>(null);
-  const [discountMessage, setDiscountMessage] = useState<string | null>(null);
+  const { formData, updateFormData, discountCodeInput, setDiscountCodeInput, appliedDiscount, setAppliedDiscount, discountMessage, setDiscountMessage } = usePostAdStore();
 
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [manualLocation, setManualLocation] = useState("");
-
-  const updateFormData = useCallback((data: Partial<typeof formData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  }, []);
 
   const {
     data: categories = [],
@@ -801,8 +776,6 @@ export default function PostAdPage() {
       case "details":
         return (
           <AdDetailsStep
-            formData={formData}
-            updateFormData={updateFormData}
             categories={categories}
             subcategories={subcategories}
             locationDialogOpen={locationDialogOpen}
@@ -817,23 +790,18 @@ export default function PostAdPage() {
       case "payment":
         return (
           <PaymentTierStep
-            formData={formData}
-            updateFormData={updateFormData}
             plans={plans}
           />
         );
       case "media":
         return (
           <MediaUploadStep
-            formData={formData}
-            updateFormData={updateFormData}
             plans={plans}
           />
         );
       case "preview":
         return (
           <PreviewStep
-            formData={formData}
             categories={categories}
             plans={plans}
             displayLocation={displayLocation}
@@ -842,8 +810,6 @@ export default function PostAdPage() {
       case "method":
         return (
           <PaymentMethodStep
-            formData={formData}
-            updateFormData={updateFormData}
             plans={plans}
             paymentStatus={paymentStatus}
             pendingListingId={pendingListingId}
@@ -852,12 +818,6 @@ export default function PostAdPage() {
             onRetryPayment={checkTransactionStatus}
             isModalOpen={isModalOpen}
             setIsModalOpen={setIsModalOpen}
-            discountCodeInput={discountCodeInput}
-            setDiscountCodeInput={setDiscountCodeInput}
-            appliedDiscount={appliedDiscount}
-            setAppliedDiscount={setAppliedDiscount}
-            discountMessage={discountMessage}
-            setDiscountMessage={setDiscountMessage}
           />
         );
       default:
@@ -931,6 +891,7 @@ export default function PostAdPage() {
                       !pendingListingId ||
                       (selectedTier?.price > 0 && paymentStatus === "pending")
                     }
+                    className="bg-green-500 hover:bg-green-600 text-white rounded-lg"
                   >
                     {isPublishingListing
                       ? "Publishing..."
@@ -945,6 +906,7 @@ export default function PostAdPage() {
                     disabled={
                       isSubmitted || isPublishingListing || isCreatingListing
                     }
+                    className="bg-green-500 hover:bg-green-600 text-white rounded-lg"
                   >
                     {isCreatingListing && currentStep === 3
                       ? "Creating..."
@@ -978,8 +940,6 @@ export default function PostAdPage() {
 }
 
 function AdDetailsStep({
-  formData,
-  updateFormData,
   categories,
   subcategories,
   locationDialogOpen,
@@ -990,8 +950,6 @@ function AdDetailsStep({
   categoriesError,
   categoriesLoading,
 }: {
-  formData: any;
-  updateFormData: (data: any) => void;
   categories: any[];
   subcategories: any[];
   locationDialogOpen: boolean;
@@ -1002,6 +960,7 @@ function AdDetailsStep({
   categoriesError: any;
   categoriesLoading: boolean;
 }) {
+  const { formData, updateFormData } = usePostAdStore();
   const availableSubcategories = formData.category ? subcategories : [];
 
   const formatPrice = (value: string | number) => {
@@ -1258,14 +1217,11 @@ function AdDetailsStep({
 }
 
 function MediaUploadStep({
-  formData,
-  updateFormData,
   plans,
 }: {
-  formData: any;
-  updateFormData: (data: any) => void;
   plans: Plan[];
 }) {
+  const { formData, updateFormData } = usePostAdStore();
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
@@ -1336,14 +1292,11 @@ function MediaUploadStep({
 }
 
 function PaymentTierStep({
-  formData,
-  updateFormData,
   plans,
 }: {
-  formData: any;
-  updateFormData: (data: any) => void;
   plans: Plan[];
 }) {
+  const { formData, updateFormData } = usePostAdStore();
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Choose Your Plan</h2>
@@ -1397,8 +1350,6 @@ function PaymentTierStep({
 }
 
 function PaymentMethodStep({
-  formData,
-  updateFormData,
   plans,
   paymentStatus,
   pendingListingId,
@@ -1407,15 +1358,7 @@ function PaymentMethodStep({
   onRetryPayment,
   isModalOpen,
   setIsModalOpen,
-  discountCodeInput,
-  setDiscountCodeInput,
-  appliedDiscount,
-  setAppliedDiscount,
-  discountMessage,
-  setDiscountMessage,
 }: {
-  formData: any;
-  updateFormData: (data: any) => void;
   plans: Plan[];
   paymentStatus: PaymentStatus;
   pendingListingId: string | null;
@@ -1424,13 +1367,9 @@ function PaymentMethodStep({
   onRetryPayment: () => void;
   isModalOpen: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>; 
-  discountCodeInput: string;
-  setDiscountCodeInput: (value: string) => void;
-  appliedDiscount: { type: string; value: number; code_id: number } | null;
-  setAppliedDiscount: (value: { type: string; value: number; code_id: number } | null) => void;
-  discountMessage: string | null;
-  setDiscountMessage: (value: string | null) => void;
 }) {
+  const { formData, updateFormData, discountCodeInput, setDiscountCodeInput, appliedDiscount, setAppliedDiscount, discountMessage, setDiscountMessage } = usePostAdStore();
+  const [showDiscountCodeSection, setShowDiscountCodeSection] = useState(false);
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
@@ -1593,34 +1532,46 @@ function PaymentMethodStep({
       </div>
 
       <div className="space-y-4">
-        {/* Discount Code Input */}
-        <div className="space-y-2">
-          <Label htmlFor="discountCode">Discount Code</Label>
-          <div className="flex space-x-2">
-            <Input
-              id="discountCode"
-              placeholder="Enter discount code"
-              value={discountCodeInput}
-              onChange={(e) => {
-                setDiscountCodeInput(e.target.value);
-                setDiscountMessage(null); // Clear message on input change
-                setAppliedDiscount(null); // Clear applied discount on input change
-              }}
-              disabled={!!appliedDiscount}
-              className={discountMessage && !appliedDiscount ? "border-red-500 focus-visible:ring-red-500" : ""} // Added conditional class
-            />
-            {!appliedDiscount && (
-              <Button onClick={handleApplyDiscount} disabled={!discountCodeInput.trim()}>
-                Apply
-              </Button>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="show-discount"
+            checked={showDiscountCodeSection}
+            onCheckedChange={(checked) =>
+              setShowDiscountCodeSection(Boolean(checked))
+            }
+          />
+          <Label htmlFor="show-discount">I have a discount code</Label>
+        </div>
+
+        {showDiscountCodeSection && (
+          <div className="space-y-2">
+            <Label htmlFor="discountCode">Discount Code</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="discountCode"
+                placeholder="Enter discount code"
+                value={discountCodeInput}
+                onChange={(e) => {
+                  setDiscountCodeInput(e.target.value);
+                  setDiscountMessage(null); // Clear message on input change
+                  setAppliedDiscount(null); // Clear applied discount on input change
+                }}
+                disabled={!!appliedDiscount}
+                className={discountMessage && !appliedDiscount ? "border-red-500 focus-visible:ring-red-500" : ""} // Added conditional class
+              />
+              {!appliedDiscount && (
+                <Button onClick={handleApplyDiscount} disabled={!discountCodeInput.trim()} className="bg-green-500 hover:bg-green-600 text-white rounded-lg">
+                  Apply
+                </Button>
+              )}
+            </div>
+            {discountMessage && (
+              <p className={`text-sm ${appliedDiscount ? 'text-green-600' : 'text-red-600'}`}>
+                {discountMessage}
+              </p>
             )}
           </div>
-          {discountMessage && (
-            <p className={`text-sm ${appliedDiscount ? 'text-green-600' : 'text-red-600'}`}>
-              {discountMessage}
-            </p>
-          )}
-        </div>
+        )}
 
         <div>
           <Label>Choose Payment Method</Label>
@@ -1704,16 +1655,15 @@ function PaymentMethodStep({
 }
 
 function PreviewStep({
-  formData,
   categories,
   plans,
   displayLocation,
 }: {
-  formData: any;
   categories: any[];
   plans: Plan[];
   displayLocation: string;
 }) {
+  const { formData } = usePostAdStore();
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
   const selectedCategory = categories.find(

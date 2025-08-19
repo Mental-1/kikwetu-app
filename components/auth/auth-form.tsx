@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getSupabaseClient } from "@/utils/supabase/client";
 import { AuthError } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuthStore } from "@/stores/authStore";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -78,7 +78,7 @@ export function AuthForm() {
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [twoFACode, setTwoFACode] = useState("");
   const { toast } = useToast();
-  const supabase = getSupabaseClient();
+  const { login, loginWithGoogle, setUser, mfaRequired, challengeId, factorId, verifyMfa } = useAuthStore();
 
   useEffect(() => {
     const referralCode = searchParams.get("referral_code");
@@ -102,65 +102,15 @@ export function AuthForm() {
     }
 
     try {
-      if (!supabase) {
-        setError("Supabase client not initialized.");
-        setLoading(false);
-        return;
-      }
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        if (
-          error.message ===
-          "A multi-factor authentication challenge is required"
-        ) {
-          const mfaError: MFAError = error;
-
-          if (
-            mfaError.next_step &&
-            mfaError.next_step.type === "mfa_required" &&
-            mfaError.next_step.challenge_id &&
-            mfaError.next_step.factor_id
-          ) {
-            setChallengeId(mfaError.next_step.challenge_id);
-            setFactorId(mfaError.next_step.factor_id);
-            setShow2FAModal(true);
-            setMessage(
-              "Multi-factor authentication required. Please enter your 2FA code.",
-            );
-            setLoading(false);
-            return;
-          } else {
-            throw new Error("MFA required but missing challenge or factor ID.");
-          }
-        } else {
-          throw error;
-        }
-      }
-
-      if (data.session) {
-        const res = await fetch("/auth/callback", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data.session),
-        });
-
-        if (res.ok) {
-          router.push("/");
-        } else {
-          const errorData = await res.text();
-          throw new Error(`Session sync failed: ${errorData}`);
-        }
-      } else {
-        throw new Error("No session returned from sign-in");
-      }
+      await login(email, password);
+      router.push("/");
     } catch (error: any) {
-      setError(error.message || "An error occurred during sign in");
+      if (mfaRequired) {
+        setShow2FAModal(true);
+        setMessage("Multi-factor authentication required. Please enter your 2FA code.");
+      } else {
+        setError(error.message || "An error occurred during sign in");
+      }
     } finally {
       setLoading(false);
     }
@@ -178,28 +128,10 @@ export function AuthForm() {
     }
 
     try {
-      const response = await fetch("/api/auth/verify-2fa", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ factorId, challengeId, code: twoFACode }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to verify 2FA code");
-      }
-
-      if (result.success) {
-        setMessage("2FA code verified successfully. Signing in...");
-        await supabase.auth.setSession(result.session);
-        setShow2FAModal(false);
-        router.push("/");
-      } else {
-        setError("Invalid 2FA code.");
-      }
+      await verifyMfa(twoFACode);
+      setMessage("2FA code verified successfully. Signing in...");
+      setShow2FAModal(false);
+      router.push("/");
     } catch (error: any) {
       setError(error.message || "An error occurred during 2FA verification");
     } finally {
@@ -211,13 +143,7 @@ export function AuthForm() {
     setError(null);
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) throw error;
+      await loginWithGoogle(`${window.location.origin}/auth/callback`);
     } catch (error: any) {
       setError(error.message || "An error occurred during Google sign in");
     } finally {
@@ -267,11 +193,6 @@ export function AuthForm() {
       return;
     }
     try {
-      if (!supabase) {
-        setError("Supabase client not initialized.");
-        setLoading(false);
-        return;
-      }
       // Sign up the user with metadata
       const referrerCode = localStorage.getItem("referrer_code");
 
@@ -321,6 +242,11 @@ export function AuthForm() {
             variant: "destructive",
           });
         }
+      }
+
+      // Set user in store after successful signup
+      if (authData.user) {
+        setUser(authData.user);
       }
 
       setAuthMode("sign-in");

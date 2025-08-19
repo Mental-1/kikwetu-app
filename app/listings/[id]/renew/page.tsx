@@ -6,14 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getSupabaseClient } from '@/utils/supabase/client';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuthStore } from "@/stores/authStore";
 import { getPlans, Plan } from '@/app/post-ad/actions';
 import { formatPrice } from "@/lib/utils";
 
 export default function RenewListingPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isLoading } = useAuth();
+  const { user, loading: isLoading } = useAuthStore();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 

@@ -2,12 +2,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy } from "lucide-react";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
 
 export function ReferralCard() {
-  const { profile } = useAuth();
+  const { profile } = useAuthStore();
   const { toast } = useToast();
   const [referralLink, setReferralLink] = useState("");
 

@@ -114,7 +114,7 @@ export default function AdminReferralsPage() {
           <CardTitle className="text-sm font-medium">All Discount Codes</CardTitle>
           <Button 
             onClick={() => { setEditingCode(null); setIsFormOpen(true); }}
-            className="bg-green-500 hover:bg-green-600 text-white rounded-lg" {/* Green button */}
+            className="bg-green-500 hover:bg-green-600 text-white rounded-lg"
           >
             Create New Code
           </Button>
@@ -151,7 +151,7 @@ export default function AdminReferralsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mr-0 sm:mr-2 mb-2 sm:mb-0 rounded-lg" {/* Added mb-2 and rounded-lg */}
+                      className="mr-0 sm:mr-2 mb-2 sm:mb-0 rounded-lg"
                       onClick={() => handleEdit(code)}
                     >
                       Edit
@@ -159,7 +159,7 @@ export default function AdminReferralsPage() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="rounded-lg" {/* Added rounded-lg */}
+                      className="rounded-lg"
                       onClick={() => handleDelete(code.id)}
                     >
                       Delete
@@ -173,9 +173,9 @@ export default function AdminReferralsPage() {
       </Card>
 
       <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingCode(null); }}>
-        <DialogContent className="sm:max-w-[600px] rounded-lg"> {/* Added rounded-lg */}
+        <DialogContent className="sm:max-w-[600px] rounded-lg">
           <DialogHeader>
-            <DialogTitle className="text-center"> {/* Centered title */}
+            <DialogTitle className="text-center">
               {editingCode ? "Edit Discount Code" : "Create New Discount Code"}
             </DialogTitle>
             <DialogDescription>

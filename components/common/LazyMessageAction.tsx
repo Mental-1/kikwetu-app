@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSendMessage } from '@/hooks/useSendMessage';
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/components/ui/use-toast";
 
 interface LazyMessageActionProps {
@@ -10,7 +10,7 @@ interface LazyMessageActionProps {
 }
 
 const LazyMessageAction: React.FC<LazyMessageActionProps> = ({ sellerId, listingId, renderButton }) => {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const { sendMessage } = useSendMessage({ sellerId, listingId });
 

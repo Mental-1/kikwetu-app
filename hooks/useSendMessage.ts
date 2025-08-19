@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import React from "react";
 
 interface UseSendMessageOptions {
@@ -11,7 +11,7 @@ interface UseSendMessageOptions {
 export const useSendMessage = ({ sellerId, listingId }: UseSendMessageOptions) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const sendMessage = React.useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();

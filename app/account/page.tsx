@@ -33,7 +33,7 @@ import {
   Clipboard,
 } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { getAccountData } from "./actions";
 import { deleteAccount } from "./actions/delete-account";
 import { updateAccount } from "./actions/update-account";
@@ -101,7 +101,7 @@ interface FormData {
 }
 
 function AccountDetails() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, fetchProfile } = useAuthStore();
   const queryClient = useQueryClient();
   const router = useRouter();
   const { qrCode, secret, setQrCode, setSecret, clearTwoFAState } = useTwoFA();
@@ -180,7 +180,7 @@ function AccountDetails() {
     setSaving(true);
     await updateAccount(formData);
     await queryClient.invalidateQueries({ queryKey: ["accountData", user.id] });
-    await refreshProfile();
+    await fetchProfile(user);
     setSaving(false);
     toast({
       title: "Success",
@@ -238,7 +238,7 @@ function AccountDetails() {
         await queryClient.invalidateQueries({
           queryKey: ["accountData", user.id],
         });
-        await refreshProfile();
+        await fetchProfile(user);
         toast({
           title: "Profile picture updated",
           description: "Your profile picture has been successfully updated.",
@@ -1162,7 +1162,7 @@ function AccountDetails() {
  * Renders profile information, account security settings, verification status, and provides interactive modals for updating sensitive information and enabling or disabling security features.
  */
 export default function AccountPage() {
-  const { user, isLoading } = useAuth();
+  const { user, loading: isLoading } = useAuthStore();
 
   if (isLoading) {
     return (

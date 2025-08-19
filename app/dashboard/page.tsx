@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Check, Clock, Eye, Plus, Star } from "lucide-react";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@/components/ui/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { ReferralCard } from "@/components/referral-card"; // Added import
@@ -31,7 +31,7 @@ import {
  * Redirects unauthenticated users to the sign-in page. Shows loading feedback while authentication state is being determined. All statistics and activity data are currently placeholders and display empty or zero values.
  */
 export default function DashboardPage() {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, loading: isLoading } = useAuthStore();
   const [activeListings, setActiveListings] = useState<ListingItem[]>([]);
   const [pendingListings, setPendingListings] = useState<ListingItem[]>([]);
   const [expiredListings, setExpiredListings] = useState<ListingItem[]>([]);

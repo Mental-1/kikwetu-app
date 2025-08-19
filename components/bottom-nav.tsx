@@ -5,12 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Home, List, Map as MapIcon, Compass, Plus } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 
 const BottomNavBar = () => {
   const pathname = usePathname();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const router = useRouter();
 
   const routes = [

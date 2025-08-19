@@ -61,7 +61,7 @@ export function ListingCard({ listing, layout = "grid" }: ListingCardProps) {
 
   return (
     <Link href={`/listings/${listing.id}`}>
-      <Card className="overflow-hidden border-0 hover:shadow-md transition-shadow">
+      <Card className="overflow-hidden border hover:shadow-md transition-shadow">
         <CardContent className="p-0">
           <div className="aspect-square bg-muted">
             <Image

@@ -3,7 +3,7 @@
 import posthog from 'posthog-js';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuthStore } from '@/stores/authStore';
 
 
 export function PostHogPageview() {
@@ -21,7 +21,7 @@ export function PostHogPageview() {
 }
 
 export function PostHogAuthWrapper({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     if (user) {

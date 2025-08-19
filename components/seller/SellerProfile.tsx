@@ -6,7 +6,7 @@ import { Star } from "lucide-react";
 import { ListingCard } from "@/components/listings/listing-card";
 import { useQuery } from "@tanstack/react-query";
 import { getSellerProfileData } from "@/app/actions/user";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { followUser, unfollowUser } from "@/app/actions/user";
 import { useToast } from "@/components/ui/use-toast";
 import React, { useEffect, useState, Suspense } from "react";
@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation"; // Added
 const LazyMessageAction = React.lazy(() => import('@/components/common/LazyMessageAction'));
 
 const SellerProfile = ({ seller }: { seller: { id: string } }) => {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const router = useRouter(); // Initialize useRouter
 

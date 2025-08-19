@@ -23,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { requestReReview } from "@/app/dashboard/listings/actions";
 import { formatPrice } from "@/lib/utils";
 
@@ -55,7 +55,7 @@ interface Listing {
 export default function UserListingsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isLoading } = useAuth();
+  const { user, loading: isLoading } = useAuthStore();
   const [listings, setListings] = useState<Listing[]>([]);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [userPlan, setUserPlan] = useState<string>("free");

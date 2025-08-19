@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
   Settings,
 } from "lucide-react";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -64,7 +64,7 @@ const Logo = () => {
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, logout } = useAuthStore();
   const isMobile = useIsMobile();
 
   const routes = [
@@ -144,7 +144,7 @@ export default function Navigation() {
           <DropdownMenuItem
             onClick={async () => {
               try {
-                await signOut();
+                await logout();
               } catch (error) {
                 console.error("Sign out failed:", error);
               }
@@ -194,7 +194,7 @@ export default function Navigation() {
           <DropdownMenuItem
             onClick={async () => {
               try {
-                await signOut();
+                await logout();
               } catch (error) {
                 console.error("Sign out failed:", error);
               }

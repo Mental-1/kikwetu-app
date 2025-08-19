@@ -8,7 +8,7 @@ type FormData = {
   price: string;
   negotiable: boolean;
   condition: string;
-  location: number[];
+  location: string | number[];
   tags: string[];
   mediaUrls: string[];
   paymentTier: string;

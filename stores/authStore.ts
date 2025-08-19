@@ -8,6 +8,8 @@ type Profile = {
   avatar_url: string;
   referral_code: string;
   mfa_enabled: boolean;
+  rating: number;
+  reviews_count: number;
   // Add other profile properties here
 };
 

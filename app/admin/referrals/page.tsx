@@ -20,7 +20,7 @@ import { toast } from "@/components/ui/use-toast";
 interface DiscountCode {
   id: number;
   code: string;
-  type: string;
+  type: "PERCENTAGE_DISCOUNT" | "FIXED_AMOUNT_DISCOUNT" | "EXTRA_LISTING_DAYS";
   value: number;
   expires_at: string | null;
   max_uses: number | null;

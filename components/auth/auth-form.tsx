@@ -74,8 +74,6 @@ export function AuthForm() {
   const [authMode, setAuthMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [showPassword, setShowPassword] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
-  const [factorId, setFactorId] = useState<string | null>(null);
-  const [challengeId, setChallengeId] = useState<string | null>(null);
   const [twoFACode, setTwoFACode] = useState("");
   const { toast } = useToast();
   const { login, loginWithGoogle, setUser, mfaRequired, challengeId, factorId, verifyMfa } = useAuthStore();

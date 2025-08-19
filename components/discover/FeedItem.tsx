@@ -145,7 +145,6 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const touchStartXRef = React.useRef<number | null>(null);
   const touchStartTimeRef = React.useRef<number | null>(null);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
-  const touchStartTimeRef = React.useRef<number | null>(null);
   const { toast } = useToast();
 
   const nextImage = React.useCallback(() => {

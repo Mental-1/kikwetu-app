@@ -12,6 +12,7 @@ type Profile = {
   reviews_count: number;
   verified: boolean;
   phone_number: string | null;
+  location: string | null;
   // Add other profile properties here
 };
 

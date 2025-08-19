@@ -1146,7 +1146,7 @@ function AdDetailsStep({
               value={
                 Array.isArray(formData.location) && formData.location.length > 0
                   ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
-                  : formData.location || ""
+                  : String(formData.location || "")
               }
               onClick={() => setLocationDialogOpen(true)}
               className="cursor-pointer bg-background"

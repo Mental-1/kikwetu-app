@@ -48,10 +48,6 @@ const nextConfig = {
         source: "/api/(.*)",
         headers: [
           {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
-          },
-          {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },
@@ -83,7 +79,7 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: process.env.NEXT_PUBLIC_SUPABASE_URL; font-src 'self' data:; connect-src 'self' https://api.routteme.com; frame-src 'self' https://www.youtube.com https://player.vimeo.com;",
+              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: process.env.NEXT_PUBLIC_SUPABASE_URL; font-src 'self' data:; connect-src 'self' https://api.routteme.com; frame-src 'self' https://www.youtube.com https://player.vimeo.com; frame-ancestors 'self' *.facebook.com *.twitter.com *.instagram.com *.tiktok.com;",
           },
           {
             key: "Permissions-Policy",

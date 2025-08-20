@@ -30,7 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2, ChevronLeft } from "lucide-react";
-import { useAuthStore } from "@/stores/authStore";
+
 import { shallow } from "zustand/shallow";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

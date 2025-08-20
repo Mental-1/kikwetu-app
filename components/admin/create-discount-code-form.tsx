@@ -37,7 +37,7 @@ const formSchema = z.object({
   value: z.number().min(0, "Value must be non-negative"),
   expires_at: z.date().nullable().optional(),
   max_uses: z.coerce.number().int().min(0, "Max uses must be non-negative").nullable().optional(),
-  is_active: z.boolean().default(true),
+  is_active: z.boolean(),
   created_by_user_id: z.string().uuid("Invalid user ID").nullable().optional(),
 });
 

@@ -147,9 +147,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.mfa.challengeAndVerify({
         factorId,
-        challengeId,
         code,
       });
 

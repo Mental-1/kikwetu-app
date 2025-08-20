@@ -20,7 +20,7 @@ type Profile = {
   // Add other profile properties here
 };
 
-type AuthState = {
+export type AuthState = {
   user: User | null;
   profile: Profile | null;
   isAuthenticated: boolean;

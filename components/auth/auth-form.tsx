@@ -82,7 +82,7 @@ export function AuthForm() {
     const referralCode = searchParams.get("referral_code");
     if (referralCode) {
       localStorage.setItem("referrer_code", referralCode);
-      router.replace(window.location.pathname, { shallow: true }); // Clear URL param
+      router.replace(window.location.pathname); // Clear URL param
     }
   }, [searchParams, router]);
 

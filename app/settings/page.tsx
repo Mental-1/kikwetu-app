@@ -64,9 +64,11 @@ const defaultSettings: UserSettings = {
  *
  * Displays loading indicators while user or settings data is being fetched. If the user is not authenticated, prompts for login or account creation. Provides controls for updating notification preferences, privacy options, language, currency, timezone, exporting user data, and deleting the account.
  */
+import { AuthState, useAuthStore } from "@/stores/authStore";
+
 export default function SettingsPage() {
   const { user, isUserLoading } = useAuthStore(
-    (s) => ({ user: s.user, isUserLoading: s.loading }),
+    (s: AuthState) => ({ user: s.user, isUserLoading: s.loading }),
     shallow
   );
   const queryClient = useQueryClient();

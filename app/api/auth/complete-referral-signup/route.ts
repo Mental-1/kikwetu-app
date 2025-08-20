@@ -77,11 +77,6 @@ export async function POST(request: Request) {
       existingReferral = existing;
     }
 
-    if (existingReferralError) {
-      console.error("Error checking existing referral:", existingReferralError);
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-
     if (existingReferral) {
       return NextResponse.json({ message: "Referral already processed for this user." }, { status: 200 });
     }

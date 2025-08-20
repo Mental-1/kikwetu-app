@@ -34,10 +34,7 @@ import { debounce } from "lodash";
 const formSchema = z.object({
   code: z.string().min(3, "Code must be at least 3 characters").max(50, "Code must be at most 50 characters").regex(/^[a-zA-Z0-9_]+$/, "Code can only contain letters, numbers, and underscores"),
   type: z.enum(["PERCENTAGE_DISCOUNT", "FIXED_AMOUNT_DISCOUNT", "EXTRA_LISTING_DAYS"]),
-  value: z.preprocess(
-    (val) => (val === "" ? NaN : Number(val)),
-    z.number().min(0, "Value must be non-negative")
-  ),
+  value: z.number().min(0, "Value must be non-negative"),
   expires_at: z.date().nullable().optional(),
   max_uses: z.coerce.number().int().min(0, "Max uses must be non-negative").nullable().optional(),
   is_active: z.boolean().default(true),
@@ -261,7 +258,16 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
             <FormItem>
               <FormLabel>Value</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 15 (for 15% or 15 days)" {...field} className="rounded-lg" />
+                <Input
+                  type="number"
+                  placeholder="e.g., 15 (for 15% or 15 days)"
+                  {...field}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    field.onChange(value === "" ? undefined : Number(value));
+                  }}
+                  className="rounded-lg"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

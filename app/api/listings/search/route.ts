@@ -39,7 +39,14 @@ export async function POST(request: NextRequest) {
       pageSize: pageSize || 20,
       sortBy: sortBy || "newest",
       userLocation: userLocation || null,
-      filters: filters || { categories: [], subcategories: [], conditions: [], priceRange: {}, maxDistance: undefined, searchQuery: undefined },
+      filters: {
+        categories: filters?.categories || [],
+        subcategories: filters?.subcategories || [],
+        conditions: filters?.conditions || [],
+        priceRange: filters?.priceRange || {},
+        maxDistance: filters?.maxDistance,
+        searchQuery: filters?.searchQuery,
+      },
     });
 
     return NextResponse.json(result, { status: 200 });

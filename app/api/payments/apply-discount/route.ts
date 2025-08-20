@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       {
         status: 429,
         headers: {
-          'X-RateLimit-Limit': generalApiLimiter.maxRequests.toString(),
+          'X-RateLimit-Limit': '100',
           'X-RateLimit-Remaining': remaining.toString(),
           'X-RateLimit-Reset': resetTime.toString(),
         },

@@ -25,6 +25,7 @@ type AuthState = {
   profile: Profile | null;
   isAuthenticated: boolean;
   loading: boolean;
+  error: string | null;
   mfaRequired: boolean;
   challengeId: string | null;
   factorId: string | null;
@@ -42,6 +43,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   isAuthenticated: false,
   loading: true,
+  error: null,
   mfaRequired: false,
   challengeId: null,
   factorId: null,

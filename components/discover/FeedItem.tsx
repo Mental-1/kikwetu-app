@@ -1,3 +1,5 @@
+'use client';
+
 import React, { Suspense } from "react";
 
 const LazyMessageAction = React.lazy(() => import('@/components/common/LazyMessageAction'));

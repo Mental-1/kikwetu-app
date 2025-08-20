@@ -146,7 +146,11 @@ export function AuthForm() {
     setError(null);
     setLoading(true);
     try {
-      await loginWithGoogle(`${window.location.origin}/auth/callback`);
+      const redirectToParam = searchParams.get("redirectTo");
+      const redirectToUrl = redirectToParam
+        ? `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectToParam)}`
+        : `${window.location.origin}/auth/callback`;
+      await loginWithGoogle(redirectToUrl);
     } catch (error: any) {
       setError(error.message || "An error occurred during Google sign in");
     } finally {
@@ -253,7 +257,7 @@ export function AuthForm() {
         setUser(authData.user);
       }
 
-      setEmail(email); // Pre-populate email field for sign-in
+      setEmail(email);
       setAuthMode("sign-in");
     } catch (error: any) {
       setError(error.message || "An error occurred during registration");

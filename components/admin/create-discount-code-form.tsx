@@ -402,7 +402,7 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
           )}
         </FormItem>
 
-        <Button type="submit" className="w-full sm:w-auto mb-4 sm:mb-0 rounded-lg"
+        <Button type="submit" className="w-full sm:w-auto mb-4 sm:mb-0 rounded-lg bg-green-500 hover:bg-green-600 text-white"
           disabled={createDiscountCodeMutation.isPending || updateDiscountCodeMutation.isPending}>
           {initialData ? (updateDiscountCodeMutation.isPending ? "Updating..." : "Update Code") : (createDiscountCodeMutation.isPending ? "Creating..." : "Create Code")}
         </Button>

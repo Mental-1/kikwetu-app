@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   Gift // Added Gift icon
 } from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
+import { User } from "@supabase/supabase-js";
 
 const navItems = [
   { href: "/admin", label: "Site Growth", icon: LayoutDashboard },
@@ -21,8 +23,13 @@ const navItems = [
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
 ];
 
-export default function AdminClientLayout({ children }: { children: React.ReactNode }) {
+export default function AdminClientLayout({ children, user }: { children: React.ReactNode, user: User | null }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { setUser } = useAuthStore();
+
+  useEffect(() => {
+    setUser(user);
+  }, [user, setUser]);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">

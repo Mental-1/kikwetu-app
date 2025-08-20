@@ -14,6 +14,10 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { User } from "@supabase/supabase-js";
 
+interface AdminUser extends User {
+  full_name: string | null | undefined;
+}
+
 const navItems = [
   { href: "/admin", label: "Site Growth", icon: LayoutDashboard },
   { href: "/admin/users", label: "User Management", icon: Users },
@@ -23,7 +27,7 @@ const navItems = [
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
 ];
 
-export default function AdminClientLayout({ children, user }: { children: React.ReactNode, user: User | null }) {
+export default function AdminClientLayout({ children, user }: { children: React.ReactNode, user: AdminUser | null }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { setUser } = useAuthStore();
 

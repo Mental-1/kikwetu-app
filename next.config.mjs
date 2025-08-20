@@ -42,22 +42,7 @@ const nextConfig = {
     ],
   },
 
-const supabaseHost =
-  (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://cvnertrkcwjjdrnnjswk.supabase.co")
-    .replace(/^https?:\/\//, "")
-    .replace(/\/.*$/, "");
-const supabaseOrigin = `https://${supabaseHost}`;
 
-const csp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: ${supabaseOrigin}`,
-  `font-src 'self' data:`, 
-  `connect-src 'self' https://api.routteme.com ${supabaseOrigin}`,
-  "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
-  "frame-ancestors 'self' https://www.facebook.com https://www.instagram.com https://www.tiktok.com https://twitter.com",
-].join("; ");
 
   async headers() {
     return [
@@ -97,7 +82,8 @@ const csp = [
 
           {
             key: "Content-Security-Policy",
-            value: csp,
+            value:
+              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: process.env.NEXT_PUBLIC_SUPABASE_URL; font-src 'self' data:; connect-src 'self' https://api.routteme.com; frame-src 'self' https://www.youtube.com https://player.vimeo.com; frame-ancestors 'self' *.facebook.com *.twitter.com *.instagram.com *.tiktok.com;",
           },
           {
             key: "Permissions-Policy",

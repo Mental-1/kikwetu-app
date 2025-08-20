@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { reportUser, toggleSaveListing, isListingSaved } from "./actions";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -37,7 +37,7 @@ import { formatPrice } from "@/lib/utils";
 export function ListingDetailsClient({ listing }: { listing: Listing }) {
     const router = useRouter();
     const { toast } = useToast();
-    const { user } = useAuth();
+    const user = useAuthStore((s) => s.user);
     const [isSaved, setIsSaved] = useState(false);
     const [gettingDirections, setGettingDirections] = useState(false);
   

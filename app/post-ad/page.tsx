@@ -33,7 +33,8 @@ import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { logger } from "@/lib/utils/logger";
 import { getPlans, Plan } from "./actions";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, getNumericPrice } from "@/lib/utils";
+import { usePostAdStore } from "@/stores/postAdStore";
 import {
   Dialog,
   DialogContent,
@@ -75,29 +76,11 @@ export default function PostAdPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [pendingListingId, setPendingListingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    subcategory: "",
-    price: "",
-    negotiable: false,
-    condition: "new",
-    location: [] as number[],
-    tags: [] as string[],
-    mediaUrls: [] as string[],
-    paymentTier: "free",
-    paymentMethod: "",
-    phoneNumber: "",
-    email: "",
-  });
+
+  const { formData, updateFormData, discountCodeInput, setDiscountCodeInput, appliedDiscount, setAppliedDiscount, discountMessage, setDiscountMessage } = usePostAdStore();
 
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [manualLocation, setManualLocation] = useState("");
-
-  const updateFormData = useCallback((data: Partial<typeof formData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  }, []);
 
   const {
     data: categories = [],
@@ -127,13 +110,13 @@ export default function PostAdPage() {
 
   // Form validation helper
   const isFormValid = () => {
+    const numericPrice = getNumericPrice(formData.price);
     const basicFieldsValid =
       formData.title.trim().length >= 3 &&
       formData.description.trim().length >= 3 &&
       formData.category &&
-      formData.price !== "" &&
-      !isNaN(Number(formData.price)) &&
-      Number(formData.price) > 0 &&
+      numericPrice !== null && // Check if price is a valid number
+      numericPrice > 0 &&
       formData.location.length > 0;
 
     if (selectedTier?.price > 0) {
@@ -207,7 +190,7 @@ export default function PostAdPage() {
       const listingData = {
         title: formData.title,
         description: formData.description,
-        price: Number.parseFloat(formData.price) || null,
+        price: getNumericPrice(formData.price),
         category_id:
           categories.find((cat) => cat.name === formData.category)?.id || null,
         subcategory_id: formData.subcategory
@@ -328,7 +311,7 @@ export default function PostAdPage() {
     if (!currentTransactionId) return;
 
     const supabase = getSupabaseClient();
-    
+
     const channel = supabase
       .channel(`transactions:id=eq.${currentTransactionId}`)
       .on(
@@ -355,24 +338,24 @@ export default function PostAdPage() {
 
             if (newStatus === "completed") {
               logger.info('Payment completed, checking listing status...');
-              
+
               // Check if listing activation is needed (edge case handling)
               try {
                 let listing, listingError;
                 let retries = 3;
-                
+
                 while (retries > 0) {
                   const result = await supabase
                     .from('listings')
                     .select('status, payment_status, activated_at')
                     .eq('id', pendingListingId)
                     .single();
-                  
+
                   listing = result.data;
                   listingError = result.error;
-                  
+
                   if (!listingError) break;
-                  
+
                   retries--;
                   if (retries > 0) {
                     logger.warn(`Retrying listing status check, ${retries} attempts remaining`);
@@ -397,7 +380,7 @@ export default function PostAdPage() {
                 // Only activate if backend hasn't already done it (edge case)
                 if (listing?.status !== 'active' || listing?.payment_status !== 'paid') {
                   logger.info('Listing not yet activated by backend, calling frontend activation...');
-                  
+
                   // Set timeout for activation to prevent hanging
                   const timeoutPromise = new Promise<never>((_, reject) =>
                     setTimeout(() => reject(new Error(`Listing activation timeout after ${LISTING_ACTIVATION_TIMEOUT_MS / 1000} seconds`)), LISTING_ACTIVATION_TIMEOUT_MS)
@@ -418,14 +401,14 @@ export default function PostAdPage() {
                   listingId: pendingListingId,
                   timestamp: new Date().toISOString()
                 });
-                
+
                 // Don't prevent success flow - backend likely already handled it
                 logger.info('Continuing with success flow despite activation error (backend likely already handled)');
               }
 
               // Always show success message and redirect (even if activation had issues)
               logger.info('Showing success toast and redirecting...');
-              
+
               toast({
                 title: "Payment Confirmed",
                 description: "Your payment has been processed and your ad is now live!",
@@ -446,7 +429,7 @@ export default function PostAdPage() {
 
             } else if (newStatus === "failed" || newStatus === "cancelled") {
               logger.info({ status: newStatus }, 'Payment failed or cancelled');
-              
+
               toast({
                 title: "Payment Failed",
                 description: "Your payment was not successful. Please try again.",
@@ -500,7 +483,7 @@ export default function PostAdPage() {
 
     const supabase = getSupabaseClient();
     logger.info('Starting polling backup for transaction status...');
-    
+
     const pollInterval = setInterval(async () => {
       try {
         const { data: transaction, error } = await supabase
@@ -659,6 +642,7 @@ export default function PostAdPage() {
         const paymentResult = await processPayment(
           selectedTier,
           formData.paymentMethod,
+          appliedDiscount,
         );
 
         if (!paymentResult || !paymentResult.success) {
@@ -697,17 +681,29 @@ export default function PostAdPage() {
     }
   };
 
-  const processPayment = async (tier: Plan, paymentMethod: string) => {
+  const processPayment = async (tier: Plan, paymentMethod: string, appliedDiscount: { type: string; value: number; code_id: string } | null) => {
     if (!pendingListingId) {
       return { success: false, error: "No listing ID found." };
     }
 
+    let finalAmount = tier.price;
+    if (appliedDiscount) {
+      if (appliedDiscount.type === "PERCENTAGE_DISCOUNT") {
+        finalAmount = tier.price - (tier.price * appliedDiscount.value) / 100;
+      } else if (appliedDiscount.type === "FIXED_AMOUNT_DISCOUNT") {
+        finalAmount = tier.price - appliedDiscount.value;
+      }
+    }
+    // Clamp to >= 0 and round to 2 decimals
+    finalAmount = Math.max(0, Number(finalAmount.toFixed(2)));
+
     const paymentData = {
-      amount: tier.price,
+      amount: finalAmount,
       phoneNumber: formData.phoneNumber,
       email: formData.email,
       description: `Kikwetu Listing - ${tier.name} Plan`,
       listingId: pendingListingId,
+      discountCodeId: appliedDiscount?.code_id ? Number(appliedDiscount.code_id) : undefined, // Pass the applied discount code ID
     };
 
     let endpoint = "";
@@ -754,10 +750,9 @@ export default function PostAdPage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setFormData((prev) => ({
-            ...prev,
+          updateFormData({
             location: [position.coords.latitude, position.coords.longitude],
-          }));
+          });
           setLocationDialogOpen(false);
         },
         (error) => {
@@ -780,8 +775,6 @@ export default function PostAdPage() {
       case "details":
         return (
           <AdDetailsStep
-            formData={formData}
-            updateFormData={updateFormData}
             categories={categories}
             subcategories={subcategories}
             locationDialogOpen={locationDialogOpen}
@@ -796,23 +789,18 @@ export default function PostAdPage() {
       case "payment":
         return (
           <PaymentTierStep
-            formData={formData}
-            updateFormData={updateFormData}
             plans={plans}
           />
         );
       case "media":
         return (
           <MediaUploadStep
-            formData={formData}
-            updateFormData={updateFormData}
             plans={plans}
           />
         );
       case "preview":
         return (
           <PreviewStep
-            formData={formData}
             categories={categories}
             plans={plans}
             displayLocation={displayLocation}
@@ -821,8 +809,6 @@ export default function PostAdPage() {
       case "method":
         return (
           <PaymentMethodStep
-            formData={formData}
-            updateFormData={updateFormData}
             plans={plans}
             paymentStatus={paymentStatus}
             pendingListingId={pendingListingId}
@@ -904,6 +890,7 @@ export default function PostAdPage() {
                       !pendingListingId ||
                       (selectedTier?.price > 0 && paymentStatus === "pending")
                     }
+                    className="bg-green-500 hover:bg-green-600 text-white rounded-lg"
                   >
                     {isPublishingListing
                       ? "Publishing..."
@@ -918,6 +905,7 @@ export default function PostAdPage() {
                     disabled={
                       isSubmitted || isPublishingListing || isCreatingListing
                     }
+                    className="bg-green-500 hover:bg-green-600 text-white rounded-lg"
                   >
                     {isCreatingListing && currentStep === 3
                       ? "Creating..."
@@ -951,8 +939,6 @@ export default function PostAdPage() {
 }
 
 function AdDetailsStep({
-  formData,
-  updateFormData,
   categories,
   subcategories,
   locationDialogOpen,
@@ -963,8 +949,6 @@ function AdDetailsStep({
   categoriesError,
   categoriesLoading,
 }: {
-  formData: any;
-  updateFormData: (data: any) => void;
   categories: any[];
   subcategories: any[];
   locationDialogOpen: boolean;
@@ -975,6 +959,7 @@ function AdDetailsStep({
   categoriesError: any;
   categoriesLoading: boolean;
 }) {
+  const { formData, updateFormData } = usePostAdStore();
   const availableSubcategories = formData.category ? subcategories : [];
 
   const formatPrice = (value: string | number) => {
@@ -1161,7 +1146,7 @@ function AdDetailsStep({
               value={
                 Array.isArray(formData.location) && formData.location.length > 0
                   ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
-                  : formData.location || ""
+                  : String(formData.location || "")
               }
               onClick={() => setLocationDialogOpen(true)}
               className="cursor-pointer bg-background"
@@ -1231,20 +1216,17 @@ function AdDetailsStep({
 }
 
 function MediaUploadStep({
-  formData,
-  updateFormData,
   plans,
 }: {
-  formData: any;
-  updateFormData: (data: any) => void;
   plans: Plan[];
 }) {
+  const { formData, updateFormData } = usePostAdStore();
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
   const tierLimits = {
-    free: { images: 2, videos: 0 },
-    basic: { images: 4, videos: 0 },
+    free: { images: 6, videos: 0 },
+    basic: { images: 8, videos: 0 },
     premium: { images: 10, videos: 2 },
     enterprise: { images: 10, videos: 2 },
   };
@@ -1309,14 +1291,11 @@ function MediaUploadStep({
 }
 
 function PaymentTierStep({
-  formData,
-  updateFormData,
   plans,
 }: {
-  formData: any;
-  updateFormData: (data: any) => void;
   plans: Plan[];
 }) {
+  const { formData, updateFormData } = usePostAdStore();
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Choose Your Plan</h2>
@@ -1370,8 +1349,6 @@ function PaymentTierStep({
 }
 
 function PaymentMethodStep({
-  formData,
-  updateFormData,
   plans,
   paymentStatus,
   pendingListingId,
@@ -1381,8 +1358,6 @@ function PaymentMethodStep({
   isModalOpen,
   setIsModalOpen,
 }: {
-  formData: any;
-  updateFormData: (data: any) => void;
   plans: Plan[];
   paymentStatus: PaymentStatus;
   pendingListingId: string | null;
@@ -1390,10 +1365,82 @@ function PaymentMethodStep({
   showSupportDetails: boolean;
   onRetryPayment: () => void;
   isModalOpen: boolean;
-  setIsModalOpen: Dispatch<SetStateAction<boolean>>; 
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>;
 }) {
+  const { formData, updateFormData, discountCodeInput, setDiscountCodeInput, appliedDiscount, setAppliedDiscount, discountMessage, setDiscountMessage } = usePostAdStore();
+  const [showDiscountCodeSection, setShowDiscountCodeSection] = useState(false);
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
+
+  // Guard against undefined while plans are loading
+  if (!selectedTier) {
+    return <div className="text-sm text-muted-foreground">Loading payment options...</div>;
+  }
+
+  const mapDiscountErrorMessage = (error: Error): string => {
+    if (error.message.includes("Invalid discount code")) {
+      return "Invalid discount code. Please check and try again.";
+    } else if (error.message.includes("Discount code is not active")) {
+      return "Discount code is not active.";
+    } else if (error.message.includes("Discount code has expired")) {
+      return "Discount code has expired.";
+    } else if (error.message.includes("Discount code has reached its maximum uses")) {
+      return "Discount code has reached its maximum uses.";
+    } else if (error.message.includes("Network error")) {
+      return "Network error. Please check your internet connection.";
+    } else if (error.message.includes("Failed to apply discount")) {
+      return "Failed to apply discount. Please try again.";
+    }
+    return "An unexpected error occurred while applying discount.";
+  };
+
+  const handleApplyDiscount = async () => {
+    if (!discountCodeInput) {
+      setDiscountMessage("Please enter a discount code.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/payments/apply-discount", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: discountCodeInput }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAppliedDiscount(null);
+        throw new Error(data.error || "Failed to apply discount.");
+      }
+
+      setAppliedDiscount(data);
+      if (data.type === "EXTRA_LISTING_DAYS") {
+        setDiscountMessage(`Success! ${data.value} extra days will be added to your listing.`);
+      } else if (data.type === "PERCENTAGE_DISCOUNT") {
+        setDiscountMessage(`Success! ${data.value}% discount applied.`);
+      } else if (data.type === "FIXED_AMOUNT_DISCOUNT") {
+        setDiscountMessage(`Success! Ksh ${data.value} discount applied.`);
+      }
+      toast({
+        title: "Discount Applied",
+        description: "Discount code successfully applied!",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error applying discount:", error);
+      setAppliedDiscount(null);
+      const userMessage = mapDiscountErrorMessage(error instanceof Error ? error : new Error("Unknown error"));
+      setDiscountMessage(userMessage);
+      toast({
+        title: "Error",
+        description: userMessage,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (selectedTier.price === 0) {
     return (
@@ -1451,7 +1498,7 @@ function PaymentMethodStep({
             <>
               <DialogTitle className="text-center text-green-600">Payment Successful!</DialogTitle>
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+                <CheckCircle2 className="h-12 w-16 text-green-500 mx-auto mb-4" />
                 <p className="text-lg font-medium">Proceed to published listing now. Thank you.</p>
                 <p className="text-muted-foreground text-center">
                   Your ad is now live!
@@ -1487,12 +1534,63 @@ function PaymentMethodStep({
         <p className="text-2xl font-bold text-green-600">
           Ksh {selectedTier.price}
         </p>
+        {appliedDiscount && appliedDiscount.type !== "EXTRA_LISTING_DAYS" && (
+          <p className="text-lg font-bold text-blue-600">
+            Discounted Price: Ksh {formatPrice(Math.max(0, appliedDiscount.type === "PERCENTAGE_DISCOUNT"
+              ? selectedTier.price - (selectedTier.price * appliedDiscount.value) / 100
+              : selectedTier.price - appliedDiscount.value))}
+          </p>
+        )}
+        {discountMessage && (
+          <p className="text-sm text-green-600 mt-1">{discountMessage}</p>
+        )}
         <p className="text-sm text-muted-foreground mt-1">
           Listing ID: {pendingListingId || "Pending..."}
         </p>
       </div>
 
       <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="show-discount"
+            checked={showDiscountCodeSection}
+            onCheckedChange={(checked) =>
+              setShowDiscountCodeSection(Boolean(checked))
+            }
+          />
+          <Label htmlFor="show-discount">I have a discount code</Label>
+        </div>
+
+        {showDiscountCodeSection && (
+          <div className="space-y-2">
+            <Label htmlFor="discountCode">Discount Code</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="discountCode"
+                placeholder="Enter discount code"
+                value={discountCodeInput}
+                onChange={(e) => {
+                  setDiscountCodeInput(e.target.value);
+                  setDiscountMessage(null); // Clear message on input change
+                  setAppliedDiscount(null); // Clear applied discount on input change
+                }}
+                disabled={!!appliedDiscount}
+                className={discountMessage && !appliedDiscount ? "border-red-500 focus-visible:ring-red-500" : ""} // Added conditional class
+              />
+              {!appliedDiscount && (
+                <Button onClick={handleApplyDiscount} disabled={!discountCodeInput.trim()} className="bg-green-500 hover:bg-green-600 text-white rounded-lg">
+                  Apply
+                </Button>
+              )}
+            </div>
+            {discountMessage && (
+              <p className={`text-sm ${appliedDiscount ? 'text-green-600' : 'text-red-600'}`}>
+                {discountMessage}
+              </p>
+            )}
+          </div>
+        )}
+
         <div>
           <Label>Choose Payment Method</Label>
           <div className="grid grid-cols-1 gap-3 mt-2">
@@ -1575,16 +1673,15 @@ function PaymentMethodStep({
 }
 
 function PreviewStep({
-  formData,
   categories,
   plans,
   displayLocation,
 }: {
-  formData: any;
   categories: any[];
   plans: Plan[];
   displayLocation: string;
 }) {
+  const { formData } = usePostAdStore();
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
   const selectedCategory = categories.find(

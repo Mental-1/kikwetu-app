@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, Trash2, MoreHorizontal } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MessageEncryption } from "@/lib/encryption";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import {
   useQuery,
   useMutation,
@@ -116,7 +116,7 @@ async function deleteConversation(conversationId: string) {
 }
 
 export default function MessagesPage() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);

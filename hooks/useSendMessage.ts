@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import React from "react";
 
 interface UseSendMessageOptions {
@@ -11,7 +11,7 @@ interface UseSendMessageOptions {
 export const useSendMessage = ({ sellerId, listingId }: UseSendMessageOptions) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const sendMessage = React.useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -52,10 +52,15 @@ export const useSendMessage = ({ sellerId, listingId }: UseSendMessageOptions) =
         const { conversationId } = await response.json();
         router.push(`/dashboard/messages?conversationId=${conversationId}`);
       } else {
-        const errorData = await response.json();
+        if (response.status === 401) {
+          toast({ title: "Session expired", description: "Please sign in again.", variant: "destructive" });
+          router.push("/auth");
+          return;
+        }
+        const errorData = await response.json().catch(() => ({}));
         toast({
           title: "Error",
-          description: errorData.error || "Failed to start conversation.",
+          description: (errorData as any).error || "Failed to start conversation.",
           variant: "destructive",
         });
       }

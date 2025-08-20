@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { followUser, unfollowUser, toggleLikeListing } from "@/app/actions/user";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,7 @@ interface RightOverlayProps {
 }
 
 const RightOverlay = ({ sellerId, sellerAvatar, listingId }: RightOverlayProps) => {
-    const { user } = useAuth();
+    const user = useAuthStore((s) => s.user);
     const { toast } = useToast();
     const queryClient = useQueryClient();
 

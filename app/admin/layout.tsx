@@ -1,65 +1,46 @@
-"use client";
+export const dynamic = "force-dynamic";
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Shield, 
-  List, 
-  DollarSign, 
-  ChevronLeft 
-} from "lucide-react";
+import { getSupabaseServer } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
+import AdminClientLayout from "./admin-client-layout"; // This will be the renamed existing layout
 
-const navItems = [
-  { href: "/admin", label: "Site Growth", icon: LayoutDashboard },
-  { href: "/admin/users", label: "User Management", icon: Users },
-  { href: "/admin/roles", label: "Role Management", icon: Shield },
-  { href: "/admin/listings", label: "Listing Moderation", icon: List },
-  { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
-];
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  if (!user) {
+    redirect("/auth"); // Redirect unauthenticated users
+  }
+
+  // Fetch user profile to check role
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (error || profile?.role !== "admin") {
+    if (error) {
+      console.warn("Admin role check error:", { userId: user?.id, errorMessage: error.message, errorCode: error.code, context: "Supabase profile lookup failed" });
+    }
+    console.warn("Unauthorized access attempt to admin area by user:", user?.id);
+    redirect("/"); // Redirect non-admin users
+  }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <aside className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg`}>
-        <div className="p-5 border-b dark:border-gray-700 flex items-center justify-between">
-          <Link href="/admin">
-            <h2 className={`text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600 transition-colors ${isCollapsed ? 'hidden' : 'block'}`}>
-              Admin
-            </h2>
-          </Link>
-          <button
-            type="button"
-            aria-label="Toggle sidebar"
-            aria-expanded={!isCollapsed}
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-          >
-            <ChevronLeft className={`h-6 w-6 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
-          </button>
-        </div>
-        <nav className="mt-4">
-          <ul>
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="flex items-center px-5 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-semibold"
-                >
-                  <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
-                  <span className={isCollapsed ? 'hidden' : 'block'}>{item.label}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
-      <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
-        {children}
-      </main>
-    </div>
+    <AdminClientLayout 
+      user={{
+        id: user.id,
+        email: user.email || undefined,
+        full_name: (user.user_metadata as any)?.full_name || null,
+        // Add missing properties from Supabase User type
+        app_metadata: user.app_metadata,
+        user_metadata: user.user_metadata,
+        aud: user.aud,
+        created_at: user.created_at,
+      }}
+    >
+      {children}
+    </AdminClientLayout>
   );
 }

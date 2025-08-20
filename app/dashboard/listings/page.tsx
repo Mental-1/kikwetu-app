@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import Image from "next/image";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { ChevronLeft, Star, Eye, Calendar, Clock, Edit, Trash2, TrendingUp } from "lucide-react";
@@ -23,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { requestReReview } from "@/app/dashboard/listings/actions";
 import { formatPrice } from "@/lib/utils";
 
@@ -55,7 +55,7 @@ interface Listing {
 export default function UserListingsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isLoading } = useAuth();
+  const { user, loading: isLoading } = useAuthStore();
   const [listings, setListings] = useState<Listing[]>([]);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [userPlan, setUserPlan] = useState<string>("free");

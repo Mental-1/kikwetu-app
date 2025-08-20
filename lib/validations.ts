@@ -107,6 +107,7 @@ export const mpesaPaymentSchema = z.object({
     .min(1, "Amount must be at least 1 KES")
     .max(450000, "Amount exceeds M-Pesa limit"),
   listingId: z.string().uuid(), // Made required
+  discountCodeId: z.number().optional(),
 });
 
 export const paystackPaymentSchema = z.object({

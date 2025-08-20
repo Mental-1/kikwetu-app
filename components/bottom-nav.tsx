@@ -5,12 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Home, List, Map as MapIcon, Compass, Plus } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 
 const BottomNavBar = () => {
   const pathname = usePathname();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const router = useRouter();
 
   const routes = [
@@ -34,10 +35,10 @@ const BottomNavBar = () => {
     label: "Post Ad",
     icon: <Plus className="h-4 w-4" />,
     onClick: () => {
-      if (user) {
+      if (isAuthenticated) {
         router.push("/post-ad");
       } else {
-        router.push("/auth");
+        router.push("/auth?redirect=/post-ad");
       }
     },
   };

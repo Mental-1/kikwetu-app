@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useSearch } from "@/hooks/useSearch";
+import { useDiscoverStore } from "@/stores/discoverStore";
 import FeedItem, { FeedMedia } from "./FeedItem";
 import { useSearchParams } from "next/navigation";
 import { ArrowDown, Loader2 } from "lucide-react";
@@ -16,10 +16,6 @@ const PULL_THRESHOLD = 100;
 const DiscoverFeed = () => {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
-  const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lon: number;
-  } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
   const [startY, setStartY] = useState(0);
@@ -32,48 +28,35 @@ const DiscoverFeed = () => {
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const { listings: allListings, isLoading, isFetchingNextPage, error, hasNextPage, fetchListings, fetchNextPage } = useDiscoverStore();
+
   useEffect(() => {
+    let cancelled = false;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-          });
+          if (cancelled) return;
+          const location = { lat: position.coords.latitude, lon: position.coords.longitude };
+          setUserLocation(location);
+          fetchListings(location);
         },
         (err) => {
           console.warn("Geolocation unavailable:", err);
+          if (cancelled) return;
           setUserLocation(null);
+          fetchListings(null); // Fetch without location
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
       );
+    } else {
+      setUserLocation(null);
+      fetchListings(null); // Fetch without location if geolocation is not supported
     }
-  }, []);
-
-  const {
-    data,
-    error,
-    isError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    refetch,
-  } = useSearch({
-    filters: {
-      categories: [],
-      subcategories: [],
-      conditions: [],
-      priceRange: { min: 0, max: 1000000 },
-      maxDistance: 100,
-      searchQuery,
-    },
-    sortBy: "newest",
-    userLocation,
-    pageSize: 5,
-  });
-
-  const allListings = data?.pages.flatMap((page) => page.data) ?? [];
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchListings]);
 
   // Scroll handler to detect which item is in view
   const handleScroll = useCallback(() => {
@@ -106,10 +89,9 @@ const DiscoverFeed = () => {
       // Trigger pagination when near the end
       if (
         newActiveIndex >= allListings.length - 2 &&
-        hasNextPage &&
-        !isFetchingNextPage
+        hasNextPage
       ) {
-        fetchNextPage();
+        fetchNextPage(userLocation);
       }
     }
 
@@ -120,13 +102,7 @@ const DiscoverFeed = () => {
     scrollTimeoutRef.current = setTimeout(() => {
       setIsScrolling(false);
     }, 150);
-  }, [
-    activeIndex,
-    allListings.length,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  ]); // Removed isScrolling from dependencies
+  }, [activeIndex, allListings.length, hasNextPage, fetchNextPage, userLocation]); // Removed isScrolling from dependencies
 
   const debouncedHandleScroll = useMemo(
     () => debounce(handleScroll, 50),
@@ -219,7 +195,7 @@ const DiscoverFeed = () => {
       if (pullDistance > PULL_THRESHOLD) {
         setIsRefreshing(true);
         try {
-          await refetch();
+          await fetchListings(userLocation, true); // Pass true for refresh
           // Reset to first item after refresh
           if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
@@ -298,7 +274,7 @@ const DiscoverFeed = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeIndex, allListings.length, navigateToItem]); // Added navigateToItem to dependencies
 
-  if (isLoading && !data) {
+  if (isLoading && allListings.length === 0) {
     return (
       <div className="h-screen w-full flex justify-center items-center bg-black">
         <div className="flex gap-2">
@@ -310,10 +286,10 @@ const DiscoverFeed = () => {
     );
   }
 
-  if (isError) {
+  if (error) {
     return (
       <Suspense fallback={null}>
-        <ErrorModal onRetry={() => window.location.reload()} />
+        <ErrorModal onRetry={() => window.location.reload()} errorMessage={error} />
       </Suspense>
     );
   }
@@ -357,33 +333,38 @@ const DiscoverFeed = () => {
         onTouchEnd={handleTouchEnd}
       >
         {/* Render all listings */}
-        {allListings.map((listing, index) => (
-          <div
-            key={listing.id}
-            ref={(el) => {
-              itemsRef.current[index] = el;
-            }}
-            className="h-screen w-full snap-start snap-always flex-shrink-0 animate-fade-in-slide-up"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <FeedItem
-              item={{
-                id: listing.id,
-                type: "image", // Assuming image for now
-                src: listing.images?.[0] || "/placeholder.svg",
-                avatar: listing.seller_avatar || "/placeholder-user.jpg",
-                username: listing.seller_username || "Unknown User",
-                seller_id: listing.user_id || '',
-                tags: [], // Placeholder for now
-                gallery: listing.images || undefined,
-                title: listing.title,
-                description: listing.description,
-                price: listing.price,
-                location: listing.location,
+        {allListings.map((listing, index) => {
+          const video = listing.images?.find((img) => /\.(mp4|webm)(\?.*)?$/i.test(img));
+          const gallery = video ? [video, ...(listing.images || []).filter((img) => img !== video)] : listing.images;
+
+          return (
+            <div
+              key={listing.id}
+              ref={(el) => {
+                itemsRef.current[index] = el;
               }}
-            />
-          </div>
-        ))}
+              className="h-screen w-full snap-start snap-always flex-shrink-0 animate-fade-in-slide-up"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <FeedItem
+                item={{
+                  id: listing.id,
+                  type: video ? "video" : "image",
+                  src: video || listing.images?.[0] || "/placeholder.svg",
+                  avatar: listing.seller_avatar || "/placeholder-user.jpg",
+                  username: listing.seller_username || "Unknown User",
+                  seller_id: listing.user_id || '',
+                  tags: [], // Placeholder for now
+                  gallery: gallery || undefined,
+                  title: listing.title,
+                  description: listing.description,
+                  price: listing.price,
+                  location: listing.location,
+                }}
+              />
+            </div>
+          );
+        })}
 
         {/* Loading indicator for next page */}
         {isFetchingNextPage && (

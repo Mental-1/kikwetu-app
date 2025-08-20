@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const { phoneNumber, amount, listingId } = validatedData.data;
+    const { phoneNumber, amount, listingId, discountCodeId } = validatedData.data;
 
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -176,7 +176,8 @@ export async function POST(request: NextRequest) {
         status: "pending",
         phone_number: validatedData.data.phoneNumber,
         listing_id: listingId,
-        transaction_token: transactionToken, // Add this field
+        transaction_token: transactionToken,
+        discount_code_id: discountCodeId, // Added discount_code_id here
       })
       .select()
       .single();

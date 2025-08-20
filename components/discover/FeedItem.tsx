@@ -1,3 +1,5 @@
+'use client';
+
 import React, { Suspense } from "react";
 
 const LazyMessageAction = React.lazy(() => import('@/components/common/LazyMessageAction'));
@@ -141,8 +143,14 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [following, setFollowing] = React.useState(false);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
+  const [isVideoPaused, setIsVideoPaused] = React.useState(false);
   const touchStartXRef = React.useRef<number | null>(null);
+  const touchStartTimeRef = React.useRef<number | null>(null);
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const { toast } = useToast();
+
+  const TAP_THRESHOLD_MS = 200;
+  const SWIPE_THRESHOLD_PX = 50;
 
   const nextImage = React.useCallback(() => {
     if (!item.gallery || item.gallery.length <= 1) return;
@@ -188,27 +196,43 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
 
   // Mobile touch handlers for gallery
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!item.gallery || item.gallery.length <= 1) return;
-    touchStartXRef.current = e.touches[0].clientX;
+    if (item.gallery && item.gallery.length > 1) {
+      touchStartXRef.current = e.touches[0].clientX;
+    }
+    if (item.type === "video") {
+      touchStartTimeRef.current = Date.now();
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!item.gallery || item.gallery.length <= 1 || !touchStartXRef.current)
-      return;
+    const touchEndTime = Date.now();
+    const touchDuration = touchEndTime - (touchStartTimeRef.current || 0);
 
-    const endX = e.changedTouches[0].clientX;
-    const diff = touchStartXRef.current - endX;
-    const threshold = 50;
+    if (item.type === "video" && touchDuration < TAP_THRESHOLD_MS) { // Tap to pause
+      if (videoRef.current) {
+        if (videoRef.current.paused) {
+          videoRef.current.play();
+          setIsVideoPaused(false);
+        } else {
+          videoRef.current.pause();
+          setIsVideoPaused(true);
+        }
+      }
+    } else if (item.gallery && item.gallery.length > 1 && touchStartXRef.current) { // Swipe to navigate
+      const endX = e.changedTouches[0].clientX;
+      const diff = touchStartXRef.current - endX;
 
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0) {
-        nextImage();
-      } else {
-        prevImage();
+      if (Math.abs(diff) > SWIPE_THRESHOLD_PX) {
+        if (diff > 0) {
+          nextImage();
+        } else {
+          prevImage();
+        }
       }
     }
 
     touchStartXRef.current = null;
+    touchStartTimeRef.current = null;
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -245,23 +269,44 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   };
 
   return (
-    <article className="relative h-[calc(100vh-64px)] w-full overflow-hidden flex items-center justify-center">
+    <article
+      className="relative h-[calc(100vh-64px)] w-full overflow-hidden flex items-center justify-center"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Background media */}
       {item.type === "video" ? (
-        <video
-          className="absolute inset-0 h-full w-full object-contain md:rounded-xl"
-          src={item.src}
-          poster={item.poster}
-          playsInline
-          muted
-          loop
-          autoPlay
-        />
+        <>
+          <video
+            ref={videoRef}
+            className="absolute inset-0 h-full w-full object-contain md:rounded-xl"
+            src={item.src}
+            poster={item.poster}
+            playsInline
+            muted
+            loop
+            autoPlay
+            onClick={() => {
+              if (videoRef.current) {
+                if (videoRef.current.paused) {
+                  videoRef.current.play();
+                  setIsVideoPaused(false);
+                } else {
+                  videoRef.current.pause();
+                  setIsVideoPaused(true);
+                }
+              }
+            }}
+          />
+          {item.type === "video" && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              {isVideoPaused && <span className="rounded bg-black/60 px-3 py-1 text-white text-sm">Paused</span>}
+            </div>
+          )}
+        </>
       ) : item.gallery && item.gallery.length > 0 ? (
         <div
           className="absolute inset-0 h-full w-full overflow-hidden md:rounded-xl z-[15]"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
         >
           <div
             className="flex h-full w-full transition-transform duration-300 ease-out"

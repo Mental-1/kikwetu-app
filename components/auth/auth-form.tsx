@@ -2,10 +2,8 @@
 
 import { z } from "zod";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { getSupabaseClient } from "@/utils/supabase/client";
-import { AuthError } from "@supabase/supabase-js";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +27,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuthStore } from "@/stores/authStore";
+import { getSupabaseClient } from "@/utils/supabase/client";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -47,13 +47,6 @@ const signUpSchema = z.object({
     .regex(/^\+?[0-9\- ]+$/, "Invalid phone number"),
 });
 
-interface MFAError extends AuthError {
-  next_step?: {
-    type: string;
-    challenge_id: string;
-    factor_id: string;
-  };
-}
 /**
  * Displays an authentication form supporting both sign-in and sign-up modes with client-side validation and Supabase integration.
  *
@@ -61,6 +54,7 @@ interface MFAError extends AuthError {
  */
 export function AuthForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -73,11 +67,23 @@ export function AuthForm() {
   const [authMode, setAuthMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [showPassword, setShowPassword] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
-  const [factorId, setFactorId] = useState<string | null>(null);
-  const [challengeId, setChallengeId] = useState<string | null>(null);
   const [twoFACode, setTwoFACode] = useState("");
   const { toast } = useToast();
-  const supabase = getSupabaseClient();
+  const login = useAuthStore((s) => s.login);
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
+  const setUser = useAuthStore((s) => s.setUser);
+  const verifyMfa = useAuthStore((s) => s.verifyMfa);
+
+  useEffect(() => {
+    const referralCode = searchParams.get("referral_code");
+    if (referralCode) {
+      localStorage.setItem("referrer_code", referralCode);
+      const params = new URLSearchParams(window.location.search);
+      params.delete("referral_code");
+      const next = params.toString();
+      router.replace(next ? `${window.location.pathname}?${next}` : window.location.pathname);
+    }
+  }, [searchParams, router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,63 +99,14 @@ export function AuthForm() {
     }
 
     try {
-      if (!supabase) {
-        setError("Supabase client not initialized.");
-        setLoading(false);
+      await login(email, password);
+      const { mfaRequired: nowMfaRequired } = useAuthStore.getState();
+      if (nowMfaRequired) {
+        setShow2FAModal(true);
+        setMessage("Multi-factor authentication required. Please enter your 2FA code.");
         return;
       }
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        if (
-          error.message ===
-          "A multi-factor authentication challenge is required"
-        ) {
-          const mfaError: MFAError = error;
-
-          if (
-            mfaError.next_step &&
-            mfaError.next_step.type === "mfa_required" &&
-            mfaError.next_step.challenge_id &&
-            mfaError.next_step.factor_id
-          ) {
-            setChallengeId(mfaError.next_step.challenge_id);
-            setFactorId(mfaError.next_step.factor_id);
-            setShow2FAModal(true);
-            setMessage(
-              "Multi-factor authentication required. Please enter your 2FA code.",
-            );
-            setLoading(false);
-            return;
-          } else {
-            throw new Error("MFA required but missing challenge or factor ID.");
-          }
-        } else {
-          throw error;
-        }
-      }
-
-      if (data.session) {
-        const res = await fetch("/auth/callback", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data.session),
-        });
-
-        if (res.ok) {
-          router.push("/");
-        } else {
-          const errorData = await res.text();
-          throw new Error(`Session sync failed: ${errorData}`);
-        }
-      } else {
-        throw new Error("No session returned from sign-in");
-      }
+      router.push("/");
     } catch (error: any) {
       setError(error.message || "An error occurred during sign in");
     } finally {
@@ -162,6 +119,7 @@ export function AuthForm() {
     setLoading(true);
     setError(null);
 
+    const { factorId, challengeId } = useAuthStore.getState();
     if (!factorId || !challengeId) {
       setError("2FA factor ID or challenge ID is missing.");
       setLoading(false);
@@ -169,28 +127,10 @@ export function AuthForm() {
     }
 
     try {
-      const response = await fetch("/api/auth/verify-2fa", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ factorId, challengeId, code: twoFACode }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to verify 2FA code");
-      }
-
-      if (result.success) {
-        setMessage("2FA code verified successfully. Signing in...");
-        await supabase.auth.setSession(result.session);
-        setShow2FAModal(false);
-        router.push("/");
-      } else {
-        setError("Invalid 2FA code.");
-      }
+      await verifyMfa(twoFACode);
+      setMessage("2FA code verified successfully. Signing in...");
+      setShow2FAModal(false);
+      router.push("/");
     } catch (error: any) {
       setError(error.message || "An error occurred during 2FA verification");
     } finally {
@@ -202,13 +142,11 @@ export function AuthForm() {
     setError(null);
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) throw error;
+      const redirectToParam = searchParams.get("redirectTo");
+      const redirectToUrl = redirectToParam
+        ? `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectToParam)}`
+        : `${window.location.origin}/auth/callback`;
+      await loginWithGoogle(redirectToUrl);
     } catch (error: any) {
       setError(error.message || "An error occurred during Google sign in");
     } finally {
@@ -258,12 +196,10 @@ export function AuthForm() {
       return;
     }
     try {
-      if (!supabase) {
-        setError("Supabase client not initialized.");
-        setLoading(false);
-        return;
-      }
       // Sign up the user with metadata
+      const referrerCode = localStorage.getItem("referrer_code");
+      const supabase = getSupabaseClient();
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -272,14 +208,60 @@ export function AuthForm() {
             username,
             full_name: full_name,
             phone_number: phone_number,
+            ...(referrerCode && { referrer_code: referrerCode }), // Conditionally add referrer_code
           },
         },
       });
+
+      // Clear referrer code from local storage after sign-up attempt
+      localStorage.removeItem("referrer_code");
+
       if (authError) {
         console.error("Signup error details:", authError);
         throw authError;
       }
 
+      // Call the new referral completion API if a referrer code was present
+      if (referrerCode && authData.user) {
+        try {
+          const resp = await fetch("/api/auth/complete-referral-signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              new_user_id: authData.user.id,
+              referrer_code: referrerCode,
+            }),
+          });
+          const json = await resp.json().catch(() => null);
+          if (!resp.ok) {
+            console.error("Referral completion failed:", json || resp.statusText);
+            toast({
+              title: "Referral Error",
+              description: (json && (json.error || json.message)) || "Could not apply referral rewards at this time.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Referral Applied",
+              description: (json && json.message) || "Your referrer has been credited!",
+            });
+          }
+        } catch (referralApiError) {
+          console.error("Error calling referral completion API:", referralApiError);
+          toast({
+            title: "Referral Error",
+            description: "Could not apply referral rewards at this time.",
+            variant: "destructive",
+          });
+        }
+      }
+
+      // Set user in store after successful signup
+      if (authData.user) {
+        setUser(authData.user);
+      }
+
+      setEmail(email);
       setAuthMode("sign-in");
     } catch (error: any) {
       setError(error.message || "An error occurred during registration");

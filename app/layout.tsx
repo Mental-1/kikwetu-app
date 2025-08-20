@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Lato } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/contexts/auth-context";
+
 import Navigation from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { Toaster } from "@/components/ui/toaster";
@@ -15,6 +15,7 @@ import {
   PostHogAuthWrapper,
 } from "@/components/posthog-provider";
 import BottomNavBar from "@/components/bottom-nav";
+import { AuthInitializer } from "@/components/auth/AuthInitializer";
 
 const lato = Lato({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -44,6 +45,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <PostHogPageview />
           </Suspense>
+          <AuthInitializer />
           <ReactQueryClientProvider>
             <ThemeProvider
               attribute="class"
@@ -51,29 +53,26 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <AuthProvider>
-                <PostHogAuthWrapper>
-                  {" "}
-                  <div className="flex min-h-screen flex-col">
-                    <Navigation />
-                    <main className="flex-1">
-                      {/* Add error boundary for React Query errors */}
-                      <Suspense
-                        fallback={
-                          <div className="flex items-center justify-center min-h-[400px]">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                          </div>
-                        }
-                      >
-                        {children}
-                      </Suspense>
-                    </main>
-                    <Footer />
-                  </div>
-                  <Toaster />
-                  <BottomNavBar />
-                </PostHogAuthWrapper>
-              </AuthProvider>
+              <PostHogAuthWrapper>
+                <div className="flex min-h-screen flex-col">
+                  <Navigation />
+                  <main className="flex-1">
+                    {/* Add error boundary for React Query errors */}
+                    <Suspense
+                      fallback={
+                        <div className="flex items-center justify-center min-h-[400px]">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                      }
+                    >
+                      {children}
+                    </Suspense>
+                  </main>
+                  <Footer />
+                </div>
+                <Toaster />
+                <BottomNavBar />
+              </PostHogAuthWrapper>
             </ThemeProvider>
           </ReactQueryClientProvider>
           <SpeedInsights />

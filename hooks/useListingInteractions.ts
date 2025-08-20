@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuthStore } from "@/stores/authStore";
 import { getSupabaseClient } from "@/utils/supabase/client";
 
 const useListingInteractions = (listingId: string, sellerId: string) => {
-  const { user } = useAuth();
+  const user = useAuthStore((s) => s.user);
   
   return useQuery({
-    queryKey: ["listingInteractions", listingId, user?.id],
+    queryKey: ["listingInteractions", listingId, user?.id, sellerId],
     queryFn: async () => {
       const supabase = await getSupabaseClient();
       

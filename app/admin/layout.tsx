@@ -32,7 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       user={{
         id: user.id,
         email: user.email || undefined,
-        full_name: user.user_metadata?.full_name || null,
+        full_name: (user.user_metadata as any)?.full_name || null, // Type assertion for user_metadata
       }}
     >
       {children}

@@ -13,17 +13,54 @@ export function ReferralCard() {
 
   useEffect(() => {
     if (profile?.referral_code && typeof window !== 'undefined') {
-      setReferralLink(`${window.location.origin}/auth?referral_code=${profile.referral_code}`);
+      setReferralLink(`${window.location.origin}/auth?referral_code=${encodeURIComponent(profile.referral_code)}`);
     }
   }, [profile?.referral_code]);
 
   const copyToClipboard = () => {
     if (referralLink) {
-      navigator.clipboard.writeText(referralLink);
-      toast({
-        title: "Copied!",
-        description: "Referral link copied to clipboard.",
-      });
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(referralLink)
+          .then(() => {
+            toast({
+              title: "Copied!",
+              description: "Referral link copied to clipboard.",
+            });
+          })
+          .catch((err) => {
+            console.error("Failed to copy to clipboard:", err);
+            toast({
+              title: "Copy Failed",
+              description: "Failed to copy link. Please copy manually.",
+              variant: "destructive",
+            });
+          });
+      } else {
+        // Fallback for browsers that do not support navigator.clipboard
+        const textarea = document.createElement('textarea');
+        textarea.value = referralLink;
+        textarea.style.position = 'fixed'; // Prevent scrolling to bottom of page in MS Edge.
+        textarea.style.opacity = '0'; // Hide the textarea
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          toast({
+            title: "Copied!",
+            description: "Referral link copied to clipboard (fallback).",
+          });
+        } catch (err) {
+          console.error("Failed to copy to clipboard (fallback):", err);
+          toast({
+            title: "Copy Failed",
+            description: "Failed to copy link. Please copy manually (fallback).",
+            variant: "destructive",
+          });
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      }
     }
   };
 

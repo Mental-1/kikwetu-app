@@ -33,7 +33,7 @@ import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { logger } from "@/lib/utils/logger";
 import { getPlans, Plan } from "./actions";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, getNumericPrice } from "@/lib/utils";
 import { usePostAdStore } from "@/stores/postAdStore";
 import {
   Dialog,
@@ -110,13 +110,13 @@ export default function PostAdPage() {
 
   // Form validation helper
   const isFormValid = () => {
+    const numericPrice = getNumericPrice(formData.price);
     const basicFieldsValid =
       formData.title.trim().length >= 3 &&
       formData.description.trim().length >= 3 &&
       formData.category &&
-      formData.price !== "" &&
-      !isNaN(Number(formData.price)) &&
-      Number(formData.price) > 0 &&
+      numericPrice !== null && // Check if price is a valid number
+      numericPrice > 0 &&
       formData.location.length > 0;
 
     if (selectedTier?.price > 0) {
@@ -190,7 +190,7 @@ export default function PostAdPage() {
       const listingData = {
         title: formData.title,
         description: formData.description,
-        price: Number.parseFloat(formData.price) || null,
+        price: getNumericPrice(formData.price),
         category_id:
           categories.find((cat) => cat.name === formData.category)?.id || null,
         subcategory_id: formData.subcategory
@@ -1372,6 +1372,23 @@ function PaymentMethodStep({
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
+  const mapDiscountErrorMessage = (error: Error): string => {
+    if (error.message.includes("Invalid discount code")) {
+      return "Invalid discount code. Please check and try again.";
+    } else if (error.message.includes("Discount code is not active")) {
+      return "Discount code is not active.";
+    } else if (error.message.includes("Discount code has expired")) {
+      return "Discount code has expired.";
+    } else if (error.message.includes("Discount code has reached its maximum uses")) {
+      return "Discount code has reached its maximum uses.";
+    } else if (error.message.includes("Network error")) {
+      return "Network error. Please check your internet connection.";
+    } else if (error.message.includes("Failed to apply discount")) {
+      return "Failed to apply discount. Please try again.";
+    }
+    return "An unexpected error occurred while applying discount.";
+  };
+
   const handleApplyDiscount = async () => {
     if (!discountCodeInput) {
       setDiscountMessage("Please enter a discount code.");
@@ -1391,13 +1408,7 @@ function PaymentMethodStep({
 
       if (!response.ok) {
         setAppliedDiscount(null);
-        setDiscountMessage(data.error || "Failed to apply discount.");
-        toast({
-          title: "Error",
-          description: data.error || "Failed to apply discount.",
-          variant: "destructive",
-        });
-        return;
+        throw new Error(data.error || "Failed to apply discount.");
       }
 
       setAppliedDiscount(data);
@@ -1416,13 +1427,15 @@ function PaymentMethodStep({
     } catch (error) {
       console.error("Error applying discount:", error);
       setAppliedDiscount(null);
-      setDiscountMessage("An unexpected error occurred.");
+      const userMessage = mapDiscountErrorMessage(error instanceof Error ? error : new Error("Unknown error"));
+      setDiscountMessage(userMessage);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while applying discount.",
+        description: userMessage,
         variant: "destructive",
       });
     }
+  };
   };
 
   if (selectedTier.price === 0) {

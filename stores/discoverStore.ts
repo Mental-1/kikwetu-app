@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { getFilteredListingsAction } from '@/app/actions/search';
 import { DEFAULT_FILTERS } from '@/lib/search-utils';
 import { ListingsItem } from '@/lib/types/listing';
+
+const PAGE_SIZE = 20;
 
 interface DiscoverState {
   listings: ListingsItem[];
@@ -30,20 +31,38 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
   page: 1,
 
   setListings: (listings) => set({ listings }),
-  setFilters: (filters) => set({ filters }),
+  setFilters: (filters) =>
+    set({
+      filters,
+      page: 1,
+      hasNextPage: true,
+      listings: [],
+      activeItemIndex: 0,
+    }),
   setActiveItemIndex: (index) => set({ activeItemIndex: index }),
 
   fetchListings: async (userLocation, refresh = false) => {
     set({ isLoading: true, isFetchingNextPage: false, error: null });
     try {
       const currentPage = refresh ? 1 : get().page;
-      const { data, hasMore } = await getFilteredListingsAction({
-        page: currentPage,
-        pageSize: 20, // Increased page size
-        filters: get().filters,
-        sortBy: "newest",
-        userLocation,
+      const response = await fetch('/api/listings/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: currentPage,
+          pageSize: PAGE_SIZE,
+          filters: get().filters,
+          sortBy: "newest",
+          userLocation,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch listings");
+      }
+
+      const { data, count, hasMore } = await response.json();
 
       set((state) => ({
         listings: refresh ? data : [...state.listings, ...data],
@@ -60,13 +79,24 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
     if (!get().hasNextPage || get().isLoading || get().isFetchingNextPage) return;
     set({ isFetchingNextPage: true });
     try {
-      const { data, hasMore } = await getFilteredListingsAction({
-        page: get().page,
-        pageSize: 20,
-        filters: get().filters,
-        sortBy: "newest",
-        userLocation,
+      const response = await fetch('/api/listings/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: get().page,
+          pageSize: PAGE_SIZE,
+          filters: get().filters,
+          sortBy: "newest",
+          userLocation,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch more listings");
+      }
+
+      const { data, count, hasMore } = await response.json();
 
       set((state) => ({
         listings: [...state.listings, ...data],

@@ -3,26 +3,57 @@ import { getSupabaseServer } from "@/utils/supabase/server";
 import { z } from "zod";
 
 // Schema for creating a new discount code
-const createDiscountCodeSchema = z.object({
-  code: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/, "Code can only contain letters, numbers, and underscores"),
-  type: z.enum(["PERCENTAGE_DISCOUNT", "FIXED_AMOUNT_DISCOUNT", "EXTRA_LISTING_DAYS"]),
-  value: z.number().min(0),
-  expires_at: z.string().datetime().nullable().optional(),
-  max_uses: z.number().int().min(0).nullable().optional(),
-  is_active: z.boolean().default(true),
-  created_by_user_id: z.string().uuid().nullable().optional(),
-});
+const createDiscountCodeSchema = z
+  .object({
+    code: z
+      .string()
+      .min(3)
+      .max(50)
+      .regex(/^[a-zA-Z0-9_]+$/, "Code can only contain letters, numbers, and underscores")
+      .trim()
+      .transform((s) => s.toUpperCase()),
+    type: z.enum(["PERCENTAGE_DISCOUNT", "FIXED_AMOUNT_DISCOUNT", "EXTRA_LISTING_DAYS"]),
+    value: z.number().min(0),
+    expires_at: z.string().datetime().nullable().optional(),
+    max_uses: z.number().int().min(0).nullable().optional(),
+    is_active: z.boolean().default(true),
+    created_by_user_id: z.string().uuid().nullable().optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.type === "PERCENTAGE_DISCOUNT" && (val.value <= 0 || val.value > 100)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: "Percentage value must be between 1 and 100" });
+    }
+    if (val.type === "EXTRA_LISTING_DAYS" && (!Number.isInteger(val.value) || val.value < 1)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: "Extra listing days value must be an integer greater than or equal to 1" });
+    }
+  });
 
 const updateDiscountCodeSchema = z.object({
   id: z.number().int(),
-  code: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/, "Code can only contain letters, numbers, and underscores").optional(),
+  code: z
+    .string()
+    .min(3)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_]+$/, "Code can only contain letters, numbers, and underscores")
+    .trim()
+    .transform((s) => s.toUpperCase())
+    .optional(),
   type: z.enum(["PERCENTAGE_DISCOUNT", "FIXED_AMOUNT_DISCOUNT", "EXTRA_LISTING_DAYS"]).optional(),
   value: z.number().min(0).optional(),
   expires_at: z.string().datetime().nullable().optional(),
   max_uses: z.number().int().min(0).nullable().optional(),
   is_active: z.boolean().optional(),
   created_by_user_id: z.string().uuid().nullable().optional(),
-}).partial(); // All fields are optional for update
+}).partial().superRefine((val, ctx) => {
+  if (val.type && val.value !== undefined) {
+    if (val.type === "PERCENTAGE_DISCOUNT" && (val.value <= 0 || val.value > 100)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: "Percentage value must be between 1 and 100" });
+    }
+    if (val.type === "EXTRA_LISTING_DAYS" && (!Number.isInteger(val.value) || val.value < 1)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: "Extra listing days value must be an integer greater than or equal to 1" });
+    }
+  }
+});
 
 export async function GET(request: Request) {
   const supabase = await getSupabaseServer();
@@ -43,7 +74,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { data: discountCodes, error } = await supabase
+    const { data: discountCodes, error, count } = await supabase
       .from("discount_codes")
       .select("*", { count: "exact" });
 
@@ -52,7 +83,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Failed to fetch discount codes" }, { status: 500 });
     }
 
-    return NextResponse.json(discountCodes, { status: 200 });
+    return NextResponse.json({ data: discountCodes, count }, { status: 200 });
   } catch (error) {
     console.error("Error in GET /api/admin/discount-codes:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -143,7 +174,7 @@ export async function PATCH(request: Request) {
       .update(updateData)
       .eq("id", id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error updating discount code:", error);
@@ -186,17 +217,19 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Discount code ID is required for deletion" }, { status: 400 });
     }
 
-    const { error, count } = await supabase
+    const { data: deleted, error } = await supabase
       .from("discount_codes")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
 
     if (error) {
       console.error("Error deleting discount code:", error);
       return NextResponse.json({ error: "Failed to delete discount code" }, { status: 500 });
     }
 
-    if (count === 0) {
+    if (!deleted) {
       return NextResponse.json({ error: "Discount code not found" }, { status: 404 });
     }
 

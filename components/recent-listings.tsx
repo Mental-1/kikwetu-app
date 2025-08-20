@@ -26,7 +26,7 @@ export default function RecentListings({ initialListings }: RecentListingsProps)
     <>
       {initialListings.map((listing: DisplayListingItem) => (
         <Link key={listing.id} href={`/listings/${listing.id}`}>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border">
+          <Card className="hover:shadow-md transition-shadow overflow-hidden border">
             <CardContent className="p-0">
               <div className="aspect-square bg-muted">
                 <Image

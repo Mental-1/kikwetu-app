@@ -12,7 +12,12 @@ import {
   Gift // Added Gift icon
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { User } from "@supabase/supabase-js";
+
+interface MinimalUser {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+}
 
 const navItems = [
   { href: "/admin", label: "Site Growth", icon: LayoutDashboard },
@@ -23,13 +28,15 @@ const navItems = [
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
 ];
 
-export default function AdminClientLayout({ children, user }: { children: React.ReactNode, user: User | null }) {
+export default function AdminClientLayout({ children, user }: { children: React.ReactNode, user: MinimalUser | null }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { setUser } = useAuthStore();
 
   useEffect(() => {
-    setUser(user);
-  }, [user, setUser]);
+    if (user?.id !== useAuthStore.getState().user?.id) {
+      setUser(user);
+    }
+  }, [user?.id, setUser]);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">

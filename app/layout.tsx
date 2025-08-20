@@ -15,6 +15,7 @@ import {
   PostHogAuthWrapper,
 } from "@/components/posthog-provider";
 import BottomNavBar from "@/components/bottom-nav";
+import { AuthInitializer } from "@/components/auth/AuthInitializer";
 
 const lato = Lato({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -44,6 +45,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <PostHogPageview />
           </Suspense>
+          <AuthInitializer />
           <ReactQueryClientProvider>
             <ThemeProvider
               attribute="class"
@@ -52,7 +54,6 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               <PostHogAuthWrapper>
-                {" "}
                 <div className="flex min-h-screen flex-col">
                   <Navigation />
                   <main className="flex-1">

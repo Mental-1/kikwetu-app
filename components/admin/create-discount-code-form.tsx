@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,17 +29,30 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { debounce } from "lodash";
+import { debounce } from "@/utils/debounce";
 
-const formSchema = z.object({
+const base = z.object({
   code: z.string().min(3, "Code must be at least 3 characters").max(50, "Code must be at most 50 characters").regex(/^[a-zA-Z0-9_]+$/, "Code can only contain letters, numbers, and underscores"),
-  type: z.enum(["PERCENTAGE_DISCOUNT", "FIXED_AMOUNT_DISCOUNT", "EXTRA_LISTING_DAYS"]),
-  value: z.number().min(0, "Value must be non-negative"),
-  expires_at: z.date().nullable().optional(),
+  expires_at: z.date().nullable().optional().refine((date) => !date || date > new Date(), "Expiration date must be in the future"),
   max_uses: z.number().int().min(0, "Max uses must be non-negative").nullable().optional(),
   is_active: z.boolean(),
   created_by_user_id: z.string().uuid("Invalid user ID").nullable().optional(),
 });
+
+const formSchema = z.discriminatedUnion("type", [
+  base.extend({
+    type: z.literal("PERCENTAGE_DISCOUNT"),
+    value: z.number().min(1, "Percentage value must be between 1 and 100").max(100, "Percentage value must be between 1 and 100"),
+  }),
+  base.extend({
+    type: z.literal("FIXED_AMOUNT_DISCOUNT"),
+    value: z.number().min(0, "Value must be non-negative"),
+  }),
+  base.extend({
+    type: z.literal("EXTRA_LISTING_DAYS"),
+    value: z.number().int("EXTRA_LISTING_DAYS value must be an integer").min(1, "EXTRA_LISTING_DAYS value must be an integer greater than or equal to 1"),
+  }),
+]);
 
 interface DiscountCode {
   id: number;
@@ -89,35 +102,113 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
         value: initialData.value,
         max_uses: initialData.max_uses ?? null,
       });
-      if (initialData.created_by_user_id) {
-        setSelectedUser({ id: initialData.created_by_user_id, username: "Loading...", email: "Loading...", full_name: "Loading..." });
-      }
+      // Removed the placeholder setting here, will be handled by new effect
     } else {
       form.reset();
+      setSelectedUser(null); // Clear selected user when initialData is null (new form)
+      setUserSearchInput("");
+      setUserSearchTerm("");
     }
   }, [initialData, form]);
 
+  // Effect to fetch user details when editing an existing discount code
+  useEffect(() => {
+    if (initialData?.created_by_user_id) {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      const fetchUser = async () => {
+        try {
+          const response = await fetch(`/api/admin/users/search?query=${initialData.created_by_user_id}`, { signal });
+          if (!response.ok) {
+            if (response.status === 404) {
+              setSelectedUser(null);
+              setUserSearchInput("");
+              setUserSearchTerm("");
+              toast({
+                title: "User Not Found",
+                description: "The user linked to this code could not be found.",
+                variant: "destructive",
+              });
+            } else {
+              throw new Error(`Failed to fetch user: ${response.statusText}`);
+            }
+          }
+          const users = await response.json();
+          if (users && users.length > 0) {
+            setSelectedUser(users[0]);
+            setUserSearchInput(users[0].username || users[0].email || users[0].id);
+            setUserSearchTerm(users[0].id);
+          } else {
+            setSelectedUser(null);
+            setUserSearchInput("");
+            setUserSearchTerm("");
+            toast({
+              title: "User Not Found",
+              description: "The user linked to this code could not be found.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            // Request was aborted, ignore
+          } else {
+            console.error("Error fetching linked user:", error);
+            setSelectedUser(null);
+            setUserSearchInput("");
+            setUserSearchTerm("");
+            toast({
+              title: "Error",
+              description: "Failed to load linked user details.",
+              variant: "destructive",
+            });
+          }
+        }
+      };
+
+      fetchUser();
+
+      return () => {
+        controller.abort();
+      };
+    } else if (!initialData) {
+      // If initialData becomes null (e.g., switching to create mode)
+      setSelectedUser(null);
+      setUserSearchInput("");
+      setUserSearchTerm("");
+    }
+  }, [initialData?.created_by_user_id, form]);
+
+  const [userSearchInput, setUserSearchInput] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
 
-  const debouncedUserSearch = debounce((term: string) => {
-    setUserSearchTerm(term);
-  }, 300);
+  const debouncedUserSearch = useMemo(
+    () =>
+      debounce((term: string) => {
+        setUserSearchTerm(term);
+      }, 300),
+    []
+  );
 
-  const { data: userSearchResults } = useQuery<UserSearchResult[]>(
-    {
+  useEffect(() => {
+    return () => {
+      debouncedUserSearch.cancel?.();
+    };
+  }, [debouncedUserSearch]);
+
+  const { data: userSearchResults } = useQuery<UserSearchResult[]>({
       queryKey: ["adminUserSearch", userSearchTerm],
-      queryFn: async () => {
+      queryFn: async ({ signal }) => {
         if (!userSearchTerm) return [];
-        const response = await fetch(`/api/admin/users/search?query=${userSearchTerm}`);
+        const response = await fetch(`/api/admin/users/search?query=${encodeURIComponent(userSearchTerm)}`, { signal });
         if (!response.ok) {
           throw new Error("Failed to search users");
         }
         return response.json();
       },
-      enabled: !!userSearchTerm,
-    }
-  );
+      enabled: !!userSearchTerm && !selectedUser,
+  });
 
   useEffect(() => {
     if (selectedUser) {
@@ -141,8 +232,14 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create discount code");
+        let message = "Failed to create discount code";
+        try {
+          const errorData = await response.json();
+          message = errorData.error || message;
+        } catch {
+          message = await response.text().catch(() => message);
+        }
+        throw new Error(message);
       }
       return response.json();
     },
@@ -154,10 +251,11 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
       queryClient.invalidateQueries({ queryKey: ["adminDiscountCodes"] });
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Failed to create discount code.";
       toast({
         title: "Error",
-        description: error.message || "Failed to create discount code.",
+        description: message,
         variant: "destructive",
       });
     },
@@ -181,8 +279,14 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update discount code");
+        let message = "Failed to update discount code";
+        try {
+          const errorData = await response.json();
+          message = errorData.error || message;
+        } catch {
+          message = await response.text().catch(() => message);
+        }
+        throw new Error(message);
       }
       return response.json();
     },
@@ -194,10 +298,11 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
       queryClient.invalidateQueries({ queryKey: ["adminDiscountCodes"] });
       onSuccess();
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Failed to update discount code.";
       toast({
         title: "Error",
-        description: error.message || "Failed to update discount code.",
+        description: message,
         variant: "destructive",
       });
     },
@@ -345,7 +450,7 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
               <FormControl>
                 <Checkbox
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(checked) => field.onChange(Boolean(checked))}
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
@@ -362,11 +467,12 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
           <FormControl>
             <Input
               placeholder="Search by username or email"
-              value={userSearchTerm}
+              value={userSearchInput}
               onChange={(e) => {
-                setUserSearchTerm(e.target.value);
+                const term = e.target.value;
+                setUserSearchInput(term);
                 setSelectedUser(null);
-                debouncedUserSearch(e.target.value);
+                debouncedUserSearch(term);
               }}
               className="rounded-lg"
             />
@@ -375,26 +481,33 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
           {userSearchTerm && !selectedUser && userSearchResults && userSearchResults.length > 0 && (
             <div className="border rounded-lg mt-2 max-h-40 overflow-y-auto">
               {userSearchResults.map((user) => (
-                <div
+                <button
                   key={user.id}
-                  className="p-2 cursor-pointer hover:bg-gray-100 rounded-lg"
+                  type="button"
+                  className="w-full text-left p-2 hover:bg-gray-100 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring"
                   onClick={() => {
                     setSelectedUser(user);
-                    setUserSearchTerm(user.username || user.email || user.id);
+                    setUserSearchInput(user.username || user.email || user.id);
+                    setUserSearchTerm(user.id);
                   }}
                 >
                   {user.username} ({user.email})
-                </div>
+                </button>
               ))}
             </div>
           )}
           {selectedUser && (
             <p className="text-sm text-muted-foreground mt-2">
               Selected User: {selectedUser.username || selectedUser.email} (ID: {selectedUser.id})
-              <Button variant="link" size="sm" onClick={() => {
-                setSelectedUser(null);
-                setUserSearchTerm("");
-              }}>Clear</Button>
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => {
+                  setSelectedUser(null);
+                  setUserSearchInput("");
+                  setUserSearchTerm("");
+                }}
+              >Clear</Button>
             </p>
           )}
           {userSearchTerm && !selectedUser && userSearchResults && userSearchResults.length === 0 && (

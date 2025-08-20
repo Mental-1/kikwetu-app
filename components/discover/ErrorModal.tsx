@@ -2,7 +2,7 @@
 
 interface ErrorModalProps {
   onRetry: () => void;
-  errorMessage?: string | null;
+  errorMessage?: string;
 }
 
 const ErrorModal = ({ onRetry, errorMessage }: ErrorModalProps) => {

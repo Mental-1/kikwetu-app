@@ -21,7 +21,7 @@ export function PostHogPageview() {
 }
 
 export function PostHogAuthWrapper({ children }: { children: React.ReactNode }) {
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     if (user) {

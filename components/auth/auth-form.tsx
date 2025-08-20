@@ -83,7 +83,10 @@ export function AuthForm() {
     const referralCode = searchParams.get("referral_code");
     if (referralCode) {
       localStorage.setItem("referrer_code", referralCode);
-      router.replace(window.location.pathname); // Clear URL param
+      const params = new URLSearchParams(window.location.search);
+      params.delete("referral_code");
+      const next = params.toString();
+      router.replace(next ? `${window.location.pathname}?${next}` : window.location.pathname);
     }
   }, [searchParams, router]);
 
@@ -102,14 +105,15 @@ export function AuthForm() {
 
     try {
       await login(email, password);
-      router.push("/");
-    } catch (error: any) {
-      if (mfaRequired) {
+      const { mfaRequired: nowMfaRequired } = useAuthStore.getState();
+      if (nowMfaRequired) {
         setShow2FAModal(true);
         setMessage("Multi-factor authentication required. Please enter your 2FA code.");
-      } else {
-        setError(error.message || "An error occurred during sign in");
+        return;
       }
+      router.push("/");
+    } catch (error: any) {
+      setError(error.message || "An error occurred during sign in");
     } finally {
       setLoading(false);
     }
@@ -249,6 +253,7 @@ export function AuthForm() {
         setUser(authData.user);
       }
 
+      setEmail(email); // Pre-populate email field for sign-in
       setAuthMode("sign-in");
     } catch (error: any) {
       setError(error.message || "An error occurred during registration");

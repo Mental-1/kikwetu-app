@@ -18,7 +18,7 @@ interface RightOverlayProps {
 }
 
 const RightOverlay = ({ sellerId, sellerAvatar, listingId }: RightOverlayProps) => {
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const { toast } = useToast();
     const queryClient = useQueryClient();
 

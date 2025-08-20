@@ -31,6 +31,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2, ChevronLeft } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { shallow } from "zustand/shallow";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -64,7 +65,10 @@ const defaultSettings: UserSettings = {
  * Displays loading indicators while user or settings data is being fetched. If the user is not authenticated, prompts for login or account creation. Provides controls for updating notification preferences, privacy options, language, currency, timezone, exporting user data, and deleting the account.
  */
 export default function SettingsPage() {
-  const { user, loading: isUserLoading } = useAuthStore();
+  const { user, isUserLoading } = useAuthStore(
+    (s) => ({ user: s.user, isUserLoading: s.loading }),
+    shallow
+  );
   const queryClient = useQueryClient();
   const router = useRouter();
 

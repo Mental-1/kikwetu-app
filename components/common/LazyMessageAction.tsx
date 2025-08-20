@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useSendMessage } from '@/hooks/useSendMessage';
 import { useAuthStore } from "@/stores/authStore";
@@ -10,7 +12,7 @@ interface LazyMessageActionProps {
 }
 
 const LazyMessageAction: React.FC<LazyMessageActionProps> = ({ sellerId, listingId, renderButton }) => {
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
   const { toast } = useToast();
   const { sendMessage } = useSendMessage({ sellerId, listingId });
 

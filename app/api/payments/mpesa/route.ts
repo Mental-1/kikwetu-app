@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
         },
         { status: 409 },
       );
-    }
 
     // Sanitize phone number is now handled by Zod schema
     const sanitizedPhoneNumber = phoneNumber;

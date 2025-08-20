@@ -1,29 +1,32 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/utils/supabase/server';
+import { z } from 'zod';
 
 export async function POST(request: Request) {
   try {
-    const { code } = await request.json();
     const supabase = await getSupabaseServer();
-
-    if (!code) {
-      return NextResponse.json({ error: 'Discount code is required.' }, { status: 400 });
+    const body = await request.json();
+    const schema = z.object({ code: z.string().trim().min(1, 'Discount code is required').transform((s) => s.toUpperCase()) });
+    const parsed = schema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request body', details: parsed.error.flatten() }, { status: 400 });
     }
+    const code = parsed.data.code;
 
     // Query the discount_codes table
     const { data: discountCode, error } = await supabase
       .from('discount_codes')
-      .select('*')
+      .select('id,type,value,is_active,expires_at,max_uses,use_count')
       .eq('code', code)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching discount code:', error);
-      return NextResponse.json({ error: 'Invalid discount code.' }, { status: 404 });
+      return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
     }
 
     if (!discountCode) {
-      return NextResponse.json({ error: 'Discount code not found.' }, { status: 404 });
+      return NextResponse.json({ error: 'Invalid discount code.' }, { status: 404 });
     }
 
     // Perform validation checks
@@ -35,7 +38,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Discount code has expired.' }, { status: 400 });
     }
 
-    if (discountCode.max_uses !== null && discountCode.use_count >= discountCode.max_uses) {
+    const useCount = discountCode.use_count ?? 0;
+    if (discountCode.max_uses !== null && useCount >= discountCode.max_uses) {
       return NextResponse.json({ error: 'Discount code has reached its maximum uses.' }, { status: 400 });
     }
 

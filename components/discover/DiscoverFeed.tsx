@@ -32,15 +32,18 @@ const DiscoverFeed = () => {
   const { listings: allListings, isLoading, isFetchingNextPage, error, hasNextPage, fetchListings, fetchNextPage } = useDiscoverStore();
 
   useEffect(() => {
+    let cancelled = false;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          if (cancelled) return;
           const location = { lat: position.coords.latitude, lon: position.coords.longitude };
           setUserLocation(location);
           fetchListings(location);
         },
         (err) => {
           console.warn("Geolocation unavailable:", err);
+          if (cancelled) return;
           setUserLocation(null);
           fetchListings(null); // Fetch without location
         },
@@ -50,6 +53,9 @@ const DiscoverFeed = () => {
       setUserLocation(null);
       fetchListings(null); // Fetch without location if geolocation is not supported
     }
+    return () => {
+      cancelled = true;
+    };
   }, [fetchListings]);
 
   // Scroll handler to detect which item is in view
@@ -328,8 +334,8 @@ const DiscoverFeed = () => {
       >
         {/* Render all listings */}
         {allListings.map((listing, index) => {
-          const video = listing.images?.find(img => img.endsWith('.mp4') || img.endsWith('.webm'));
-          const gallery = video ? [video, ...(listing.images || []).filter(img => img !== video)] : listing.images;
+          const video = listing.images?.find((img) => /\.(mp4|webm)(\?.*)?$/i.test(img));
+          const gallery = video ? [video, ...(listing.images || []).filter((img) => img !== video)] : listing.images;
 
           return (
             <div

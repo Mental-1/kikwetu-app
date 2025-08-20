@@ -33,6 +33,13 @@ interface DiscountCode {
 export default function AdminReferralsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [discountCodeToDeleteId, setDiscountCodeToDeleteId] = useState<number | null>(null);
+
+  const handleDialogChange = React.useCallback((open: boolean) => {
+    setIsFormOpen(open);
+    if (!open) setEditingCode(null);
+  }, [setIsFormOpen, setEditingCode]);
 
   const { data, isLoading, error } = useQuery<DiscountCode[]>({
     queryKey: ["adminDiscountCodes"],
@@ -70,18 +77,37 @@ export default function AdminReferralsPage() {
       });
       queryClient.invalidateQueries({ queryKey: ["adminDiscountCodes"] });
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      let message = "Failed to delete discount code.";
+      if (error instanceof Error) {
+        message = error.message;
+      } else if (typeof error === "string") {
+        message = error;
+      } else {
+        try {
+          message = JSON.stringify(error);
+        } catch (e) {
+          // Fallback to default message
+        }
+      }
       toast({
         title: "Error",
-        description: error.message || "Failed to delete discount code.",
+        description: message,
         variant: "destructive",
       });
     },
   });
 
   const handleDelete = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this discount code?")) {
-      deleteDiscountCodeMutation.mutate(id);
+    setDiscountCodeToDeleteId(id);
+    setIsConfirmDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (discountCodeToDeleteId !== null) {
+      deleteDiscountCodeMutation.mutate(discountCodeToDeleteId);
+      setIsConfirmDialogOpen(false);
+      setDiscountCodeToDeleteId(null);
     }
   };
 
@@ -174,7 +200,7 @@ export default function AdminReferralsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) setEditingCode(null); }}>
+      <Dialog open={isFormOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="sm:max-w-[600px] rounded-lg">
           <DialogHeader>
             <DialogTitle className="text-center">
@@ -188,6 +214,34 @@ export default function AdminReferralsPage() {
             initialData={editingCode}
             onSuccess={() => { setIsFormOpen(false); setEditingCode(null); }}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-lg">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-center">Confirm Deletion</DialogTitle>
+            <DialogDescription className="text-center">
+              Are you sure you want to delete this discount code? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsConfirmDialogOpen(false)}
+              className="rounded-lg w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              className="rounded-lg w-full sm:w-auto"
+            >
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

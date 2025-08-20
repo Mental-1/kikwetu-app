@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import AdminClientLayout from "./admin-client-layout"; // This will be the renamed existing layout
@@ -18,12 +20,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .single();
 
   if (error || profile?.role !== "admin") {
+    if (error) {
+      console.warn("Admin role check error:", { userId: user?.id, errorMessage: error.message, errorCode: error.code, context: "Supabase profile lookup failed" });
+    }
     console.warn("Unauthorized access attempt to admin area by user:", user?.id);
     redirect("/"); // Redirect non-admin users
   }
 
   return (
-    <AdminClientLayout user={user}>
+    <AdminClientLayout 
+      user={{
+        id: user.id,
+        email: user.email || null,
+        full_name: user.user_metadata?.full_name || null,
+      }}
+    >
       {children}
     </AdminClientLayout>
   );

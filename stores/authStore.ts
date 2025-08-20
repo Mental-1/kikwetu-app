@@ -36,13 +36,14 @@ type AuthState = {
   setProfile: (profile: Profile | null) => void;
   fetchProfile: (user: User) => Promise<void>;
   verifyMfa: (code: string) => Promise<void>;
+  initialize: () => void; // Add initialize action
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
   isAuthenticated: false,
-  loading: true,
+  loading: false, // Change to false
   error: null,
   mfaRequired: false,
   challengeId: null,
@@ -101,7 +102,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const supabase = getSupabaseClient();
     try {
       await supabase.auth.signOut();
-      set({ user: null, profile: null, isAuthenticated: false, loading: false, mfaRequired: false });
+      set({ user: null, profile: null, isAuthenticated: false, loading: false, mfaRequired: false, challengeId: null, factorId: null });
     } catch (error: any) {
       set({ error: error.message, loading: false });
       throw error; // Re-throw for component to catch
@@ -137,11 +138,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   verifyMfa: async (code: string) => {
     set({ loading: true, error: null });
-    const { challengeId, factorId } = get();
+    const { factorId } = get();
     const supabase = getSupabaseClient();
 
-    if (!challengeId || !factorId) {
-      const err = new Error("MFA challenge or factor ID missing.");
+    if (!factorId) {
+      const err = new Error("MFA factor ID missing.");
       set({ error: err.message, loading: false });
       throw err;
     }
@@ -162,5 +163,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ error: error.message, loading: false });
       throw error; // Re-throw for component to catch
     }
+  },
+  initialize: () => {
+    const supabase = getSupabaseClient();
+
+    // Set initial loading state
+    set({ loading: true });
+
+    // Restore session and set initial state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        set({ user: session.user, isAuthenticated: true, loading: false });
+        get().fetchProfile(session.user);
+      } else {
+        set({ user: null, isAuthenticated: false, loading: false });
+      }
+    });
+
+    // Subscribe to auth state changes
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        set({ user: session?.user || null, isAuthenticated: !!session, loading: false });
+        if (session?.user) {
+          get().fetchProfile(session.user);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        set({ user: null, profile: null, isAuthenticated: false, loading: false });
+      }
+    });
   },
 }));

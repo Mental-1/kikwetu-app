@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation"; // Added
 const LazyMessageAction = React.lazy(() => import('@/components/common/LazyMessageAction'));
 
 const SellerProfile = ({ seller }: { seller: { id: string } }) => {
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
   const { toast } = useToast();
   const router = useRouter(); // Initialize useRouter
 

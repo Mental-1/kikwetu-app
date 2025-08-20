@@ -147,6 +147,9 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const { toast } = useToast();
 
+  const TAP_THRESHOLD_MS = 200;
+  const SWIPE_THRESHOLD_PX = 50;
+
   const nextImage = React.useCallback(() => {
     if (!item.gallery || item.gallery.length <= 1) return;
     setGalleryIndex((prev) => (prev + 1) % item.gallery!.length);
@@ -203,7 +206,7 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
     const touchEndTime = Date.now();
     const touchDuration = touchEndTime - (touchStartTimeRef.current || 0);
 
-    if (item.type === "video" && touchDuration < 200) { // Tap to pause
+    if (item.type === "video" && touchDuration < TAP_THRESHOLD_MS) { // Tap to pause
       if (videoRef.current) {
         if (videoRef.current.paused) {
           videoRef.current.play();
@@ -216,9 +219,8 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
     } else if (item.gallery && item.gallery.length > 1 && touchStartXRef.current) { // Swipe to navigate
       const endX = e.changedTouches[0].clientX;
       const diff = touchStartXRef.current - endX;
-      const threshold = 50;
 
-      if (Math.abs(diff) > threshold) {
+      if (Math.abs(diff) > SWIPE_THRESHOLD_PX) {
         if (diff > 0) {
           nextImage();
         } else {
@@ -293,11 +295,14 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
             }
           }}
         />
+        {item.type === "video" && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            {isVideoPaused && <span className="rounded bg-black/60 px-3 py-1 text-white text-sm">Paused</span>}
+          </div>
+        )}
       ) : item.gallery && item.gallery.length > 0 ? (
         <div
           className="absolute inset-0 h-full w-full overflow-hidden md:rounded-xl z-[15]"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
         >
           <div
             className="flex h-full w-full transition-transform duration-300 ease-out"

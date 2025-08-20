@@ -20,11 +20,11 @@ type FormData = {
 type PostAdState = {
   formData: FormData;
   discountCodeInput: string;
-  appliedDiscount: { type: string; value: number; code_id: number } | null;
+  appliedDiscount: { type: 'PERCENTAGE_DISCOUNT' | 'FIXED_AMOUNT_DISCOUNT' | 'EXTRA_LISTING_DAYS'; value: number; code_id: string } | null;
   discountMessage: string | null;
   updateFormData: (data: Partial<FormData>) => void;
   setDiscountCodeInput: (value: string) => void;
-  setAppliedDiscount: (value: { type: string; value: number; code_id: number } | null) => void;
+  setAppliedDiscount: (value: { type: 'PERCENTAGE_DISCOUNT' | 'FIXED_AMOUNT_DISCOUNT' | 'EXTRA_LISTING_DAYS'; value: number; code_id: string } | null) => void;
   setDiscountMessage: (value: string | null) => void;
   resetForm: () => void;
 };
@@ -58,5 +58,10 @@ export const usePostAdStore = create<PostAdState>((set) => ({
   setDiscountCodeInput: (value) => set({ discountCodeInput: value }),
   setAppliedDiscount: (value) => set({ appliedDiscount: value }),
   setDiscountMessage: (value) => set({ discountMessage: value }),
-  resetForm: () => set({ formData: initialFormData }),
+  resetForm: () => set({
+    formData: initialFormData,
+    discountCodeInput: '',
+    appliedDiscount: null,
+    discountMessage: null,
+  }),
 }));

@@ -37,7 +37,7 @@ import { formatPrice } from "@/lib/utils";
 export function ListingDetailsClient({ listing }: { listing: Listing }) {
     const router = useRouter();
     const { toast } = useToast();
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const [isSaved, setIsSaved] = useState(false);
     const [gettingDirections, setGettingDirections] = useState(false);
   

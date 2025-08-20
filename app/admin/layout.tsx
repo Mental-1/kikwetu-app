@@ -32,7 +32,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       user={{
         id: user.id,
         email: user.email || undefined,
-        full_name: (user.user_metadata as any)?.full_name || null, // Type assertion for user_metadata
+        full_name: (user.user_metadata as any)?.full_name || null,
+        // Add missing properties from Supabase User type
+        app_metadata: user.app_metadata,
+        user_metadata: user.user_metadata,
+        aud: user.aud,
+        created_at: user.created_at,
       }}
     >
       {children}

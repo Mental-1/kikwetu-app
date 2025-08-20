@@ -1,8 +1,27 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/utils/supabase/server';
 import { z } from 'zod';
+import { generalApiLimiter, getClientIdentifier } from '@/utils/rate-limiting'; // Import rate limiter
 
 export async function POST(request: Request) {
+  // Apply rate limiting
+  const identifier = getClientIdentifier(request);
+  const { allowed, remaining, resetTime } = generalApiLimiter.check(identifier);
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': generalApiLimiter.maxRequests.toString(),
+          'X-RateLimit-Remaining': remaining.toString(),
+          'X-RateLimit-Reset': resetTime.toString(),
+        },
+      }
+    );
+  }
+
   try {
     const supabase = await getSupabaseServer();
     const body = await request.json();

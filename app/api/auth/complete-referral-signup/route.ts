@@ -61,19 +61,21 @@ export async function POST(request: Request) {
     }
 
     const referrerCodeIds = referrerDiscountCodes.map(code => code.id);
-
-    if (referrerCodeIds.length === 0) {
-      // No codes created by this referrer, so no existing referral to check
-      return NextResponse.json({ message: "Referral code not found or invalid, but signup successful." }, { status: 200 });
+    // Step 2: Check user_applied_codes for new_user_id and any of these code_ids (if any exist)
+    let existingReferral: { id: string } | null = null;
+    if (referrerCodeIds.length > 0) {
+      const { data: existing, error: existingReferralError } = await supabase
+        .from("user_applied_codes")
+        .select("id")
+        .eq("user_id", new_user_id)
+        .in("code_id", referrerCodeIds)
+        .maybeSingle();
+      if (existingReferralError) {
+        console.error("Error checking existing referral:", existingReferralError);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+      }
+      existingReferral = existing;
     }
-
-    // Step 2: Check user_applied_codes for new_user_id and any of these code_ids
-    const { data: existingReferral, error: existingReferralError } = await supabase
-      .from("user_applied_codes")
-      .select("id")
-      .eq("user_id", new_user_id)
-      .in("code_id", referrerCodeIds)
-      .maybeSingle();
 
     if (existingReferralError) {
       console.error("Error checking existing referral:", existingReferralError);

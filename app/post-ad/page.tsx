@@ -689,13 +689,13 @@ export default function PostAdPage() {
     let finalAmount = tier.price;
     if (appliedDiscount) {
       if (appliedDiscount.type === "PERCENTAGE_DISCOUNT") {
-        finalAmount = tier.price - (tier.price * appliedDiscount.value / 100);
+        finalAmount = tier.price - (tier.price * appliedDiscount.value) / 100;
       } else if (appliedDiscount.type === "FIXED_AMOUNT_DISCOUNT") {
         finalAmount = tier.price - appliedDiscount.value;
       }
-      // Ensure amount doesn't go below zero
-      finalAmount = Math.max(0, finalAmount);
     }
+    // Clamp to >= 0 and round to 2 decimals
+    finalAmount = Math.max(0, Number(finalAmount.toFixed(2)));
 
     const paymentData = {
       amount: finalAmount,
@@ -1372,6 +1372,11 @@ function PaymentMethodStep({
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
+  // Guard against undefined while plans are loading
+  if (!selectedTier) {
+    return <div className="text-sm text-muted-foreground">Loading payment options...</div>;
+  }
+
   const mapDiscountErrorMessage = (error: Error): string => {
     if (error.message.includes("Invalid discount code")) {
       return "Invalid discount code. Please check and try again.";
@@ -1531,7 +1536,9 @@ function PaymentMethodStep({
         </p>
         {appliedDiscount && appliedDiscount.type !== "EXTRA_LISTING_DAYS" && (
           <p className="text-lg font-bold text-blue-600">
-            Discounted Price: Ksh {selectedTier.price - (appliedDiscount.type === "PERCENTAGE_DISCOUNT" ? (selectedTier.price * appliedDiscount.value / 100) : appliedDiscount.value)}
+            Discounted Price: Ksh {formatPrice(Math.max(0, appliedDiscount.type === "PERCENTAGE_DISCOUNT"
+              ? selectedTier.price - (selectedTier.price * appliedDiscount.value) / 100
+              : selectedTier.price - appliedDiscount.value))}
           </p>
         )}
         {discountMessage && (

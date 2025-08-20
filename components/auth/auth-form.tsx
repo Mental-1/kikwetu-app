@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AuthError } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,13 +47,6 @@ const signUpSchema = z.object({
     .regex(/^\+?[0-9\- ]+$/, "Invalid phone number"),
 });
 
-interface MFAError extends AuthError {
-  next_step?: {
-    type: string;
-    challenge_id: string;
-    factor_id: string;
-  };
-}
 /**
  * Displays an authentication form supporting both sign-in and sign-up modes with client-side validation and Supabase integration.
  *
@@ -77,7 +69,10 @@ export function AuthForm() {
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [twoFACode, setTwoFACode] = useState("");
   const { toast } = useToast();
-  const { login, loginWithGoogle, setUser, mfaRequired, challengeId, factorId, verifyMfa } = useAuthStore();
+  const login = useAuthStore((s) => s.login);
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
+  const setUser = useAuthStore((s) => s.setUser);
+  const verifyMfa = useAuthStore((s) => s.verifyMfa);
 
   useEffect(() => {
     const referralCode = searchParams.get("referral_code");
@@ -124,6 +119,7 @@ export function AuthForm() {
     setLoading(true);
     setError(null);
 
+    const { factorId, challengeId } = useAuthStore.getState();
     if (!factorId || !challengeId) {
       setError("2FA factor ID or challenge ID is missing.");
       setLoading(false);
@@ -228,20 +224,28 @@ export function AuthForm() {
       // Call the new referral completion API if a referrer code was present
       if (referrerCode && authData.user) {
         try {
-          await fetch("/api/auth/complete-referral-signup", {
+          const resp = await fetch("/api/auth/complete-referral-signup", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               new_user_id: authData.user.id,
               referrer_code: referrerCode,
             }),
           });
-          toast({
-            title: "Referral Applied",
-            description: "Your referrer has been credited!",
-          });
+          const json = await resp.json().catch(() => null);
+          if (!resp.ok) {
+            console.error("Referral completion failed:", json || resp.statusText);
+            toast({
+              title: "Referral Error",
+              description: (json && (json.error || json.message)) || "Could not apply referral rewards at this time.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Referral Applied",
+              description: (json && json.message) || "Your referrer has been credited!",
+            });
+          }
         } catch (referralApiError) {
           console.error("Error calling referral completion API:", referralApiError);
           toast({

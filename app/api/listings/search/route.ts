@@ -7,8 +7,14 @@ const searchParamsSchema = z.object({
   pageSize: z.preprocess(Number, z.number().min(1)).optional(),
   sortBy: z.string().optional(),
   userLocation: z.object({
-    lat: z.preprocess(Number, z.number()),
-    lon: z.preprocess(Number, z.number()),
+    lat: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : Number(v)),
+      z.number()
+    ),
+    lon: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : Number(v)),
+      z.number()
+    ),
   }).nullable().optional(),
   filters: z.object({
     categories: z.array(z.preprocess(Number, z.number())).optional(),
@@ -34,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const { page, pageSize, sortBy, userLocation, filters } = validatedData.data;
 
-    const result = await getFilteredListingsAction({
+    const { data, totalCount, hasMore } = await getFilteredListingsAction({
       page: page || 1,
       pageSize: pageSize || 20,
       sortBy: sortBy || "newest",
@@ -52,7 +58,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(result, { status: 200 });
+    return NextResponse.json(
+      { data, count: totalCount, hasMore },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error in /api/listings/search:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

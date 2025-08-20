@@ -34,7 +34,19 @@ import { debounce } from "lodash";
 const formSchema = z.object({
   code: z.string().min(3, "Code must be at least 3 characters").max(50, "Code must be at most 50 characters").regex(/^[a-zA-Z0-9_]+$/, "Code can only contain letters, numbers, and underscores"),
   type: z.enum(["PERCENTAGE_DISCOUNT", "FIXED_AMOUNT_DISCOUNT", "EXTRA_LISTING_DAYS"]),
-  value: z.coerce.number().min(0, "Value must be non-negative"),
+  value: z.string()
+    .transform((val, ctx) => {
+      const num = Number(val);
+      if (isNaN(num)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Value must be a valid number",
+        });
+        return z.NEVER; // Indicate that transformation failed
+      }
+      return num;
+    })
+    .pipe(z.number().min(0, "Value must be non-negative")),
   expires_at: z.date().nullable().optional(),
   max_uses: z.coerce.number().int().min(0, "Max uses must be non-negative").nullable().optional(),
   is_active: z.boolean().default(true),

@@ -43,7 +43,10 @@ export async function POST(request: NextRequest) {
         categories: filters?.categories || [],
         subcategories: filters?.subcategories || [],
         conditions: filters?.conditions || [],
-        priceRange: filters?.priceRange || {},
+        priceRange: {
+          min: filters?.priceRange?.min || 0,
+          max: filters?.priceRange?.max || 0,
+        },
         maxDistance: filters?.maxDistance,
         searchQuery: filters?.searchQuery,
       },

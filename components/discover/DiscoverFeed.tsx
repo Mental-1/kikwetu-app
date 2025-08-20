@@ -28,21 +28,26 @@ const DiscoverFeed = () => {
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const { listings: allListings, isLoading, error, hasNextPage, fetchListings, fetchNextPage } = useDiscoverStore();
 
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          fetchListings({ lat: position.coords.latitude, lon: position.coords.longitude });
+          const location = { lat: position.coords.latitude, lon: position.coords.longitude };
+          setUserLocation(location);
+          fetchListings(location);
         },
         (err) => {
           console.warn("Geolocation unavailable:", err);
+          setUserLocation(null);
           fetchListings(null); // Fetch without location
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
       );
     } else {
+      setUserLocation(null);
       fetchListings(null); // Fetch without location if geolocation is not supported
     }
   }, [fetchListings]);

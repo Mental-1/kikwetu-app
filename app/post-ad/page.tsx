@@ -1225,8 +1225,8 @@ function MediaUploadStep({
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
   const tierLimits = {
-    free: { images: 2, videos: 0 },
-    basic: { images: 4, videos: 0 },
+    free: { images: 6, videos: 0 },
+    basic: { images: 8, videos: 0 },
     premium: { images: 10, videos: 2 },
     enterprise: { images: 10, videos: 2 },
   };

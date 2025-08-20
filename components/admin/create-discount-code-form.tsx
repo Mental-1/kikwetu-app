@@ -36,7 +36,7 @@ const formSchema = z.object({
   type: z.enum(["PERCENTAGE_DISCOUNT", "FIXED_AMOUNT_DISCOUNT", "EXTRA_LISTING_DAYS"]),
   value: z.preprocess(
     (val) => (val === "" ? NaN : Number(val)),
-    z.number({ required_error: "Value is required." }).min(0, "Value must be non-negative")
+    z.number().min(0, "Value must be non-negative")
   ),
   expires_at: z.date().nullable().optional(),
   max_uses: z.coerce.number().int().min(0, "Max uses must be non-negative").nullable().optional(),

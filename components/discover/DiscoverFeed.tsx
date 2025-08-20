@@ -96,7 +96,7 @@ const DiscoverFeed = () => {
     scrollTimeoutRef.current = setTimeout(() => {
       setIsScrolling(false);
     }, 150);
-  }, [activeIndex, allListings.length, hasNextPage, fetchNextPage]); // Removed isScrolling from dependencies
+  }, [activeIndex, allListings.length, hasNextPage, fetchNextPage, userLocation]); // Removed isScrolling from dependencies
 
   const debouncedHandleScroll = useMemo(
     () => debounce(handleScroll, 50),

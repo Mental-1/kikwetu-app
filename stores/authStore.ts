@@ -28,7 +28,7 @@ type AuthState = {
   mfaRequired: boolean;
   challengeId: string | null;
   factorId: string | null;
-  login: (email, password) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (redirectTo?: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;

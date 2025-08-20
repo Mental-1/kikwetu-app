@@ -311,7 +311,7 @@ export default function PostAdPage() {
     if (!currentTransactionId) return;
 
     const supabase = getSupabaseClient();
-    
+
     const channel = supabase
       .channel(`transactions:id=eq.${currentTransactionId}`)
       .on(
@@ -338,24 +338,24 @@ export default function PostAdPage() {
 
             if (newStatus === "completed") {
               logger.info('Payment completed, checking listing status...');
-              
+
               // Check if listing activation is needed (edge case handling)
               try {
                 let listing, listingError;
                 let retries = 3;
-                
+
                 while (retries > 0) {
                   const result = await supabase
                     .from('listings')
                     .select('status, payment_status, activated_at')
                     .eq('id', pendingListingId)
                     .single();
-                  
+
                   listing = result.data;
                   listingError = result.error;
-                  
+
                   if (!listingError) break;
-                  
+
                   retries--;
                   if (retries > 0) {
                     logger.warn(`Retrying listing status check, ${retries} attempts remaining`);
@@ -380,7 +380,7 @@ export default function PostAdPage() {
                 // Only activate if backend hasn't already done it (edge case)
                 if (listing?.status !== 'active' || listing?.payment_status !== 'paid') {
                   logger.info('Listing not yet activated by backend, calling frontend activation...');
-                  
+
                   // Set timeout for activation to prevent hanging
                   const timeoutPromise = new Promise<never>((_, reject) =>
                     setTimeout(() => reject(new Error(`Listing activation timeout after ${LISTING_ACTIVATION_TIMEOUT_MS / 1000} seconds`)), LISTING_ACTIVATION_TIMEOUT_MS)
@@ -401,14 +401,14 @@ export default function PostAdPage() {
                   listingId: pendingListingId,
                   timestamp: new Date().toISOString()
                 });
-                
+
                 // Don't prevent success flow - backend likely already handled it
                 logger.info('Continuing with success flow despite activation error (backend likely already handled)');
               }
 
               // Always show success message and redirect (even if activation had issues)
               logger.info('Showing success toast and redirecting...');
-              
+
               toast({
                 title: "Payment Confirmed",
                 description: "Your payment has been processed and your ad is now live!",
@@ -429,7 +429,7 @@ export default function PostAdPage() {
 
             } else if (newStatus === "failed" || newStatus === "cancelled") {
               logger.info({ status: newStatus }, 'Payment failed or cancelled');
-              
+
               toast({
                 title: "Payment Failed",
                 description: "Your payment was not successful. Please try again.",
@@ -483,7 +483,7 @@ export default function PostAdPage() {
 
     const supabase = getSupabaseClient();
     logger.info('Starting polling backup for transaction status...');
-    
+
     const pollInterval = setInterval(async () => {
       try {
         const { data: transaction, error } = await supabase
@@ -642,7 +642,7 @@ export default function PostAdPage() {
         const paymentResult = await processPayment(
           selectedTier,
           formData.paymentMethod,
-          appliedDiscount, // Pass appliedDiscount here
+          appliedDiscount,
         );
 
         if (!paymentResult || !paymentResult.success) {
@@ -681,7 +681,7 @@ export default function PostAdPage() {
     }
   };
 
-  const processPayment = async (tier: Plan, paymentMethod: string, appliedDiscount: { type: string; value: number; code_id: number } | null) => {
+  const processPayment = async (tier: Plan, paymentMethod: string, appliedDiscount: { type: string; value: number; code_id: string } | null) => {
     if (!pendingListingId) {
       return { success: false, error: "No listing ID found." };
     }
@@ -703,7 +703,7 @@ export default function PostAdPage() {
       email: formData.email,
       description: `Kikwetu Listing - ${tier.name} Plan`,
       listingId: pendingListingId,
-      discountCodeId: appliedDiscount?.code_id, // Pass the applied discount code ID
+      discountCodeId: appliedDiscount?.code_id ? Number(appliedDiscount.code_id) : undefined, // Pass the applied discount code ID
     };
 
     let endpoint = "";
@@ -1365,7 +1365,7 @@ function PaymentMethodStep({
   showSupportDetails: boolean;
   onRetryPayment: () => void;
   isModalOpen: boolean;
-  setIsModalOpen: Dispatch<SetStateAction<boolean>>; 
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>;
 }) {
   const { formData, updateFormData, discountCodeInput, setDiscountCodeInput, appliedDiscount, setAppliedDiscount, discountMessage, setDiscountMessage } = usePostAdStore();
   const [showDiscountCodeSection, setShowDiscountCodeSection] = useState(false);
@@ -1435,7 +1435,6 @@ function PaymentMethodStep({
         variant: "destructive",
       });
     }
-  };
   };
 
   if (selectedTier.price === 0) {

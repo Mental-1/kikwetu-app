@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           min: filters?.priceRange?.min || 0,
           max: filters?.priceRange?.max || 0,
         },
-        maxDistance: filters?.maxDistance,
+        maxDistance: filters?.maxDistance || 25,
         searchQuery: filters?.searchQuery,
       },
     });

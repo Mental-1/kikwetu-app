@@ -36,7 +36,7 @@ const formSchema = z.object({
   type: z.enum(["PERCENTAGE_DISCOUNT", "FIXED_AMOUNT_DISCOUNT", "EXTRA_LISTING_DAYS"]),
   value: z.number().min(0, "Value must be non-negative"),
   expires_at: z.date().nullable().optional(),
-  max_uses: z.coerce.number().int().min(0, "Max uses must be non-negative").nullable().optional(),
+  max_uses: z.number().int().min(0, "Max uses must be non-negative").nullable().optional(),
   is_active: z.boolean(),
   created_by_user_id: z.string().uuid("Invalid user ID").nullable().optional(),
 });
@@ -320,7 +320,16 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
             <FormItem>
               <FormLabel>Max Uses (Optional)</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 100 (leave blank for unlimited)" {...field} className="rounded-lg" />
+                <Input
+                  type="number"
+                  placeholder="e.g., 100 (leave blank for unlimited)"
+                  {...field}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    field.onChange(value === "" ? null : Number(value));
+                  }}
+                  className="rounded-lg"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

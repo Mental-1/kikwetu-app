@@ -176,6 +176,7 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
       setSelectedUser(null);
       setUserSearchInput("");
       setUserSearchTerm("");
+      return;
     }
   }, [initialData, form]);
 

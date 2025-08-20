@@ -37,7 +37,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
     set({ isLoading: true, isFetchingNextPage: false, error: null });
     try {
       const currentPage = refresh ? 1 : get().page;
-      const { data, hasNextPage } = await getFilteredListingsAction({
+      const { data, hasMore } = await getFilteredListingsAction({
         page: currentPage,
         pageSize: 20, // Increased page size
         filters: get().filters,
@@ -47,7 +47,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
 
       set((state) => ({
         listings: refresh ? data : [...state.listings, ...data],
-        hasNextPage: hasNextPage,
+        hasNextPage: hasMore,
         page: currentPage + 1,
         isLoading: false,
       }));
@@ -60,7 +60,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
     if (!get().hasNextPage || get().isLoading || get().isFetchingNextPage) return;
     set({ isFetchingNextPage: true });
     try {
-      const { data, hasNextPage } = await getFilteredListingsAction({
+      const { data, hasMore } = await getFilteredListingsAction({
         page: get().page,
         pageSize: 20,
         filters: get().filters,
@@ -70,7 +70,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
 
       set((state) => ({
         listings: [...state.listings, ...data],
-        hasNextPage: hasNextPage,
+        hasNextPage: hasMore,
         page: state.page + 1,
         isFetchingNextPage: false,
       }));

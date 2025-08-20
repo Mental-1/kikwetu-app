@@ -276,32 +276,34 @@ const FeedItem: React.FC<{ item: FeedMedia }> = ({ item }) => {
     >
       {/* Background media */}
       {item.type === "video" ? (
-        <video
-          ref={videoRef}
-          className="absolute inset-0 h-full w-full object-contain md:rounded-xl"
-          src={item.src}
-          poster={item.poster}
-          playsInline
-          muted
-          loop
-          autoPlay
-          onClick={() => {
-            if (videoRef.current) {
-              if (videoRef.current.paused) {
-                videoRef.current.play();
-                setIsVideoPaused(false);
-              } else {
-                videoRef.current.pause();
-                setIsVideoPaused(true);
+        <>
+          <video
+            ref={videoRef}
+            className="absolute inset-0 h-full w-full object-contain md:rounded-xl"
+            src={item.src}
+            poster={item.poster}
+            playsInline
+            muted
+            loop
+            autoPlay
+            onClick={() => {
+              if (videoRef.current) {
+                if (videoRef.current.paused) {
+                  videoRef.current.play();
+                  setIsVideoPaused(false);
+                } else {
+                  videoRef.current.pause();
+                  setIsVideoPaused(true);
+                }
               }
-            }
-          }}
-        />
-        {item.type === "video" && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            {isVideoPaused && <span className="rounded bg-black/60 px-3 py-1 text-white text-sm">Paused</span>}
-          </div>
-        )}
+            }}
+          />
+          {item.type === "video" && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              {isVideoPaused && <span className="rounded bg-black/60 px-3 py-1 text-white text-sm">Paused</span>}
+            </div>
+          )}
+        </>
       ) : item.gallery && item.gallery.length > 0 ? (
         <div
           className="absolute inset-0 h-full w-full overflow-hidden md:rounded-xl z-[15]"

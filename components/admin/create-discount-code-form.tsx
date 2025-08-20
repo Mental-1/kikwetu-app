@@ -324,6 +324,7 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
                   type="number"
                   placeholder="e.g., 100 (leave blank for unlimited)"
                   {...field}
+                  value={field.value ?? ""}
                   onChange={(e) => {
                     const value = e.target.value;
                     field.onChange(value === "" ? null : Number(value));

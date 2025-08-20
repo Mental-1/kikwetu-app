@@ -29,7 +29,7 @@ const DiscoverFeed = () => {
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const { listings: allListings, isLoading, error, hasNextPage, fetchListings, fetchNextPage } = useDiscoverStore();
+  const { listings: allListings, isLoading, isFetchingNextPage, error, hasNextPage, fetchListings, fetchNextPage } = useDiscoverStore();
 
   useEffect(() => {
     if (navigator.geolocation) {

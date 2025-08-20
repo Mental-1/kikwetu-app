@@ -8,6 +8,7 @@ interface DiscoverState {
   filters: any; // Define a more specific type for filters later
   activeItemIndex: number;
   isLoading: boolean;
+  isFetchingNextPage: boolean;
   error: string | null;
   hasNextPage: boolean;
   page: number;
@@ -23,6 +24,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
   filters: DEFAULT_FILTERS,
   activeItemIndex: 0,
   isLoading: false,
+  isFetchingNextPage: false,
   error: null,
   hasNextPage: true,
   page: 1,
@@ -32,7 +34,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
   setActiveItemIndex: (index) => set({ activeItemIndex: index }),
 
   fetchListings: async (userLocation, refresh = false) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, isFetchingNextPage: false, error: null });
     try {
       const currentPage = refresh ? 1 : get().page;
       const { data, hasNextPage } = await getFilteredListingsAction({
@@ -55,8 +57,8 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
   },
 
   fetchNextPage: async (userLocation) => {
-    if (!get().hasNextPage || get().isLoading) return;
-    set({ isLoading: true });
+    if (!get().hasNextPage || get().isLoading || get().isFetchingNextPage) return;
+    set({ isFetchingNextPage: true });
     try {
       const { data, hasNextPage } = await getFilteredListingsAction({
         page: get().page,
@@ -70,10 +72,10 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
         listings: [...state.listings, ...data],
         hasNextPage: hasNextPage,
         page: state.page + 1,
-        isLoading: false,
+        isFetchingNextPage: false,
       }));
     } catch (err: any) {
-      set({ error: err.message || "Failed to fetch more listings", isLoading: false });
+      set({ error: err.message || "Failed to fetch more listings", isFetchingNextPage: false });
     }
   },
 }));

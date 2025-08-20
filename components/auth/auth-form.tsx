@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuthStore } from "@/stores/authStore";
+import { getSupabaseClient } from "@/utils/supabase/client";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -193,6 +194,7 @@ export function AuthForm() {
     try {
       // Sign up the user with metadata
       const referrerCode = localStorage.getItem("referrer_code");
+      const supabase = getSupabaseClient();
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,

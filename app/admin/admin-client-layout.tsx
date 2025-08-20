@@ -36,7 +36,7 @@ export default function AdminClientLayout({ children, user }: { children: React.
     if (user?.id !== useAuthStore.getState().user?.id) {
       setUser(user);
     }
-  }, [user?.id, setUser]);
+  }, [user, setUser]);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">

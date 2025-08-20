@@ -177,7 +177,7 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
       setUserSearchInput("");
       setUserSearchTerm("");
     }
-  }, [initialData?.created_by_user_id, form]);
+  }, [initialData, form]);
 
   const [userSearchInput, setUserSearchInput] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");

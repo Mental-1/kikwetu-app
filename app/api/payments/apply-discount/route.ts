@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/utils/supabase/server';
 import { z } from 'zod';
-import { generalApiLimiter, getClientIdentifier } from '@/utils/rate-limiting'; // Import rate limiter
+import { generalApiLimiter, getClientIdentifier } from '@/utils/rate-limiting';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   // Apply rate limiting
   const identifier = getClientIdentifier(request);
   const { allowed, remaining, resetTime } = generalApiLimiter.check(identifier);

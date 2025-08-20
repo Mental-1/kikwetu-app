@@ -42,6 +42,23 @@ const nextConfig = {
     ],
   },
 
+const supabaseHost =
+  (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://cvnertrkcwjjdrnnjswk.supabase.co")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
+const supabaseOrigin = `https://${supabaseHost}`;
+
+const csp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  `img-src 'self' data: ${supabaseOrigin}`,
+  `font-src 'self' data:`, 
+  `connect-src 'self' https://api.routteme.com ${supabaseOrigin}`,
+  "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
+  "frame-ancestors 'self' https://www.facebook.com https://www.instagram.com https://www.tiktok.com https://twitter.com",
+].join("; ");
+
   async headers() {
     return [
       {
@@ -76,20 +93,7 @@ const nextConfig = {
             key: "Access-Control-Allow-Headers",
             value: "Content-Type, Authorization",
           },
-          const supabaseHost =
-  (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://cvnertrkcwjjdrnnjswk.supabase.co")
-    .replace(/^https?:
-
-const csp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: ${supabaseOrigin}`,
-  `font-src 'self' data:`, 
-  `connect-src 'self' https://api.routteme.com ${supabaseOrigin}`,
-  "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
-  "frame-ancestors 'self' https://www.facebook.com https://www.instagram.com https://www.tiktok.com https://twitter.com",
-].join("; ");
+          
 
           {
             key: "Content-Security-Policy",

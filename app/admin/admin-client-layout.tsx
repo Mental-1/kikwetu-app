@@ -9,15 +9,10 @@ import {
   List,
   DollarSign,
   ChevronLeft,
-  Gift // Added Gift icon
+  Gift
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-
-interface MinimalUser {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-}
+import { User } from "@supabase/supabase-js";
 
 const navItems = [
   { href: "/admin", label: "Site Growth", icon: LayoutDashboard },
@@ -28,7 +23,7 @@ const navItems = [
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
 ];
 
-export default function AdminClientLayout({ children, user }: { children: React.ReactNode, user: MinimalUser | null }) {
+export default function AdminClientLayout({ children, user }: { children: React.ReactNode, user: User | null }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { setUser } = useAuthStore();
 

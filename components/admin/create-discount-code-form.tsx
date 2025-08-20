@@ -113,8 +113,10 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
 
   // Effect to fetch user details when editing an existing discount code
   useEffect(() => {
+    let controller: AbortController | undefined;
+
     if (initialData?.created_by_user_id) {
-      const controller = new AbortController();
+      controller = new AbortController();
       const signal = controller.signal;
 
       const fetchUser = async () => {
@@ -167,17 +169,18 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
       };
 
       fetchUser();
-
-      return () => {
-        controller.abort();
-      };
     } else if (!initialData) {
       // If initialData becomes null (e.g., switching to create mode)
       setSelectedUser(null);
       setUserSearchInput("");
       setUserSearchTerm("");
-      return;
     }
+
+    return () => {
+      if (controller) {
+        controller.abort();
+      }
+    };
   }, [initialData, form]);
 
   const [userSearchInput, setUserSearchInput] = useState("");

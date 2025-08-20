@@ -68,8 +68,7 @@ import { AuthState, useAuthStore } from "@/stores/authStore";
 
 export default function SettingsPage() {
   const { user, isUserLoading } = useAuthStore(
-    (s: AuthState) => ({ user: s.user, isUserLoading: s.loading }),
-    shallow
+    (s: AuthState) => ({ user: s.user, isUserLoading: s.loading })
   );
   const queryClient = useQueryClient();
   const router = useRouter();

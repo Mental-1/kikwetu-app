@@ -73,7 +73,7 @@ export function CreateDiscountCodeForm({ onSuccess, initialData }: CreateDiscoun
     defaultValues: {
       code: "",
       type: "PERCENTAGE_DISCOUNT",
-      value: 0,
+      value: 0 as number,
       expires_at: null,
       max_uses: null,
       is_active: true,

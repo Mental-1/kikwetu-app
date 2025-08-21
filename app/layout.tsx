@@ -1,4 +1,7 @@
+"use client";
+
 import React, { Suspense } from "react";
+import { usePathname } from "next/navigation";
 import type { Metadata } from "next";
 import { Lato } from "next/font/google";
 import "./globals.css";
@@ -38,6 +41,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isDiscoverRoute = pathname.startsWith("/discover");
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={lato.className}>
@@ -55,7 +61,7 @@ export default function RootLayout({
             >
               <PostHogAuthWrapper>
                 <div className="flex min-h-screen flex-col">
-                  <Navigation />
+                  {!isDiscoverRoute && <Navigation />}
                   <main className="flex-1">
                     {/* Add error boundary for React Query errors */}
                     <Suspense
@@ -68,7 +74,7 @@ export default function RootLayout({
                       {children}
                     </Suspense>
                   </main>
-                  <Footer />
+                  {!isDiscoverRoute && <Footer />}
                 </div>
                 <Toaster />
                 <BottomNavBar />

@@ -1,15 +1,8 @@
-"use client";
-
 import React, { Suspense } from "react";
-import { usePathname } from "next/navigation";
 import type { Metadata } from "next";
 import { Lato } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-
-import Navigation from "@/components/navigation";
-import { Footer } from "@/components/footer";
-import { Toaster } from "@/components/ui/toaster";
 import ReactQueryClientProvider from "@/components/reactQueryClientProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider } from "./providers";
@@ -17,8 +10,8 @@ import {
   PostHogPageview,
   PostHogAuthWrapper,
 } from "@/components/posthog-provider";
-import BottomNavBar from "@/components/bottom-nav";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
+import { ConditionalLayout } from "@/components/layout/conditional-layout";
 
 const lato = Lato({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -41,9 +34,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
-  const isDiscoverRoute = pathname.startsWith("/discover");
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={lato.className}>
@@ -60,24 +50,17 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               <PostHogAuthWrapper>
-                <div className="flex min-h-screen flex-col">
-                  {!isDiscoverRoute && <Navigation />}
-                  <main className="flex-1">
-                    {/* Add error boundary for React Query errors */}
-                    <Suspense
-                      fallback={
-                        <div className="flex items-center justify-center min-h-[400px]">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        </div>
-                      }
-                    >
-                      {children}
-                    </Suspense>
-                  </main>
-                  {!isDiscoverRoute && <Footer />}
-                </div>
-                <Toaster />
-                <BottomNavBar />
+                <ConditionalLayout>
+                  <Suspense
+                    fallback={
+                      <div className="flex items-center justify-center min-h-[400px]">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    }
+                  >
+                    {children}
+                  </Suspense>
+                </ConditionalLayout>
               </PostHogAuthWrapper>
             </ThemeProvider>
           </ReactQueryClientProvider>

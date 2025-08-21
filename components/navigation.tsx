@@ -162,8 +162,9 @@ export default function Navigation() {
   const MobileUserMenu = () => {
     if (!user) {
       return (
-        <Button variant="ghost" size="icon" aria-label="Open user menu" onClick={() => router.push('/auth')}>
+        <Button variant="ghost" size="icon" aria-label="Open user menu" onClick={() => router.push('/auth')} className="flex flex-col h-full">
             <User className="h-5 w-5" />
+            <span className="text-xs">Register</span>
         </Button>
       )
     }

@@ -56,14 +56,28 @@ const ImageCarousel = ({ images }: ImageCarouselProps) => {
   }
 
   if (images.length === 1) {
+    const isVideo = (url: string) => {
+      const videoExtensions = ['.mp4', '.mov', '.webm', '.ogg'];
+      return videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
+    };
+
     return (
       <div className="relative w-full h-full">
-        <Image
-          src={images[0]}
-          alt="Listing image"
-          fill
-          style={{objectFit: "cover"}}
-        />
+        {isVideo(images[0]) ? (
+          <video
+            src={images[0]}
+            controls
+            className="w-full h-full object-cover"
+            preload="metadata"
+          />
+        ) : (
+          <Image
+            src={images[0]}
+            alt="Listing image"
+            fill
+            style={{objectFit: "cover"}}
+          />
+        )}
       </div>
     );
   }
@@ -72,16 +86,32 @@ const ImageCarousel = ({ images }: ImageCarouselProps) => {
     <div className="relative w-full h-full">
       <div className="overflow-hidden h-full" ref={emblaRef}>
         <div className="flex h-full">
-          {images.map((src, index) => (
-            <div className="relative flex-[0_0_100%] h-full" key={index}>
-              <Image
-                src={src}
-                alt={`Listing image ${index + 1}`}
-                fill
-                style={{objectFit: "cover"}}
-              />
-            </div>
-          ))}
+          {images.map((src, index) => {
+            const isVideo = (url: string) => {
+              const videoExtensions = ['.mp4', '.mov', '.webm', '.ogg'];
+              return videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
+            };
+
+            return (
+              <div className="relative flex-[0_0_100%] h-full" key={index}>
+                {isVideo(src) ? (
+                  <video
+                    src={src}
+                    controls
+                    className="w-full h-full object-cover"
+                    preload="metadata" // Load metadata to show first frame
+                  />
+                ) : (
+                  <Image
+                    src={src}
+                    alt={`Listing image ${index + 1}`}
+                    fill
+                    style={{objectFit: "cover"}}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

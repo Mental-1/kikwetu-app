@@ -1,10 +1,10 @@
 
-import { createClient } from '@/utils/supabase/server';
+import { getSupabaseServer } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { PricingTable } from '@/components/pricing-table';
 
 export default async function SubscribePage() {
-  const supabase = createClient();
+  const supabase = await getSupabaseServer();
 
   const { data: { session } } = await supabase.auth.getSession();
 

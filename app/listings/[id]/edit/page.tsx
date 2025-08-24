@@ -219,7 +219,7 @@ export default function EditListingPage() {
         toast({
           title: "Error",
           description:
-            "Listing not found or you don't have permission to edit it.",
+            "Listing not found or you don&apos;t have permission to edit it.",
           variant: "destructive",
         });
         router.push("/dashboard/listings");

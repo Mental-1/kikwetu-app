@@ -20,7 +20,7 @@ export async function getSupabaseServer(): Promise<SupabaseClient<Schema>> {
     throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
   }
 
-  const client = createServerClient(
+  const client = createServerClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
     {
@@ -56,7 +56,7 @@ export async function getSupabaseRouteHandler(
     throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
   }
 
-  const client = createServerClient(
+  const client = createServerClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
     {
@@ -78,7 +78,7 @@ export function getSupabaseMiddleware(request: Request): {
   response: Response;
 } {
   const response = new Response();
-  const client = createServerClient(
+  const client = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -118,7 +118,7 @@ export function getSupabaseServiceRole(): SupabaseClient<Schema> {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
   }
-  const client = createServerClient(
+  const client = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {

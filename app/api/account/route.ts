@@ -19,6 +19,7 @@ const accountSchema = z.object({
   phone_number: z.string().regex(phoneRegex, "Invalid phone number").optional(),
   location: z.string().optional(),
   website: z.string().url("Invalid URL").optional(),
+  avatar_url: z.string().url("Invalid URL").optional(),
 });
 
 async function getUserId(supabase: SupabaseClient<Schema>) {

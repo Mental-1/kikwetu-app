@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
+
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -231,7 +233,7 @@ export default function Navigation() {
         </nav>
       </div>
       <div className="hidden md:flex items-center gap-4">
-        <ThemeToggle />
+        <NotificationDropdown />
         {user ? (
           <Button variant="default" onClick={() => router.push("/post-ad")}>
             Post Ad
@@ -240,7 +242,7 @@ export default function Navigation() {
         <UserMenu />
       </div>
       <div className="flex md:hidden items-center gap-4">
-        <ThemeToggle />
+        <NotificationDropdown />
         <MobileUserMenu />
       </div>
     </div>

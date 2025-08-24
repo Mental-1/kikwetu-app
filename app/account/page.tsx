@@ -39,7 +39,7 @@ import { deleteAccount } from "./actions/delete-account";
 import { updateAccount } from "./actions/update-account";
 import { updatePassword } from "./actions/update-password";
 import { updateEmail } from "./actions/update-email";
-import { updateAvatarUrl } from "./actions/update-avatar-url";
+
 import { enable2FA, disable2FA, verify2FA } from "./actions/2fa";
 import { getTwoFaInProgressStatus } from "./actions/2fa-status";
 import { useFileUpload } from "@/hooks/useFileUpload";
@@ -98,6 +98,7 @@ interface FormData {
   phone_number: string | null;
   location: string | null;
   website: string | null;
+  avatar_url: string | null;
 }
 
 function AccountDetails() {
@@ -234,14 +235,13 @@ function AccountDetails() {
       const file = event.target.files[0];
       const result = await uploadFile(file);
       if (result?.url && user) {
-        await updateAvatarUrl(user.id, result.url);
-        await queryClient.invalidateQueries({
-          queryKey: ["accountData", user.id],
-        });
-        await fetchProfile(user);
+        setFormData((prev: any) => ({
+          ...prev,
+          avatar_url: result.url,
+        }));
         toast({
-          title: "Profile picture updated",
-          description: "Your profile picture has been successfully updated.",
+          title: "Avatar changed",
+          description: "Click 'Save Changes' to apply the new avatar.",
         });
       } else {
         toast({
@@ -442,6 +442,7 @@ function AccountDetails() {
                     <Avatar className="h-24 w-24">
                       <AvatarImage
                         src={
+                          formData?.avatar_url ||
                           user?.user_metadata?.avatar_url ||
                           "/placeholder.svg?height=96&width=96"
                         }

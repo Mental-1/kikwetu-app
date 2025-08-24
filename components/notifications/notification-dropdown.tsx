@@ -39,10 +39,7 @@ const NotificationSchema = z.object({
 
 type Notification = z.infer<typeof NotificationSchema>;
 
-interface NotificationDropdownProps {
-  unreadCount: number;
-  setUnreadCountAction: (count: number) => void;
-}
+
 
 /**
  * Displays a dropdown menu for user notifications with options to view, mark as read, and delete notifications.
@@ -52,16 +49,35 @@ interface NotificationDropdownProps {
  * @param unreadCount - The current number of unread notifications to display in the badge.
  * @param setUnreadCountAction - Callback to update the unread notification count externally.
  */
-export function NotificationDropdown({
-  unreadCount,
-  setUnreadCountAction,
-}: NotificationDropdownProps) {
+export function NotificationDropdown() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { toast } = useToast();
 
   const supabase = getSupabaseClient();
+
+  const fetchUnreadCount = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { count, error } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+
+      if (error) {
+        console.error("Error fetching unread notification count:", error);
+      } else {
+        setUnreadCount(count || 0);
+      }
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -112,7 +128,7 @@ export function NotificationDropdown({
         ),
       );
 
-      setUnreadCountAction(Math.max(0, unreadCount - 1));
+      fetchUnreadCount();
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -127,7 +143,7 @@ export function NotificationDropdown({
       setNotifications((prev) =>
         prev.map((notif) => ({ ...notif, read: true })),
       );
-      setUnreadCountAction(0);
+      fetchUnreadCount();
 
       toast({
         title: "Success",
@@ -158,7 +174,7 @@ export function NotificationDropdown({
       );
 
       if (notification && !notification.read) {
-        setUnreadCountAction(Math.max(0, unreadCount - 1));
+        fetchUnreadCount();
       }
     } catch (error) {
       console.error("Error deleting notification:", error);

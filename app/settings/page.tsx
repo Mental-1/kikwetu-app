@@ -30,6 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2, ChevronLeft } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 import { shallow } from "zustand/shallow";
 import Link from "next/link";
@@ -587,6 +588,10 @@ export default function SettingsPage() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Theme</Label>
+                  <ThemeToggle />
                 </div>
               </div>
             </CardContent>

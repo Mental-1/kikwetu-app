@@ -152,25 +152,15 @@ export async function POST(req: NextRequest) {
 
     const { notifications, privacy, preferences } = validatedSettings;
 
+    const updateData = {
+        ...notifications,
+        ...privacy,
+        ...preferences,
+    };
+
     const { data, error } = await supabase
       .from("profiles")
-      .update({
-        email_notifications: notifications.email_notifications,
-        push_notifications: notifications.push_notifications,
-        sms_notifications: notifications.sms_notifications,
-        marketing_emails: notifications.marketing_emails,
-        new_messages: notifications.new_messages,
-        listing_updates: notifications.listing_updates,
-        price_alerts: notifications.price_alerts,
-        profile_visibility: privacy.profile_visibility,
-        show_phone: privacy.show_phone,
-        show_email: privacy.show_email,
-        show_last_seen: privacy.show_last_seen,
-        language: preferences.language,
-        currency: preferences.currency,
-        timezone: preferences.timezone,
-        theme: preferences.theme,
-      })
+      .update(updateData)
       .eq("id", userId);
 
     if (error) {
@@ -220,9 +210,9 @@ export async function PATCH(req: NextRequest) {
     const validatedSettings = settingsSchema.partial().parse(body);
 
     const updateData = {
-      ...validatedSettings.notifications,
-      ...validatedSettings.privacy,
-      ...validatedSettings.preferences,
+      ...(validatedSettings.notifications && { ...validatedSettings.notifications }),
+      ...(validatedSettings.privacy && { ...validatedSettings.privacy }),
+      ...(validatedSettings.preferences && { ...validatedSettings.preferences }),
     };
 
     const { data, error } = await supabase

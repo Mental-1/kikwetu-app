@@ -31,6 +31,7 @@ export function PlanUpgradeModal({
 
   const currentPrice = isAnnual ? selectedPlan.annualPrice : selectedPlan.monthlyPrice;
   const savings = Math.round(((selectedPlan.monthlyPrice * 12 - selectedPlan.annualPrice) / (selectedPlan.monthlyPrice * 12)) * 100);
+  const periodText = isAnnual ? 'year' : 'month';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -54,7 +55,7 @@ export function PlanUpgradeModal({
           <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg border">
             <div className="flex items-baseline justify-center gap-2 mb-2">
               <span className="text-3xl font-bold text-foreground">KES {currentPrice.toLocaleString()}</span>
-              <span className="text-muted-foreground">/{isAnnual ? &apos;year&apos; : &apos;month&apos;}</span>
+              <span className="text-muted-foreground">/{periodText}</span>
             </div>
             
             {isAnnual && savings > 0 && (

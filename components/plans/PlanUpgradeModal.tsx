@@ -67,7 +67,7 @@ export function PlanUpgradeModal({
 
           {/* Features List */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-sm text-foreground">What's included:</h4>
+            <h4 className="font-semibold text-sm text-foreground">What&apos;s included:</h4>
             <ul className="space-y-2">
               {selectedPlan.features.map((feature, index) => (
                 <li key={index} className="flex items-start gap-3">

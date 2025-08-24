@@ -489,7 +489,7 @@ export function AuthForm() {
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
           {authMode === "sign-in"
-            ? "Don't have an account? Switch to Sign Up"
+            ? "Don&apos;t have an account? Switch to Sign Up"
             : "Already have an account? Switch to Sign In"}
         </p>
       </CardFooter>

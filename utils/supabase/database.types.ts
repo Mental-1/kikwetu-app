@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -190,8 +190,62 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_reviews"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_seller_id_fkey"
             columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discount_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by_user_id: string | null
+          expires_at: string | null
+          id: number
+          is_active: boolean | null
+          max_uses: number | null
+          type: Database["public"]["Enums"]["discount_type"]
+          use_count: number | null
+          value: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by_user_id?: string | null
+          expires_at?: string | null
+          id?: number
+          is_active?: boolean | null
+          max_uses?: number | null
+          type: Database["public"]["Enums"]["discount_type"]
+          use_count?: number | null
+          value: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          expires_at?: string | null
+          id?: number
+          is_active?: boolean | null
+          max_uses?: number | null
+          type?: Database["public"]["Enums"]["discount_type"]
+          use_count?: number | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_codes_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -249,6 +303,39 @@ export type Database = {
           },
         ]
       }
+      followers: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followers_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followers_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geocoded_locations: {
         Row: {
           address: string
@@ -291,8 +378,52 @@ export type Database = {
         }
         Relationships: []
       }
+      likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          listing_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          listing_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          listing_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
+          activated_at: string | null
           category_id: number | null
           condition: string | null
           created_at: string | null
@@ -322,6 +453,7 @@ export type Database = {
           views: number | null
         }
         Insert: {
+          activated_at?: string | null
           category_id?: number | null
           condition?: string | null
           created_at?: string | null
@@ -351,6 +483,7 @@ export type Database = {
           views?: number | null
         }
         Update: {
+          activated_at?: string | null
           category_id?: number | null
           condition?: string | null
           created_at?: string | null
@@ -410,66 +543,12 @@ export type Database = {
           },
         ]
       }
-      messages: {
-        Row: {
-          content: string | null
-          created_at: string | null
-          id: string
-          listing_id: string | null
-          read: boolean | null
-          receiver_id: string | null
-          sender_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          listing_id?: string | null
-          read?: boolean | null
-          receiver_id?: string | null
-          sender_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          listing_id?: string | null
-          read?: boolean | null
-          receiver_id?: string | null
-          sender_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_receiver_id_fkey"
-            columns: ["receiver_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notifications: {
         Row: {
           created_at: string | null
           data: Json | null
           id: string
+          listing_id: string | null
           message: string
           read: boolean | null
           title: string
@@ -481,6 +560,7 @@ export type Database = {
           created_at?: string | null
           data?: Json | null
           id?: string
+          listing_id?: string | null
           message: string
           read?: boolean | null
           title: string
@@ -492,6 +572,7 @@ export type Database = {
           created_at?: string | null
           data?: Json | null
           id?: string
+          listing_id?: string | null
           message?: string
           read?: boolean | null
           title?: string
@@ -499,7 +580,22 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_listing_id"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_listing_id"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orphaned_callbacks: {
         Row: {
@@ -631,6 +727,7 @@ export type Database = {
           profile_visibility: string
           push_notifications: boolean
           rating: number
+          referral_code: string | null
           reviews_count: number
           role: Database["public"]["Enums"]["user_role"]
           show_email: boolean
@@ -675,6 +772,7 @@ export type Database = {
           profile_visibility?: string
           push_notifications?: boolean
           rating?: number
+          referral_code?: string | null
           reviews_count?: number
           role?: Database["public"]["Enums"]["user_role"]
           show_email?: boolean
@@ -719,6 +817,7 @@ export type Database = {
           profile_visibility?: string
           push_notifications?: boolean
           rating?: number
+          referral_code?: string | null
           reviews_count?: number
           role?: Database["public"]["Enums"]["user_role"]
           show_email?: boolean
@@ -734,35 +833,81 @@ export type Database = {
         }
         Relationships: []
       }
-      reviews: {
+      referral_codes_pool: {
         Row: {
-          comment: string
+          code: string
           created_at: string | null
-          id: string
-          rating: number
-          reviewer_id: string
-          seller_id: string
-          updated_at: string | null
+          id: number
+          used: boolean | null
+          used_at: string | null
+          used_by_user_id: string | null
         }
         Insert: {
-          comment: string
+          code: string
           created_at?: string | null
-          id?: string
-          rating: number
-          reviewer_id: string
-          seller_id: string
-          updated_at?: string | null
+          id?: number
+          used?: boolean | null
+          used_at?: string | null
+          used_by_user_id?: string | null
         }
         Update: {
-          comment?: string
+          code?: string
           created_at?: string | null
-          id?: string
-          rating?: number
-          reviewer_id?: string
-          seller_id?: string
-          updated_at?: string | null
+          id?: number
+          used?: boolean | null
+          used_at?: string | null
+          used_by_user_id?: string | null
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          rating: number
+          review: string | null
+          reviewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          rating: number
+          review?: string | null
+          reviewer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          rating?: number
+          review?: string | null
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_listings: {
         Row: {
@@ -789,6 +934,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_listings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_reviews"
             referencedColumns: ["id"]
           },
           {
@@ -832,17 +984,61 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          plan_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          plan_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          plan_id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
           checkout_request_id: string | null
           created_at: string
+          discount_code_id: number | null
           email: string | null
           id: string
           listing_id: string | null
           merchant_request_id: string | null
           payment_method: string
           phone_number: string | null
+          psp_event_id: string | null
+          psp_transaction_id: string | null
           reference: string | null
           status: string
           transaction_token: string | null
@@ -853,12 +1049,15 @@ export type Database = {
           amount: number
           checkout_request_id?: string | null
           created_at?: string
+          discount_code_id?: number | null
           email?: string | null
           id?: string
           listing_id?: string | null
           merchant_request_id?: string | null
           payment_method: string
           phone_number?: string | null
+          psp_event_id?: string | null
+          psp_transaction_id?: string | null
           reference?: string | null
           status?: string
           transaction_token?: string | null
@@ -869,12 +1068,15 @@ export type Database = {
           amount?: number
           checkout_request_id?: string | null
           created_at?: string
+          discount_code_id?: number | null
           email?: string | null
           id?: string
           listing_id?: string | null
           merchant_request_id?: string | null
           payment_method?: string
           phone_number?: string | null
+          psp_event_id?: string | null
+          psp_transaction_id?: string | null
           reference?: string | null
           status?: string
           transaction_token?: string | null
@@ -883,17 +1085,250 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "transactions_discount_code_id_fkey"
+            columns: ["discount_code_id"]
+            isOneToOne: false
+            referencedRelation: "discount_codes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "transactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_reviews"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      user_applied_codes: {
+        Row: {
+          applied_at: string
+          code_id: number
+          id: number
+          listing_id: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          code_id: number
+          id?: number
+          listing_id?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          code_id?: number
+          id?: number
+          listing_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_applied_codes_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "discount_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_applied_codes_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_applied_codes_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_applied_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_dead_letter_queue: {
+        Row: {
+          final_failure_reason: string | null
+          id: string
+          moved_at: string | null
+          original_event_id: string
+          reviewed: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+        }
+        Insert: {
+          final_failure_reason?: string | null
+          id?: string
+          moved_at?: string | null
+          original_event_id: string
+          reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Update: {
+          final_failure_reason?: string | null
+          id?: string
+          moved_at?: string | null
+          original_event_id?: string
+          reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          created_at: string
+          failure_reason: string | null
+          id: string
+          next_retry_at: string | null
+          payload: Json
+          psp: string
+          psp_event_id: string
+          retry_count: number
+          status: Database["public"]["Enums"]["webhook_event_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          next_retry_at?: string | null
+          payload: Json
+          psp: string
+          psp_event_id: string
+          retry_count?: number
+          status?: Database["public"]["Enums"]["webhook_event_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          psp?: string
+          psp_event_id?: string
+          retry_count?: number
+          status?: Database["public"]["Enums"]["webhook_event_status"]
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      listing_reviews_summary: {
+        Row: {
+          average_rating: number | null
+          listing_id: string | null
+          review_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_with_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listings_with_reviews: {
+        Row: {
+          average_rating: number | null
+          category_id: number | null
+          condition: string | null
+          created_at: string | null
+          description: string | null
+          expiry_date: string | null
+          featured: boolean | null
+          featured_tier: string | null
+          featured_until: string | null
+          id: string | null
+          images: string[] | null
+          latitude: number | null
+          location: string | null
+          location_geometry: unknown | null
+          longitude: number | null
+          payment_status: string | null
+          plan: string | null
+          plan_id: string | null
+          plan_name: string | null
+          price: number | null
+          review_count: number | null
+          search_vector: unknown | null
+          status: string | null
+          subcategory_id: number | null
+          tags: string[] | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+          views: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_profile"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_events_summary: {
+        Row: {
+          avg_retry_count: number | null
+          event_count: number | null
+          max_retry_count: number | null
+          newest_event: string | null
+          oldest_event: string | null
+          psp: string | null
+          status: Database["public"]["Enums"]["webhook_event_status"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_delete_listing: {
@@ -905,8 +1340,12 @@ export type Database = {
         Returns: boolean
       }
       can_feature_listing: {
-        Args: { user_uuid: string; listing_uuid: string }
+        Args: { listing_uuid: string; user_uuid: string }
         Returns: boolean
+      }
+      claim_next_referral_code: {
+        Args: { user_id: string }
+        Returns: string
       }
       cleanup_abandoned_transactions: {
         Args: Record<PropertyKey, never>
@@ -916,74 +1355,83 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_old_webhook_events: {
+        Args: { days_to_keep?: number }
+        Returns: number
+      }
       create_notification: {
         Args:
           | {
-              p_user_id: string
-              p_title: string
-              p_message: string
-              p_type: string
+              notification_data?: Json
+              notification_message: string
+              notification_title: string
+              notification_type: string
+              target_user_id: string
             }
           | {
-              target_user_id: string
-              notification_type: string
-              notification_title: string
-              notification_message: string
-              notification_data?: Json
+              p_message: string
+              p_title: string
+              p_type: string
+              p_user_id: string
             }
         Returns: undefined
       }
       delete_abandoned_listings: {
         Args: Record<PropertyKey, never>
         Returns: {
-          deleted_transactions: number
           deleted_listings: number
-          execution_time: unknown
+          deleted_transactions: number
           error_message: string
+          execution_time: unknown
         }[]
       }
       feature_listing: {
-        Args: { listing_uuid: string; duration_days?: number }
+        Args: { duration_days?: number; listing_uuid: string }
         Returns: boolean
+      }
+      generate_referral_codes_batch: {
+        Args: { batch_size?: number }
+        Returns: number
       }
       get_cleanup_stats: {
         Args: { days_back?: number }
         Returns: {
-          total_runs: number
-          successful_runs: number
-          failed_runs: number
-          total_transactions_deleted: number
-          total_listings_deleted: number
           avg_execution_time: unknown
-          last_successful_run: string
+          failed_runs: number
           last_failed_run: string
+          last_successful_run: string
+          successful_runs: number
+          total_listings_deleted: number
+          total_runs: number
+          total_transactions_deleted: number
         }[]
       }
       get_filtered_listings: {
         Args: {
+          p_categories?: number[]
+          p_conditions?: string[]
+          p_max_price?: number
+          p_min_price?: number
           p_page?: number
           p_page_size?: number
-          p_sort_by?: string
-          p_sort_order?: string
-          p_categories?: number[]
-          p_subcategories?: number[]
-          p_conditions?: string[]
-          p_min_price?: number
-          p_max_price?: number
-          p_user_latitude?: number
-          p_user_longitude?: number
           p_radius_km?: number
           p_search_query?: string
+          p_sort_by?: string
+          p_sort_order?: string
+          p_subcategories?: number[]
+          p_user_latitude?: number
+          p_user_longitude?: number
         }
         Returns: Json
       }
       get_listings_within_radius: {
         Args: {
+          radius_km: number
           user_latitude: number
           user_longitude: number
-          radius_km: number
         }
         Returns: {
+          activated_at: string | null
           category_id: number | null
           condition: string | null
           created_at: string | null
@@ -1015,12 +1463,23 @@ export type Database = {
       }
       get_or_create_conversation: {
         Args: {
-          p_listing_id: string
           p_buyer_id: string
-          p_seller_id: string
           p_encryption_key: string
+          p_listing_id: string
+          p_seller_id: string
         }
         Returns: string
+      }
+      get_referral_pool_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          available_codes: number
+          estimated_days_remaining: number
+          pool_status: string
+          total_codes: number
+          usage_rate_last_24h: number
+          used_codes: number
+        }[]
       }
       gtrgm_compress: {
         Args: { "": unknown }
@@ -1048,17 +1507,32 @@ export type Database = {
       }
       increment_listing_views: {
         Args: { listing_uuid: string }
+        Returns: number
+      }
+      insert_webhook_event: {
+        Args: { p_payload: Json; p_psp: string; p_psp_event_id: string }
+        Returns: string
+      }
+      maintain_referral_codes_pool: {
+        Args: Record<PropertyKey, never>
         Returns: {
-          views: number
+          action: string
+          codes_generated: number
+          pool_health: string
+          total_available: number
         }[]
+      }
+      manage_webhook_workers: {
+        Args: { action?: string }
+        Returns: string
       }
       manual_cleanup_abandoned_listings: {
         Args: { confirm_deletion?: boolean }
         Returns: {
-          deleted_transactions: number
           deleted_listings: number
-          execution_time: unknown
+          deleted_transactions: number
           error_message: string
+          execution_time: unknown
         }[]
       }
       mark_all_notifications_as_read: {
@@ -1068,6 +1542,14 @@ export type Database = {
       mark_notification_as_read: {
         Args: { notification_id: string }
         Returns: boolean
+      }
+      process_webhook_events: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      refresh_listing_reviews_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       renew_listing: {
         Args: { listing_id: string; plan_id: string }
@@ -1091,19 +1573,19 @@ export type Database = {
       }
       search_listings_with_fuzzy: {
         Args: {
+          p_categories?: number[]
+          p_conditions?: string[]
+          p_max_price?: number
+          p_min_price?: number
           p_page?: number
           p_page_size?: number
-          p_sort_by?: string
-          p_sort_order?: string
-          p_categories?: number[]
-          p_subcategories?: number[]
-          p_conditions?: string[]
-          p_min_price?: number
-          p_max_price?: number
-          p_user_latitude?: number
-          p_user_longitude?: number
           p_radius_km?: number
           p_search_query?: string
+          p_sort_by?: string
+          p_sort_order?: string
+          p_subcategories?: number[]
+          p_user_latitude?: number
+          p_user_longitude?: number
         }
         Returns: Json
       }
@@ -1119,14 +1601,50 @@ export type Database = {
         Args: { "": string }
         Returns: string[]
       }
+      show_webhook_jobs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active: boolean
+          command: string
+          jobname: string
+          schedule: string
+        }[]
+      }
       unfeature_expired_listings: {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      webhook_processing_stats: {
+        Args: { hours_back?: number }
+        Returns: {
+          completed_events: number
+          completion_rate: number
+          dead_letter_events: number
+          failed_events: number
+          processing_events: number
+          total_events: number
+        }[]
+      }
     }
     Enums: {
+      discount_type:
+        | "PERCENTAGE_DISCOUNT"
+        | "FIXED_AMOUNT_DISCOUNT"
+        | "EXTRA_LISTING_DAYS"
+      subscription_status:
+        | "active"
+        | "inactive"
+        | "cancelled"
+        | "past_due"
+        | "free"
       transaction_status: "pending" | "completed" | "failed"
       user_role: "user" | "admin" | "moderator"
+      webhook_event_status:
+        | "received"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "dead_letter"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1254,8 +1772,27 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      discount_type: [
+        "PERCENTAGE_DISCOUNT",
+        "FIXED_AMOUNT_DISCOUNT",
+        "EXTRA_LISTING_DAYS",
+      ],
+      subscription_status: [
+        "active",
+        "inactive",
+        "cancelled",
+        "past_due",
+        "free",
+      ],
       transaction_status: ["pending", "completed", "failed"],
       user_role: ["user", "admin", "moderator"],
+      webhook_event_status: [
+        "received",
+        "processing",
+        "completed",
+        "failed",
+        "dead_letter",
+      ],
     },
   },
 } as const

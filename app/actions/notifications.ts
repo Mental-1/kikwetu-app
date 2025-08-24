@@ -42,14 +42,16 @@ export async function createNotification({
 }) {
   const supabase = await getSupabaseRouteHandler(cookies);
 
-  const { error } = await supabase.from("notifications").insert({
+  const notification: Database['public']['Tables']['notifications']['Insert'] = {
     user_id: userId,
     title,
     message,
     type,
     listing_id: listingId,
     read: false,
-  });
+  };
+
+  const { error } = await supabase.from("notifications").insert(notification);
 
   if (error) {
     console.error("Error creating notification:", error);

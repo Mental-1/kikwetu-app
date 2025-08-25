@@ -14,11 +14,8 @@ import { createListingLimiter } from "@/utils/rate-limiting";
 import { checkUserPlanLimit } from "@/utils/subscriptions/check_user_limits";
 import { PostHog } from "posthog-node";
 
-import type {
-  AdDetailsFormData,
-  ActionResponse,
-  ListingCreateData,
-} from "@/lib/types/form-types";
+import type {  AdDetailsFormData,  ActionResponse,  ListingCreateData,} from "@/lib/types/form-types";
+import type { Tables } from "@/utils/supabase/database.types";
 
 const createListingSchema = z.object({
   title: createSanitizedString({ min: 5, max: 100 }),

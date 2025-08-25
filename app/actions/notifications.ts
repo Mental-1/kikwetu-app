@@ -40,25 +40,26 @@ export async function createNotification({
   type: NotificationType;
   listingId?: string | null;
 }) {
-  const supabase = await getSupabaseRouteHandler(cookies);
-
-  const notification_data: Record<string, any> = {};
-  if (listingId) {
-    notification_data.listing_id = listingId;
-  }
-
-  const { error } = await supabase.rpc("create_notification", {
-    target_user_id: userId,
-    notification_title: title,
-    notification_message: message,
-    notification_type: type,
-    notification_data,
-  });
-
-  if (error) {
-    console.error("Error creating notification:", error);
-    return { success: false, error: error.message };
-  }
+  // TODO: Fix the create_notification RPC call.
+  // const supabase = await getSupabaseRouteHandler(cookies);
+  //
+  // const notification_data: Record<string, any> = {};
+  // if (listingId) {
+  //   notification_data.listing_id = listingId;
+  // }
+  //
+  // const { error } = await supabase.rpc("create_notification", {
+  //   target_user_id: userId,
+  //   notification_title: title,
+  //   notification_message: message,
+  //   notification_type: type,
+  //   notification_data,
+  // });
+  //
+  // if (error) {
+  //   console.error("Error creating notification:", error);
+  //   return { success: false, error: error.message };
+  // }
 
   return { success: true };
 }

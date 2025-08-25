@@ -1360,21 +1360,14 @@ export type Database = {
         Returns: number
       }
       create_notification: {
-        Args:
-          | {
-              notification_data?: Json
-              notification_message: string
-              notification_title: string
-              notification_type: string
-              target_user_id: string
-            }
-          | {
-              p_message: string
-              p_title: string
-              p_type: string
-              p_user_id: string
-            }
-        Returns: undefined
+        Args: {
+          notification_data?: Json
+          notification_message: string
+          notification_title: string
+          notification_type: string
+          target_user_id: string
+        }
+        Returns: string
       }
       delete_abandoned_listings: {
         Args: Record<PropertyKey, never>

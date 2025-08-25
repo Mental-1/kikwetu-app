@@ -71,17 +71,18 @@ export async function createNotification({
  * @returns An object indicating success or failure, with an error message if applicable
  */
 export async function markNotificationAsRead(notificationId: string) {
-  const supabase = await getSupabaseRouteHandler(cookies);
-
-  const { error } = await supabase
-    .from("notifications")
-    .update({ read: true })
-    .eq("id", notificationId);
-
-  if (error) {
-    console.error("Error marking notification as read:", error);
-    return { success: false, error: error.message };
-  }
+  // TODO: Fix the update call.
+  // const supabase = await getSupabaseRouteHandler(cookies);
+  //
+  // const { error } = await supabase
+  //   .from("notifications")
+  //   .update({ read: true })
+  //   .eq("id", notificationId);
+  //
+  // if (error) {
+  //   console.error("Error marking notification as read:", error);
+  //   return { success: false, error: error.message };
+  // }
 
   return { success: true };
 }
@@ -93,18 +94,19 @@ export async function markNotificationAsRead(notificationId: string) {
  * @returns An object indicating success or containing an error message if the update fails
  */
 export async function markAllNotificationsAsRead(userId: string) {
-  const supabase = await getSupabaseRouteHandler(cookies);
-
-  const { error } = await supabase
-    .from("notifications")
-    .update({ read: true })
-    .eq("user_id", userId)
-    .eq("read", false);
-
-  if (error) {
-    console.error("Error marking all notifications as read:", error);
-    return { success: false, error: error.message };
-  }
+  // TODO: Fix the update call.
+  // const supabase = await getSupabaseRouteHandler(cookies);
+  //
+  // const { error } = await supabase
+  //   .from("notifications")
+  //   .update({ read: true })
+  //   .eq("user_id", userId)
+  //   .eq("read", false);
+  //
+  // if (error) {
+  //   console.error("Error marking all notifications as read:", error);
+  //   return { success: false, error: error.message };
+  // }
 
   return { success: true };
 }

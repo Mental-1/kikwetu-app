@@ -59,7 +59,7 @@ async function getUserContext() {
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .single<Tables<"profiles">>();
 
   return { user, profile };
 }
@@ -91,7 +91,7 @@ async function validateCategories(categoryId: number, subcategoryId?: number) {
       .select("*")
       .eq("id", subcategoryId)
       .eq("parent_category_id", categoryId)
-      .single();
+      .single<Tables<"subcategories">>();
 
     if (!subcat) {
       throw new AppError("Invalid subcategory", 400, "INVALID_SUBCATEGORY");

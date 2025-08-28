@@ -1,0 +1,67 @@
+Hello! Here is the guidance on migrating your build process to Bun on Coolify and setting up imgproxy.
+
+### Using Bun with Coolify
+
+Coolify has built-in support for Bun. When you're setting up your application in the Coolify dashboard, you should be able to select **Bun** as your build pack or runtime. If you do this, Coolify will automatically use `bun install` to install dependencies and `bun run build` to build your application.
+
+If you need more control, you can add a `nixpacks.toml` file to your project's root directory to customize the build process. Here's an example configuration to use Bun:
+
+```toml
+# nixpacks.toml
+
+[phases.install]
+cmds = ["bun install"]
+
+[phases.build]
+cmds = ["bun run build"]
+```
+
+### Linting and Error Reporting
+
+Your `package.json` already has a `lint` script that runs `next lint`. To ensure that linting errors are caught before a new version is deployed, you can modify your `build` script to run the linter first:
+
+```json
+"scripts": {
+  "dev": "next dev",
+  "build": "next lint && next build",
+  "start": "next start",
+  "lint": "next lint",
+  ...
+}
+```
+
+With this change, any linting errors will cause the build to fail, and Coolify will report the errors in the deployment logs.
+
+### Setting up imgproxy
+
+`imgproxy` is a great choice for self-hosting image optimization. Here's a general outline of how to integrate it with your Next.js app in Coolify:
+
+1.  **Deploy imgproxy:** Set up `imgproxy` as a separate service in your Coolify instance.
+2.  **Configure Next.js:** You'll need to tell the Next.js `Image` component to use `imgproxy` for image transformations. You can do this by creating a custom image loader.
+
+First, update your `next.config.mjs`:
+
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    loader: 'custom',
+    loaderFile: './lib/imgproxy-loader.js',
+  },
+};
+
+export default nextConfig;
+```
+
+Next, create the custom loader file at `lib/imgproxy-loader.js`:
+
+```javascript
+// lib/imgproxy-loader.js
+export default function imgproxyLoader({ src, width, quality }) {
+  const imgproxyUrl = process.env.NEXT_PUBLIC_IMGPROXY_URL; // Set this in your Coolify environment variables
+  const encodedSrc = Buffer.from(src).toString('base64url');
+  
+  // You might need to adjust the path depending on your imgproxy configuration
+  return `${imgproxyUrl}/insecure/rs:fit:${width}:0/g:no/plain/${encodedSrc}`;
+}
+```

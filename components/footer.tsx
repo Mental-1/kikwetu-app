@@ -163,7 +163,7 @@ export function Footer() {
             </a>
           </div>
           <p className="mt-4 text-sm text-muted-foreground md:mt-0">
-            &copy; {new Date().getFullYear()} Kikwetu. All rights reserved.
+            &copy; {new Date().getFullYear()} Routtme Inc. All rights reserved.
           </p>
         </div>
       </div>

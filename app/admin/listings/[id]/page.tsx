@@ -32,7 +32,7 @@ export default function ListingPreviewPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchListingDetails = async () => {
+    const fetchListingDetails = async (id: string) => {
       let supabase;
       try {
         supabase = getSupabaseClient();
@@ -46,7 +46,7 @@ export default function ListingPreviewPage() {
         const { data, error } = await supabase
           .from("listings")
           .select("*, profiles!inner(*)")
-          .eq("id", params.id)
+          .eq("id", id)
           .single();
 
         if (error) throw error;
@@ -61,8 +61,8 @@ export default function ListingPreviewPage() {
       }
     };
 
-    if (params.id) {
-      fetchListingDetails();
+    if (typeof params.id === 'string') {
+      fetchListingDetails(params.id);
     }
   }, [params.id]);
 

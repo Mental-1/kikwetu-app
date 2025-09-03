@@ -7,8 +7,6 @@ import { Database } from "@/utils/supabase/database.types";
 import { logger } from "@/lib/utils/logger";
 
 
-type Schema = Database["public"];
-
 const phoneRegex = new RegExp(
   /^(\+?[1-9]\d{0,3})?[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}$/,
 );
@@ -22,7 +20,7 @@ const accountSchema = z.object({
   avatar_url: z.string().url("Invalid URL").optional(),
 });
 
-async function getUserId(supabase: SupabaseClient<Schema>) {
+async function getUserId(supabase: SupabaseClient<Database>) {
   const {
     data: { user },
   } = await supabase.auth.getUser();

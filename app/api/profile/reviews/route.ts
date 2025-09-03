@@ -6,7 +6,7 @@ import { reviewCountCache } from "@/utils/lru-cache"; // Import the LRU cache in
 // GET: Fetch review count for a specific user_id
 // Example usage: GET /api/reviews?userId=some-user-id
 export async function GET(request: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
 
   try {
     const userId = request.nextUrl.searchParams.get("userId");
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
 // POST: Create a new review
 export async function POST(request: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
   try {
     const body = await request.json();
     const { userId, reviewContent, rating, sellerId } = body;
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
 // PUT: Update an existing review
 // Example usage: PUT /api/reviews?reviewId=some-review-id
 export async function PUT(request: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
 
   const {
     data: { user },
@@ -240,7 +240,7 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete a review
 // Example usage: DELETE /api/reviews?reviewId=some-review-id&userId=some-user-id
 export async function DELETE(request: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
 
   try {
     const reviewId = request.nextUrl.searchParams.get("reviewId");

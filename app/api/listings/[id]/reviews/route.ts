@@ -19,7 +19,7 @@ export async function GET(
   logger.info({ listingId, page, pageSize }, "Fetching reviews for listing");
 
   try {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
 
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize - 1;
@@ -72,7 +72,7 @@ export async function POST(
   logger.info({ listingId }, "Submitting review for listing");
 
   try {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

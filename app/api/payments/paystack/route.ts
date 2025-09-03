@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
       error: authError,

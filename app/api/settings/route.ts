@@ -49,7 +49,7 @@ const settingsUpdateLimiter = createRateLimiter({
 });
 
 async function getUserId() {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -57,7 +57,7 @@ async function getUserId() {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
   const userId = await getUserId();
 
   if (!userId) {
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
   const userId = await getUserId();
   const identifier = getClientIdentifier(req);
 
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
   const userId = await getUserId();
   const identifier = getClientIdentifier(req);
 

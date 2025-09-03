@@ -11,7 +11,7 @@ export async function DELETE(
   { params }: { params: { conversationId: string } }
 ) {
   const { conversationId } = params;
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
 
   const { data: { user } } = await supabase.auth.getUser();
 

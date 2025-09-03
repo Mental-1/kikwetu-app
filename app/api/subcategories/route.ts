@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("category_id");
 
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
 
     let query = supabase.from("subcategories").select("*").order("name");
 

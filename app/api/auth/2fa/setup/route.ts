@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies(); // Await not required, but harmless
-  const supabase = await getSupabaseRouteHandler(cookies); // Pass cookies function
+  const supabase = await getSupabaseRouteHandler(); // Pass cookies function
   // Guard: Don't enroll if 2FA already enabled
   const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
   if (factorsError) {

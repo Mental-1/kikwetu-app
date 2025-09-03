@@ -10,7 +10,7 @@ import { cookies } from "next/headers";
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
       error: authError,

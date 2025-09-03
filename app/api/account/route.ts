@@ -30,7 +30,7 @@ async function getUserId(supabase: SupabaseClient<Schema>) {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
 
   const userId = await getUserId(supabase);
 
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
   const userId = await getUserId(supabase);
 
   // On success, log structured event with route context
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
   const userId = await getUserId(supabase);
 
   if (!userId) {

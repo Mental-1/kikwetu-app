@@ -17,7 +17,7 @@ const sendMessageSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
     } = await supabase.auth.getUser();

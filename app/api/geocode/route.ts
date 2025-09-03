@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { address } = geocodeSchema.parse(body);
 
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
 
     // First check cache
     const { data: cached } = await supabase
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       lng,
     });
 
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
 
     // Check for nearby cached results
     const { data: cached } = await supabase.rpc("reverse_geocode", {

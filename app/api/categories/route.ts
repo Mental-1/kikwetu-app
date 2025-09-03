@@ -11,7 +11,7 @@ export const runtime = 'edge';
  */
 export async function GET() {
   try {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
 
     const { data: categories, error } = await supabase
       .from("categories")

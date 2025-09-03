@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
     const { phoneNumber, amount, listingId, discountCodeId } = validatedData.data;
 
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
       error: authError,

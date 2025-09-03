@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const redirectTo = requestUrl.searchParams.get('redirectTo') || '/';
 
   if (code) {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     await supabase.auth.exchangeCodeForSession(code);
   }
 

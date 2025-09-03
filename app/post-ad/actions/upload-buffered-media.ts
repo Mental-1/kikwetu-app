@@ -16,7 +16,7 @@ export async function uploadBufferedMedia(
   mediaUrls: string[],
   uploadType: "listings" | "profiles",
 ): Promise<UploadResult[]> {
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
   const {
     data: { user },
     error: authError,

@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const supabase = await getSupabaseRouteHandler(cookies);
+  const supabase = await getSupabaseRouteHandler();
 
   try {
     const {

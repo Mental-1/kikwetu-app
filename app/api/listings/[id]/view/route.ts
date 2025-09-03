@@ -25,7 +25,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
 
     // Increment view count using RPC function
     const { data, error } = await supabase.rpc("increment_listing_views", {

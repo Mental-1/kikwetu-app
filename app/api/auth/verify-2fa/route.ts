@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies(); // Await cookies() here
-  const supabase = await getSupabaseRouteHandler(cookies); // Pass cookies function
+  const supabase = await getSupabaseRouteHandler(); // Pass cookies function
 
   const { code } = await req.json();
 

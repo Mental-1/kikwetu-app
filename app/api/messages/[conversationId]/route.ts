@@ -20,7 +20,7 @@ export async function POST(
   const reqId = request.headers.get("x-request-id") ?? undefined;
   const baseLog = logger.child({ route: "messages:POST", conversationId: params?.conversationId, reqId });
   try {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -112,7 +112,7 @@ export async function GET(
   const reqId = request.headers.get("x-request-id") ?? undefined;
   const baseLog = logger.child({ route: "messages:GET", conversationId: params?.conversationId, reqId });
   try {
-    const supabase = await getSupabaseRouteHandler(cookies);
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
     } = await supabase.auth.getUser();

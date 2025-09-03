@@ -69,7 +69,7 @@ export async function getFilteredListingsAction(
   try {
     console.log("getFilteredListingsAction called with:", params);
 
-    const { data, error } = await supabase.rpc<FilteredListingsResponse>("get_filtered_listings", {
+    const { data, error } = await supabase.rpc("get_filtered_listings", {
       p_page: params.page,
       p_page_size: params.pageSize,
       p_categories:
@@ -98,8 +98,11 @@ export async function getFilteredListingsAction(
       throw new Error(`Search failed: ${error.message}`);
     }
 
-    const listings = data?.listings || [];
-    const totalCount = data?.total_count || 0;
+    // Bypassing the problematic generic slot by applying the type directly to the returned data.
+    const typedData = data as FilteredListingsResponse | null;
+
+    const listings = typedData?.listings || [];
+    const totalCount = typedData?.total_count || 0;
 
     const sanitizedData: ListingsItem[] = listings.map(sanitizeListing);
 

@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
     const referrerCodeIds = referrerDiscountCodes.map(code => code.id);
     // Step 2: Check user_applied_codes for new_user_id and any of these code_ids (if any exist)
-    let existingReferral: { id: string } | null = null;
+    let existingReferral: { id: number } | null = null;
     if (referrerCodeIds.length > 0) {
       const { data: existing, error: existingReferralError } = await supabase
         .from("user_applied_codes")

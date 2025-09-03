@@ -55,11 +55,19 @@ async function getUserContext() {
     throw new AppError("Authentication required", 401, "AUTH_REQUIRED");
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single<Tables<"profiles">>();
+    .maybeSingle();
+
+  if (profileError) {
+    throw new AppError(
+      "There was an issue fetching your profile. Please try again.",
+      500,
+      "DB_ERROR",
+    );
+  }
 
   return { user, profile };
 }

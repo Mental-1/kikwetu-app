@@ -70,22 +70,22 @@ export async function getFilteredListingsAction(
       p_categories:
         params.filters.categories.length > 0
           ? params.filters.categories
-          : null,
+          : undefined,
       p_subcategories:
         params.filters.subcategories.length > 0
           ? params.filters.subcategories
-          : null,
+          : undefined,
       p_conditions:
         params.filters.conditions.length > 0
           ? params.filters.conditions
-          : null,
+          : undefined,
       p_min_price: params.filters.priceRange.min,
       p_max_price: params.filters.priceRange.max,
       p_radius_km: params.filters.maxDistance,
-      p_search_query: params.filters.searchQuery || null,
+      p_search_query: params.filters.searchQuery || undefined,
       p_sort_by: params.sortBy,
-      p_user_latitude: params.userLocation?.lat || null,
-      p_user_longitude: params.userLocation?.lon || null,
+      p_user_latitude: params.userLocation?.lat || undefined,
+      p_user_longitude: params.userLocation?.lon || undefined,
     });
 
     if (error) {

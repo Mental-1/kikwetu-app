@@ -56,6 +56,11 @@ function sanitizeListing(raw: RawListing): ListingsItem {
   };
 }
 
+interface FilteredListingsResponse {
+  listings: RawListing[];
+  total_count: number;
+}
+
 export async function getFilteredListingsAction(
   params: SearchParams,
 ): Promise<ListingsResponse> {
@@ -64,7 +69,7 @@ export async function getFilteredListingsAction(
   try {
     console.log("getFilteredListingsAction called with:", params);
 
-    const { data, error } = await supabase.rpc("get_filtered_listings", {
+    const { data, error } = await supabase.rpc<FilteredListingsResponse>("get_filtered_listings", {
       p_page: params.page,
       p_page_size: params.pageSize,
       p_categories:

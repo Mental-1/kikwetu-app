@@ -992,6 +992,7 @@ export type Database = {
           plan_id: string
           start_date: string
           status: Database["public"]["Enums"]["subscription_status"]
+          transaction_id: string | null
           updated_at: string
           user_id: string
         }
@@ -1002,6 +1003,7 @@ export type Database = {
           plan_id: string
           start_date: string
           status: Database["public"]["Enums"]["subscription_status"]
+          transaction_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1012,6 +1014,7 @@ export type Database = {
           plan_id?: string
           start_date?: string
           status?: Database["public"]["Enums"]["subscription_status"]
+          transaction_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1021,6 +1024,13 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]

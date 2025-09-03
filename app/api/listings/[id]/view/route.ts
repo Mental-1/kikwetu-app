@@ -2,13 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
-type IncrementListingViewsResult = {
-  views: number;
-};
-type IncrementListingViewsArg = {
-  Args: { listing_id: string };
-  Returns: undefined;
-};
+
 
 /**
  * Handles a POST request to increment the view count of a listing by its ID.
@@ -40,11 +34,11 @@ export async function POST(
       );
     }
 
-    if (!data || data.length === 0 || typeof data[0]?.views !== 'number') {
-      return NextResponse.json({ error: "Listing not found or views not returned" }, { status: 404 });
+    if (typeof data !== 'number') {
+      return NextResponse.json({ error: "Listing not found or failed to get updated view count" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, views: data[0].views });
+    return NextResponse.json({ success: true, views: data });
   } catch (error) {
     console.error("Error in view endpoint:", error);
     return NextResponse.json(

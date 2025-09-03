@@ -7,6 +7,8 @@ import { serializeCookieHeader } from "@supabase/ssr";
 type Schema = Database["public"];
 
 /** SSR client for Server Components (read-only cookies) */
+/*
+// OLD getSupabaseServer() - Not compatible with Next.js 15
 export async function getSupabaseServer(): Promise<SupabaseClient<Schema>> {
   const cookieStore = await nextCookies();
 
@@ -38,6 +40,37 @@ export async function getSupabaseServer(): Promise<SupabaseClient<Schema>> {
   );
   // *This cast is the magic bullet:*
   return client as unknown as SupabaseClient<Schema>;
+}
+*/
+
+import { type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+// NEW getSupabaseServer() - Compatible with Next.js 15
+export const getSupabaseServer = async () => {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {}
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {}
+        },
+      },
+    }
+  )
 }
 
 /** Route Handler client */

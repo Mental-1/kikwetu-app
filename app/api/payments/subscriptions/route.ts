@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         plan_id: planId,
         transaction_id: transactionId,
         status: "active",
+        start_date: new Date().toISOString(),
         // Calculate end_date based on plan duration if available, or set to null for indefinite
         end_date: null, // Placeholder: needs to be calculated based on plan duration
       })

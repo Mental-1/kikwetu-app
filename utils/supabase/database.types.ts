@@ -1001,7 +1001,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           plan_id: string
-          start_date: string
+          start_date?: string
           status: Database["public"]["Enums"]["subscription_status"]
           transaction_id?: string | null
           updated_at?: string

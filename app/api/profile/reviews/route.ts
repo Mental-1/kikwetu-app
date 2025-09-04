@@ -100,9 +100,9 @@ export async function POST(request: NextRequest) {
       .from("reviews")
       .insert({
         reviewer_id: userId,
-        comment: reviewContent,
+        review: reviewContent,
         rating: rating,
-        seller_id: sellerId,
+        listing_id: sellerId,
       })
       .select();
 
@@ -196,7 +196,7 @@ export async function PUT(request: NextRequest) {
     const { data, error } = await supabase
       .from("reviews")
       .update({
-        comment: reviewContent,
+        review: reviewContent,
       })
       .eq("id", reviewId)
       .select();

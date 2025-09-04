@@ -173,7 +173,7 @@ export async function PUT(request: NextRequest) {
     // First, fetch the review to verify ownership
     const { data: existingReview, error: fetchError } = await supabase
       .from("reviews")
-      .select("reviewer_id, seller_id")
+      .select("reviewer_id, listing_id")
       .eq("id", reviewId)
       .single();
 

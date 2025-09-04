@@ -704,6 +704,7 @@ export type Database = {
           birth_date: string | null
           created_at: string | null
           currency: string | null
+          current_plan_id: string | null
           deleted_at: string | null
           deletion_reason: string | null
           email: string | null
@@ -749,6 +750,7 @@ export type Database = {
           birth_date?: string | null
           created_at?: string | null
           currency?: string | null
+          current_plan_id?: string | null
           deleted_at?: string | null
           deletion_reason?: string | null
           email?: string | null
@@ -794,6 +796,7 @@ export type Database = {
           birth_date?: string | null
           created_at?: string | null
           currency?: string | null
+          current_plan_id?: string | null
           deleted_at?: string | null
           deletion_reason?: string | null
           email?: string | null
@@ -831,7 +834,15 @@ export type Database = {
           verified?: boolean | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_plan_id_fkey"
+            columns: ["current_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_codes_pool: {
         Row: {

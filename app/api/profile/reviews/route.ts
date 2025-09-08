@@ -193,6 +193,19 @@ export async function PUT(request: NextRequest) {
       });
     }
 
+    // Fetch the listing to get the seller's ID for cache invalidation
+    const { data: listing, error: listingError } = await supabase
+      .from("listings")
+      .select("user_id")
+      .eq("id", existingReview.listing_id)
+      .single();
+
+    if (listingError || !listing) {
+      // This should ideally not happen if data integrity is maintained
+      console.error(`Listing not found for review ${reviewId}`);
+      // Decide if you want to proceed without cache invalidation or return an error
+    }
+
     const { data, error } = await supabase
       .from("reviews")
       .update({
@@ -215,8 +228,8 @@ export async function PUT(request: NextRequest) {
     // userReviewsListCache.delete(userId);
     // console.log(`Cache invalidated for user ${userId} review list after PUT.`);
     // Invalidate seller's review count cache since review content might affect aggregations
-    if (existingReview?.seller_id) {
-      reviewCountCache.delete(existingReview.seller_id);
+    if (listing?.user_id) {
+      reviewCountCache.delete(listing.user_id);
     }
     return NextResponse.json({
       message: "Review updated successfully.",

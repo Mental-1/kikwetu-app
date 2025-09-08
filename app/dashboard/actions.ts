@@ -46,11 +46,16 @@ export async function getDashboardData(): Promise<DashboardData> {
   const expiredListings =
     allListings?.filter((listing) => listing.status === "expired") || [];
 
+  const processedTransactions = transactions?.map(transaction => ({
+    ...transaction,
+    listings: transaction.listings ? [transaction.listings] : []
+  }));
+
   return {
     activeListings,
     pendingListings,
     expiredListings,
-    transactions: (transactions as TransactionItem[]) || [],
+    transactions: processedTransactions || [],
     recentActivity,
   };
 }

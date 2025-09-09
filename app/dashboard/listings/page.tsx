@@ -128,10 +128,18 @@ export default function UserListingsPage() {
           variant: "destructive",
         });
       } else {
+        type SavedListingWithListing = {
+          listings: (Database["public"]["Tables"]["listings"]["Row"] & {
+            category?: { name: string };
+          }) | null;
+        };
+
+        const savedListingsData = saved as SavedListingWithListing[] | null;
+
         setSavedListings(
-          (saved || [])
+          (savedListingsData || [])
             .filter((item) => item.listings)
-            .map((item) => transformListingData(item.listings!)),
+            .map((item) => transformListingData(item.listings!))
         );
       }
     } catch (error) {

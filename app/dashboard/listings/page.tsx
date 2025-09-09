@@ -130,8 +130,8 @@ export default function UserListingsPage() {
       } else {
         setSavedListings(
           (saved || [])
-            .filter(item => item.listings && Array.isArray(item.listings) && item.listings.length > 0)
-            .map((item) => transformListingData(item.listings[0])),
+            .filter((item) => item.listings)
+            .map((item) => transformListingData(item.listings!)),
         );
       }
     } catch (error) {

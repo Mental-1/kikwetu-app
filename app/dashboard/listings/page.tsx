@@ -151,16 +151,21 @@ export default function UserListingsPage() {
     try {
       const supabase = getSupabaseClient();
 
-      const { data: subscription } = await supabase
+      const { data: subscription, error } = await supabase
         .from("subscriptions")
-        .select("plan_id")
+        .select("*")
         .eq("user_id", user!.id)
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
 
-      if (subscription && subscription.plan_id) {
+      if (error) {
+        console.error("Error fetching subscription:", error);
+      }
+
+      if (subscription) {
+        console.log("Subscription object:", subscription);
         const { data: plan } = await supabase
           .from("plans")
           .select("name")

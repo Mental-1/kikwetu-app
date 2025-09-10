@@ -153,15 +153,23 @@ export default function UserListingsPage() {
 
       const { data: subscription } = await supabase
         .from("subscriptions")
-        .select("plans ( name )")
+        .select("plan_id")
         .eq("user_id", user!.id)
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
 
-      if (subscription && subscription.plans) {
-        setUserPlan(subscription.plans.name);
+      if (subscription && subscription.plan_id) {
+        const { data: plan } = await supabase
+          .from("plans")
+          .select("name")
+          .eq("id", subscription.plan_id)
+          .single();
+
+        if (plan) {
+          setUserPlan(plan.name);
+        }
       }
     } catch (error) {
       console.error("Error fetching user plan:", error);

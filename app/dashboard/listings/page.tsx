@@ -162,14 +162,15 @@ export default function UserListingsPage() {
 
       if (error) {
         console.error("Error fetching subscription:", error);
+        return;
       }
 
       if (subscription) {
-        console.log("Subscription object:", subscription);
+        const sub = subscription as unknown as { plan_id: string };
         const { data: plan } = await supabase
           .from("plans")
           .select("name")
-          .eq("id", subscription.plan_id)
+          .eq("id", sub.plan_id)
           .single();
 
         if (plan) {
